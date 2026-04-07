@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
+import '../../providers/auth_provider.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
@@ -135,6 +137,11 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
+                    // Authenticate via AuthProvider before navigating
+                    context.read<AuthProvider>().loginAsDriver(
+                      _emailController.text,
+                      _passwordController.text,
+                    );
                     Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const DriverHomeScreen()));
                   },
                   style: ElevatedButton.styleFrom(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 
 class ProfilePhotoScreen extends StatelessWidget {
   const ProfilePhotoScreen({super.key});
@@ -197,7 +198,9 @@ class ProfilePhotoScreen extends StatelessWidget {
                     // Skip for now
                     TextButton(
                       onPressed: () {
-                        // Skip photo upload
+                        // Skip photo upload\
+                      Navigator.of(context).pushReplacement(
+  MaterialPageRoute(builder: (context) => PassengerHomeScreen()),);
                       },
                       child: const Text(
                         'Skip for now',
@@ -216,6 +219,8 @@ class ProfilePhotoScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {
                           // Navigate to next step
+                          Navigator.of(context).pushReplacement(
+  MaterialPageRoute(builder: (context) => PassengerHomeScreen()),);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1A1A1A),

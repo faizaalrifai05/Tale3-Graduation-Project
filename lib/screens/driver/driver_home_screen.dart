@@ -1,31 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
 import '../../widgets/app_bottom_nav_bar.dart';
+import '../../providers/navigation_provider.dart';
 import 'package:testtale3/screens/driver/driver_create_ride_screen.dart';
 import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
 import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 
-class DriverHomeScreen extends StatefulWidget {
+class DriverHomeScreen extends StatelessWidget {
   const DriverHomeScreen({super.key});
 
   @override
-  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
-}
-
-class _DriverHomeScreenState extends State<DriverHomeScreen> {
-  int _currentIndex = 0;
-
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Watch the navigation provider to rebuild when the tab index changes.
+    final navProvider = context.watch<NavigationProvider>();
+
     return Scaffold(
       backgroundColor: AppStyles.backgroundColor,
       body: IndexedStack(
-        index: _currentIndex,
+        index: navProvider.driverTabIndex,
         children: const [
           _DriverHomeTab(),
           PickupScheduleScreen(),
@@ -34,8 +28,11 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
+        currentIndex: navProvider.driverTabIndex,
+        onTap: (index) {
+          // Use listen: false via context.read – we're inside a callback.
+          context.read<NavigationProvider>().setDriverTab(index);
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -519,5 +516,3 @@ class _WalletTab extends StatelessWidget {
     );
   }
 }
-
-

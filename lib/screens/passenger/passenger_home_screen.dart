@@ -1,31 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
 import '../../widgets/app_bottom_nav_bar.dart';
+import '../../providers/navigation_provider.dart';
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/chat_screen.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 
-class PassengerHomeScreen extends StatefulWidget {
+class PassengerHomeScreen extends StatelessWidget {
   const PassengerHomeScreen({super.key});
 
   @override
-  State<PassengerHomeScreen> createState() => _PassengerHomeScreenState();
-}
-
-class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
-  int _currentIndex = 0;
-
-  void _onNavTap(int index) {
-    setState(() => _currentIndex = index);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Watch the navigation provider to rebuild when the tab index changes.
+    final navProvider = context.watch<NavigationProvider>();
+
     return Scaffold(
       backgroundColor: AppStyles.backgroundColor,
       body: IndexedStack(
-        index: _currentIndex,
+        index: navProvider.passengerTabIndex,
         children: const [
           _HomeTab(),
           MyTripsScreen(),
@@ -34,8 +28,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         ],
       ),
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavTap,
+        currentIndex: navProvider.passengerTabIndex,
+        onTap: (index) {
+          context.read<NavigationProvider>().setPassengerTab(index);
+        },
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
@@ -545,5 +541,3 @@ class _ProfileTab extends StatelessWidget {
     );
   }
 }
-
-
