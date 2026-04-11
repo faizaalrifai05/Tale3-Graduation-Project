@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 
 class NotesAndRulesScreen extends StatefulWidget {
@@ -11,11 +12,6 @@ class NotesAndRulesScreen extends StatefulWidget {
 class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
   static const Color _primaryColor = Color(0xFF8B1A2B);
 
-  bool _rule1 = true;
-  bool _rule2 = true;
-  bool _rule3 = false;
-  bool _rule4 = false;
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,7 +21,9 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: _primaryColor),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const CommunityGuidelinesScreen()),
+          ),
         ),
         title: const Text(
           'Notes & Rules',
@@ -60,26 +58,10 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildCheckboxItem(
-                value: _rule1,
-                onChanged: (val) => setState(() => _rule1 = val ?? false),
-                text: 'Tale3 is a shared carpool community — not a private car. Ride together, not alone.',
-              ),
-              _buildCheckboxItem(
-                value: _rule2,
-                onChanged: (val) => setState(() => _rule2 = val ?? false),
-                text: 'Share rides, split costs, and travel smarter together.',
-              ),
-              _buildCheckboxItem(
-                value: _rule3,
-                onChanged: (val) => setState(() => _rule3 = val ?? false),
-                text: 'Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.',
-              ),
-              _buildCheckboxItem(
-                value: _rule4,
-                onChanged: (val) => setState(() => _rule4 = val ?? false),
-                text: 'Carpooling helps keep travel affordable while building a friendly, trust-based community.',
-              ),
+              _buildNote('Tale3 is a shared carpool community and not a private car. Ride together, not alone.'),
+              _buildNote('Share rides, split costs, and travel smarter together.'),
+              _buildNote('Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.'),
+              _buildNote('Carpooling helps keep travel affordable while building a friendly, trust-based community.'),
               const SizedBox(height: 32),
 
               // Seats Order Section
@@ -191,23 +173,17 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
     );
   }
 
-  Widget _buildCheckboxItem({required bool value, required ValueChanged<bool?> onChanged, required String text}) {
+  Widget _buildNote(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: Checkbox(
-              value: value,
-              onChanged: onChanged,
-              activeColor: _primaryColor,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-            ),
+          const Padding(
+            padding: EdgeInsets.only(top: 5),
+            child: Icon(Icons.circle, size: 6, color: Color(0xFF8B1A2B)),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,

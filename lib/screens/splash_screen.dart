@@ -50,77 +50,26 @@ class _SplashScreenState extends State<SplashScreen>
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF8B1A2B),
-              Color(0xFF5C0A1A),
-              Color(0xFF3A0510),
-            ],
-            stops: [0.0, 0.5, 1.0],
-          ),
-        ),
+       
         child: SafeArea(
           child: Column(
             children: [
               const Spacer(flex: 3),
               // Logo
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: const Color(0x26FFFFFF), // white 15%
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Center(
-                  child: Text(
-                    'U',
-                    style: TextStyle(
-                      fontFamily: 'serif',
-                      fontSize: 48,
-                      fontWeight: FontWeight.w300,
-                      color: Colors.white,
-                      height: 1.0,
-                    ),
+                SizedBox(
+                  width: 350,
+                  height: 300,
+              child: Container(
+                child: Image.asset(
+                 'assets/images/logomodified.png',
+                  fit: BoxFit.fill,
                   ),
-                ),
-              ),
+                 ),
+                  ),
               const SizedBox(height: 24),
               // App name
-              const Text(
-                'Tale3',
-                style: TextStyle(
-                  fontSize: 42,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              // Tagline
-              const Text(
-                'Your premium intercity\nconnection',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xD9FFFFFF), // white 85%
-                  height: 1.4,
-                ),
-              ),
-              const SizedBox(height: 8),
-              // Arabic text
-              const Text(
-                'رحلتك بين المدن أسهل',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0x99FFFFFF), // white 60%
-                ),
-              ),
+             
+              
               const Spacer(flex: 4),
               // Progress section
               Padding(
@@ -135,7 +84,7 @@ class _SplashScreenState extends State<SplashScreen>
                           'Preparing your journey...',
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xB3FFFFFF), // white 70%
+                            color: Color(0xFF5C0A1A), // white 70%
                           ),
                         ),
                         AnimatedBuilder(
@@ -145,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen>
                               '${(_progressController.value * 100).toInt()}%',
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: Color(0xB3FFFFFF), // white 70%
+                                color: Color(0xFF5C0A1A), // white 70%
                               ),
                             );
                           },
@@ -175,15 +124,7 @@ class _SplashScreenState extends State<SplashScreen>
               ),
               const SizedBox(height: 24),
               // Bottom text
-              const Text(
-                'SAFE  •  FAST  •  PREMIUM',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 3,
-                  color: Color(0x80FFFFFF), // white 50%
-                ),
-              ),
+              
               const SizedBox(height: 32),
             ],
           ),

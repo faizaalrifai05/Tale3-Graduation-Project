@@ -87,12 +87,11 @@ class DriverVehicleDetailsScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
 
-              // Form fields
-              _buildDropdownField('Car Make', 'Select Car Make'),
-              const SizedBox(height: 16),
-              _buildDropdownField('Car Model', 'Select Car Model'),
-              const SizedBox(height: 16),
               
+              
+              
+              _buildTextField('Car Model', 'e.g., Toyota Camry'),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(

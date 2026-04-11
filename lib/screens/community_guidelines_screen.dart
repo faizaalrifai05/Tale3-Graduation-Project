@@ -20,14 +20,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
-                      color: _primaryColor,
-                      size: 24,
-                    ),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  
                   const SizedBox(width: 4),
                   const Text(
                     'Before you start',
@@ -94,7 +87,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                       icon: Icons.people_outline,
                       title: 'Shared Community',
                       description:
-                          'Tale3 is a shared carpool community — not a private cab. Ride together, not alone.',
+                          'Tale3 is a shared carpool community and not a private cab. Ride together, not alone.',
                     ),
                     _buildGuidelineItem(
                       icon: Icons.lightbulb_outline,
