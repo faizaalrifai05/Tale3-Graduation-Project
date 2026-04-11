@@ -181,7 +181,17 @@ class DriverIdVerificationScreen extends StatelessWidget {
               const SizedBox(height: 16),
               
               // SSL Security notice
-              
+              const Center(
+                child: Text(
+                  'SECURE 256-BIT SSL ENCRYPTED VERIFICATION',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFFBDBDBD),
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
             ],
           ),
