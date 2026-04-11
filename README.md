@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # tale3project
 =======
 # testtale3
@@ -19,3 +20,6 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 >>>>>>> 5c86e3175fc6d697a494f7d5e37a19a9b5915377
+=======
+# Tale3-Graduation-Project
+>>>>>>> bcf3ed8ae1d46de7248f9b9fd29009714ca353ee
