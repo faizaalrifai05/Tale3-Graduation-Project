@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
-import 'package:testtale3/screens/driver/ride_posted_screen.dart';
+import 'package:testtale3/screens/driver/ride_confirmation_screen.dart';
 
 /// Screen for drivers to create a new ride.
 ///
@@ -277,10 +277,9 @@ class DriverCreateRideScreen extends StatelessWidget {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: () {
-                        rideProvider.publishRide();
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => const RidePostedScreen(),
+                            builder: (context) => const RideConfirmationScreen(),
                           ),
                         );
                       },
