@@ -133,28 +133,7 @@ class ChooseRoleScreen extends StatelessWidget {
               ),
 
               const Spacer(flex: 3),
-
-              // Bottom navigation bar
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    top: BorderSide(
-                      color: Colors.grey[200]!,
-                      width: 1,
-                    ),
-                  ),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(Icons.home_outlined, 'Home', false),
-                    _buildNavItem(
-                        Icons.directions_car_outlined, 'Rides', false),
-                    _buildNavItem(Icons.person_outline, 'Profile', true),
-                  ],
-                ),
-              ),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -241,26 +220,6 @@ class ChooseRoleScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          size: 24,
-          color: isActive ? _primaryColor : const Color(0xFF9E9E9E),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-            color: isActive ? _primaryColor : const Color(0xFF9E9E9E),
-          ),
-        ),
-      ],
-    );
-  }
+
 }
 
