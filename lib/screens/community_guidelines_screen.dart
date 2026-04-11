@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:testtale3/screens/notes_and_rules_screen.dart';
+import 'package:testtale3/screens/welcome_screen.dart';
 
 class CommunityGuidelinesScreen extends StatelessWidget {
   const CommunityGuidelinesScreen({super.key});
 
   static const Color _primaryColor = Color(0xFF8B1A2B);
   static const Color _darkMaroon = Color(0xFF5C0A1A);
-  static const Color _primaryLight = Color(0x1A8B1A2B); // primaryColor 10%
+  static const Color _primaryLight = Color(0x1A8B1A2B);
 
   @override
   Widget build(BuildContext context) {
@@ -15,12 +15,16 @@ class CommunityGuidelinesScreen extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top bar with back arrow and title
+            // Top bar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
-                  
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back,
+                        color: _primaryColor, size: 24),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
                   const SizedBox(width: 4),
                   const Text(
                     'Before you start',
@@ -56,17 +60,10 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 24),
 
-                    // Community Guidelines header
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Community Guidelines',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
+                    // ── Community Guidelines ──────────────────────────
+                    _buildSectionHeader(
+                      icon: Icons.people_outline,
+                      title: 'Community Guidelines',
                     ),
                     const SizedBox(height: 6),
                     const Padding(
@@ -80,14 +77,13 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // Guideline items
                     _buildGuidelineItem(
                       icon: Icons.people_outline,
                       title: 'Shared Community',
                       description:
-                          'Tale3 is a shared carpool community and not a private cab. Ride together, not alone.',
+                          'Tale3 is a shared carpool community — not a private cab. Ride together, not alone.',
                     ),
                     _buildGuidelineItem(
                       icon: Icons.lightbulb_outline,
@@ -99,7 +95,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                       icon: Icons.access_time,
                       title: 'Be Punctual',
                       description:
-                          'Arrive a little early to keep things smooth for your fellow travelers.',
+                          'Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.',
                     ),
                     _buildGuidelineItem(
                       icon: Icons.handshake_outlined,
@@ -108,56 +104,83 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                           'Carpooling helps keep travel affordable while building a friendly, trust-based community.',
                     ),
 
+                    const SizedBox(height: 28),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 20),
+                      child: Divider(color: Color(0xFFF0F0F0)),
+                    ),
                     const SizedBox(height: 20),
-                    // Seat ordering section
+
+                    // ── Seats Order ───────────────────────────────────
+                    _buildSectionHeader(
+                      icon: Icons.event_seat,
+                      title: 'Seats Order',
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Visual seat diagram
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: _primaryLight,
-                              borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFDF2F4),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Column(
+                          children: [
+                            // Front row: driver + front passenger
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildSeatIcon(Icons.directions_car,
+                                    color: const Color(0xFFE0E0E0)),
+                                _buildSeatIcon(Icons.person,
+                                    color: _primaryColor, isHighlighted: true),
+                              ],
                             ),
-                            child: const Icon(
-                              Icons.event_seat,
-                              size: 18,
-                              color: _primaryColor,
+                            const SizedBox(height: 24),
+                            // Back row: 3 passengers
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildSeatIcon(Icons.person,
+                                    color: _primaryColor, isHighlighted: true),
+                                _buildSeatIcon(Icons.person,
+                                    color: _primaryColor, isHighlighted: true),
+                                _buildSeatIcon(Icons.person,
+                                    color: _primaryColor, isHighlighted: true),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Seat Ordering',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
-                            ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
+
+                    // Seat rule explanations
                     Padding(
-                      padding: const EdgeInsets.only(left: 64, right: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildBulletPoint(
-                            'Choose "Back Row" to reserve all three back seats for maximum comfort.',
-                            boldText: '"Back Row"',
+                          _buildSeatRule(
+                            icon: Icons.looks_one,
+                            title: 'Back Row Selection',
+                            desc:
+                                'Choose "Back Row" to reserve all three back seats for maximum comfort or luggage space.',
                           ),
-                          const SizedBox(height: 8),
-                          _buildBulletPoint(
-                            'Choose "All" to reserve all four seats for a private journey.',
-                            boldText: '"All"',
+                          const SizedBox(height: 16),
+                          _buildSeatRule(
+                            icon: Icons.group,
+                            title: 'Full Car Selection',
+                            desc:
+                                'Choose "All" to reserve all four seats and have the entire vehicle to yourself.',
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
@@ -173,7 +196,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
-                        builder: (context) => const NotesAndRulesScreen(),
+                        builder: (context) => const WelcomeScreen(),
                       ),
                     );
                   },
@@ -197,6 +220,37 @@ class CommunityGuidelinesScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader({
+    required IconData icon,
+    required String title,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: _primaryLight,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 18, color: _primaryColor),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -250,65 +304,60 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBulletPoint(String text, {String? boldText}) {
-    if (boldText != null && text.contains(boldText)) {
-      final parts = text.split(boldText);
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
-            child: CircleAvatar(
-              radius: 3,
-              backgroundColor: Color(0xFF8B1A2B),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF616161),
-                  height: 1.4,
-                ),
-                children: [
-                  TextSpan(text: parts[0]),
-                  TextSpan(
-                    text: boldText,
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  if (parts.length > 1) TextSpan(text: parts[1]),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
+  Widget _buildSeatIcon(IconData icon,
+      {required Color color, bool isHighlighted = false}) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: isHighlighted ? color : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Icon(
+          icon,
+          color: isHighlighted ? Colors.white : color,
+          size: 24,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSeatRule({
+    required IconData icon,
+    required String title,
+    required String desc,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(top: 6),
-          child: CircleAvatar(
-            radius: 3,
-            backgroundColor: Color(0xFF8B1A2B),
-          ),
-        ),
-        const SizedBox(width: 8),
+        Icon(icon, color: _primaryColor, size: 20),
+        const SizedBox(width: 12),
         Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontSize: 13,
-              color: Color(0xFF616161),
-              height: 1.4,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                desc,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF757575),
+                  height: 1.4,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 }
-
