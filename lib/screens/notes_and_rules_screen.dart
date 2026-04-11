@@ -1,15 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 
-class NotesAndRulesScreen extends StatefulWidget {
+class NotesAndRulesScreen extends StatelessWidget {
   const NotesAndRulesScreen({super.key});
 
-  @override
-  State<NotesAndRulesScreen> createState() => _NotesAndRulesScreenState();
-}
-
-class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
   static const Color _primaryColor = Color(0xFF8B1A2B);
 
   @override
@@ -21,9 +15,7 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: _primaryColor),
-          onPressed: () => Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const CommunityGuidelinesScreen()),
-          ),
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           'Notes & Rules',
@@ -58,10 +50,10 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildNote('Tale3 is a shared carpool community and not a private car. Ride together, not alone.'),
-              _buildNote('Share rides, split costs, and travel smarter together.'),
-              _buildNote('Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.'),
-              _buildNote('Carpooling helps keep travel affordable while building a friendly, trust-based community.'),
+              _buildRuleItem('Tale3 is a shared carpool community — not a private car. Ride together, not alone.'),
+              _buildRuleItem('Share rides, split costs, and travel smarter together.'),
+              _buildRuleItem('Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.'),
+              _buildRuleItem('Carpooling helps keep travel affordable while building a friendly, trust-based community.'),
               const SizedBox(height: 32),
 
               // Seats Order Section
@@ -173,17 +165,24 @@ class _NotesAndRulesScreenState extends State<NotesAndRulesScreen> {
     );
   }
 
-  Widget _buildNote(String text) {
+  Widget _buildRuleItem(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 5),
-            child: Icon(Icons.circle, size: 6, color: Color(0xFF8B1A2B)),
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Container(
+              width: 7,
+              height: 7,
+              decoration: const BoxDecoration(
+                color: _primaryColor,
+                shape: BoxShape.circle,
+              ),
+            ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               text,
