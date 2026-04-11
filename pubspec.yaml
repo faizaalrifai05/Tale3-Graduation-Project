@@ -65,6 +65,7 @@ flutter:
     - assets/images/amman_city.png
     - assets/images/aqaba_city.png
     - assets/images/irbid_city.png
+    - assets/images/logomodified.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
