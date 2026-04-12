@@ -24,6 +24,18 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
   final _phoneController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      setState(() {
+        _displayName = auth.userName;
+        _phoneNumber = auth.userPhone;
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
@@ -191,10 +203,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
+                      final name = _nameController.text.trim();
+                      final phone = _phoneController.text.trim();
                       setState(() {
-                        _displayName = _nameController.text.trim();
-                        _phoneNumber = _phoneController.text.trim();
+                        _displayName = name;
+                        _phoneNumber = phone;
                       });
+                      context.read<AuthProvider>().updateProfile(
+                            name: name, phone: phone);
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -283,9 +299,13 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final shownName =
-        _displayName.isNotEmpty ? _displayName : 'Alex Johnson';
-    final displayPhone = _phoneNumber.isNotEmpty ? _phoneNumber : '+966 5X XXX XXXX';
+    final authUser = context.watch<AuthProvider>().currentUser;
+    final shownName = _displayName.isNotEmpty
+        ? _displayName
+        : (authUser?.name.isNotEmpty == true ? authUser!.name : 'Your Name');
+    final displayPhone = _phoneNumber.isNotEmpty
+        ? _phoneNumber
+        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : 'Add phone number');
 
     return Stack(
       children: [
@@ -514,27 +534,40 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                     color: AppStyles.primaryColor, size: 28),
                               ),
                               const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Tesla Model 3',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1A1A1A),
-                                      ),
-                                    ),
-                                    SizedBox(height: 4),
-                                    Text(
-                                      'White • 2022 • ABC 1234',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF757575),
-                                      ),
-                                    ),
-                                  ],
+                              Expanded(
+                                child: Builder(
+                                  builder: (context) {
+                                    final user = context.watch<AuthProvider>().currentUser;
+                                    final makeModel = [user?.carMake, user?.carModel]
+                                        .where((s) => s != null && s.isNotEmpty)
+                                        .join(' ');
+                                    final details = [user?.carColor, user?.carYear, user?.plateNumber]
+                                        .where((s) => s != null && s.isNotEmpty)
+                                        .join(' • ');
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          makeModel.isNotEmpty ? makeModel : 'No vehicle added',
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF1A1A1A),
+                                          ),
+                                        ),
+                                        if (details.isNotEmpty) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            details,
+                                            style: const TextStyle(
+                                              fontSize: 13,
+                                              color: Color(0xFF757575),
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    );
+                                  },
                                 ),
                               ),
                               Container(
@@ -587,13 +620,50 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           width: double.infinity,
                           height: 52,
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              context.read<AuthProvider>().logout();
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                    builder: (_) => const WelcomeScreen()),
-                                (route) => false,
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  title: const Text('Log Out',
+                                      style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700)),
+                                  content: const Text(
+                                      'Are you sure you want to log out?',
+                                      style: TextStyle(fontSize: 14)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            AppStyles.primaryColor,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Log Out'),
+                                    ),
+                                  ],
+                                ),
                               );
+                              if (confirm == true && context.mounted) {
+                                context.read<AuthProvider>().logout();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (_) => const WelcomeScreen()),
+                                  (route) => false,
+                                );
+                              }
                             },
                             icon: const Icon(Icons.logout,
                                 color: AppStyles.primaryColor),

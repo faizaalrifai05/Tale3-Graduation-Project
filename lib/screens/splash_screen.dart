@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:provider/provider.dart';
+import 'package:testtale3/models/user_model.dart';
+import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/community_guidelines_screen.dart';
+import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -21,20 +26,30 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 3),
     )..forward();
 
-    Timer(const Duration(seconds: 4), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                const CommunityGuidelinesScreen(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
-            transitionDuration: const Duration(milliseconds: 600),
-          ),
-        );
+    Timer(const Duration(seconds: 4), () async {
+      if (!mounted) return;
+      final auth = context.read<app_auth.AuthProvider>();
+      // Wait for Firebase to resolve auth state if not ready yet
+      if (!auth.isInitialized) {
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (!mounted) return;
       }
+      Widget destination;
+      if (auth.isLoggedIn) {
+        destination = auth.userRole == UserRole.driver
+            ? const DriverHomeScreen()
+            : const PassengerHomeScreen();
+      } else {
+        destination = const CommunityGuidelinesScreen();
+      }
+      Navigator.of(context).pushReplacement(
+        PageRouteBuilder(
+          pageBuilder: (_, _, _) => destination,
+          transitionsBuilder: (_, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 600),
+        ),
+      );
     });
   }
 
@@ -47,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
+      body: SizedBox(
         width: double.infinity,
         height: double.infinity,
        

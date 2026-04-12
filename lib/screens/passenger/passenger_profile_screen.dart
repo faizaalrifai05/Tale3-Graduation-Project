@@ -24,6 +24,18 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
   final _phoneController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = context.read<AuthProvider>();
+      setState(() {
+        _displayName = auth.userName;
+        _phoneNumber = auth.userPhone;
+      });
+    });
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
@@ -191,10 +203,14 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                   height: 52,
                   child: ElevatedButton(
                     onPressed: () {
+                      final name = _nameController.text.trim();
+                      final phone = _phoneController.text.trim();
                       setState(() {
-                        _displayName = _nameController.text.trim();
-                        _phoneNumber = _phoneController.text.trim();
+                        _displayName = name;
+                        _phoneNumber = phone;
                       });
+                      context.read<AuthProvider>().updateProfile(
+                            name: name, phone: phone);
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -282,9 +298,13 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userName = context.watch<AuthProvider>().userName;
-    final shownName = _displayName.isNotEmpty ? _displayName : userName;
-    final displayPhone = _phoneNumber.isNotEmpty ? _phoneNumber : '+966 5X XXX XXXX';
+    final authUser = context.watch<AuthProvider>().currentUser;
+    final shownName = _displayName.isNotEmpty
+        ? _displayName
+        : (authUser?.name.isNotEmpty == true ? authUser!.name : 'Your Name');
+    final displayPhone = _phoneNumber.isNotEmpty
+        ? _phoneNumber
+        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : 'Add phone number');
 
     return Stack(
       children: [
@@ -477,13 +497,50 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                           width: double.infinity,
                           height: 52,
                           child: OutlinedButton.icon(
-                            onPressed: () {
-                              context.read<AuthProvider>().logout();
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute(
-                                    builder: (_) => const WelcomeScreen()),
-                                (route) => false,
+                            onPressed: () async {
+                              final confirm = await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  title: const Text('Log Out',
+                                      style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700)),
+                                  content: const Text(
+                                      'Are you sure you want to log out?',
+                                      style: TextStyle(fontSize: 14)),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Cancel'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, true),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            AppStyles.primaryColor,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8)),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('Log Out'),
+                                    ),
+                                  ],
+                                ),
                               );
+                              if (confirm == true && context.mounted) {
+                                context.read<AuthProvider>().logout();
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (_) => const WelcomeScreen()),
+                                  (route) => false,
+                                );
+                              }
                             },
                             icon: const Icon(Icons.logout,
                                 color: AppStyles.primaryColor),

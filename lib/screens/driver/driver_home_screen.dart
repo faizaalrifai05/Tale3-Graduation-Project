@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
 import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
+import '../../providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_create_ride_screen.dart';
 import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
@@ -128,9 +129,9 @@ class _DriverHomeTab extends StatelessWidget {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                'Capt. Ahmed',
-                                style: TextStyle(
+                              Text(
+                                'Capt. ${context.watch<app_auth.AuthProvider>().userName}',
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: Colors.white,

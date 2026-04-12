@@ -694,7 +694,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    _sheetButton('Update Password', () {
+                    _sheetButton('Update Password', () async {
                       if (_newPasswordController.text.isEmpty ||
                           _currentPasswordController.text.isEmpty) {
                         _showSnackBar('Please fill in all fields',
@@ -713,8 +713,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             isError: true);
                         return;
                       }
+                      final authProvider = context.read<AuthProvider>();
                       Navigator.pop(ctx);
-                      _showSnackBar('Password updated successfully');
+                      final error = await authProvider.changePassword(
+                        currentPassword: _currentPasswordController.text,
+                        newPassword: _newPasswordController.text,
+                      );
+                      if (!mounted) return;
+                      if (error != null) {
+                        _showSnackBar(error, isError: true);
+                      } else {
+                        _showSnackBar('Password updated successfully');
+                      }
                     }),
                     const SizedBox(height: 12),
                   ],
@@ -1220,6 +1230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //  8. DELETE ACCOUNT CONFIRMATION
   // ═══════════════════════════════════════════════════════════
   void _showDeleteAccountConfirmation() {
+    final passwordController = TextEditingController();
     showDialog(
       context: context,
       builder: (ctx) {
@@ -1247,12 +1258,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          content: const Text(
-            'This action is permanent and cannot be undone. All your data, ride history, and ratings will be permanently removed.',
-            style: TextStyle(
-                fontSize: 14,
-                color: AppStyles.textSecondary,
-                height: 1.5),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This action is permanent and cannot be undone. All your data, ride history, and ratings will be permanently removed.',
+                style: TextStyle(
+                    fontSize: 14,
+                    color: AppStyles.textSecondary,
+                    height: 1.5),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: InputDecoration(
+                  labelText: 'Enter your password to confirm',
+                  labelStyle:
+                      const TextStyle(fontSize: 13, color: AppStyles.textSecondary),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 12),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -1265,14 +1296,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(ctx); // close dialog
-                context.read<AuthProvider>().logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                      builder: (_) => const WelcomeScreen()),
-                  (route) => false,
-                );
+              onPressed: () async {
+                final password = passwordController.text;
+                Navigator.pop(ctx);
+                final error = await context
+                    .read<AuthProvider>()
+                    .deleteAccount(password: password.isNotEmpty ? password : null);
+                if (!mounted) return;
+                if (error != null) {
+                  _showSnackBar(error, isError: true);
+                } else {
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (_) => const WelcomeScreen()),
+                    (route) => false,
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,

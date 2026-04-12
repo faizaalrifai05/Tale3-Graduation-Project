@@ -3,9 +3,7 @@ import 'package:provider/provider.dart';
 import '../theme/app_styles.dart';
 import '../providers/chat_provider.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  INBOX  (the tab shown in the bottom nav)
-// ─────────────────────────────────────────────────────────────────────────────
+
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
 
