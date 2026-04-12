@@ -14,12 +14,20 @@ class ChooseRoleScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
 
               // Tale3 logo
               Row(
@@ -50,18 +58,8 @@ class ChooseRoleScreen extends StatelessWidget {
                 ],
               ),
 
-              // Settings icon at top right
-              Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.settings_outlined,
-                    color: Color(0xFF757575),
-                    size: 22,
-                  ),
-                  onPressed: () {},
-                ),
-              ),
+              
+              
 
               const Spacer(flex: 2),
 

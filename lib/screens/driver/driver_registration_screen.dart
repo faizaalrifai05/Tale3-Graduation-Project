@@ -132,26 +132,39 @@ If you have any questions about this Privacy Policy, please contact us through t
 
 
   void _handleSubmit() {
-    // Terms must be accepted
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Please accept the Terms of Service to continue'),
           backgroundColor: _primaryColor,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+    if (_selectedGender == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select your gender'),
+          backgroundColor: _primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
       return;
     }
 
-    // Validate all fields
-    if (!_formKey.currentState!.validate()) return;
-
     Navigator.of(context).push(
       MaterialPageRoute(
-          builder: (_) => const DriverIdVerificationScreen()),
+        builder: (_) => DriverIdVerificationScreen(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          phone: _phoneController.text.trim(),
+        ),
+      ),
     );
   }
 
@@ -587,6 +600,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _darkMaroon,
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFE0E0E0),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,

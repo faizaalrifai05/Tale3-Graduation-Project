@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:testtale3/Utils/validators.dart';
 import 'package:testtale3/theme/app_styles.dart';
+import 'package:testtale3/providers/auth_provider.dart' as app_auth;
+import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
@@ -19,6 +22,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -27,32 +31,45 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
     super.dispose();
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final error = await context
+          .read<app_auth.AuthProvider>()
+          .signInWithGoogle(UserRole.driver);
+      if (!mounted) return;
+      if (error != null) {
+        _showError(error);
+      } else {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-
     try {
-      // Mock authentication — replace with your real logic later
-      await Future.delayed(const Duration(seconds: 1));
-
-      final email = _emailController.text.trim();
-      final password = _passwordController.text;
-
-      // Simulate a successful login for any non-empty valid credentials
-      final success = email.isNotEmpty && password.isNotEmpty;
-
+      final error = await context
+          .read<app_auth.AuthProvider>()
+          .signInWithEmail(
+            _emailController.text.trim(),
+            _passwordController.text,
+            UserRole.driver,
+          );
       if (!mounted) return;
-
-      if (success) {
+      if (error != null) {
+        _showError(error);
+      } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
         );
-      } else {
-        _showError('Incorrect email or password. Please try again.');
       }
-    } catch (e) {
-      if (mounted) _showError('Something went wrong. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -237,7 +254,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Or log in with your account',
+                        'Or continue with',
                         style:
                             TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
                       ),
@@ -249,15 +266,44 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildSocialIcon(Icons.apple),
-                    const SizedBox(width: 16),
-                    _buildSocialIcon(Icons.g_mobiledata),
-                    const SizedBox(width: 16),
-                    _buildSocialIcon(Icons.facebook),
-                  ],
+                // ── Google Sign-In Button ──────────────────────────────────
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton(
+                    onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
+                    style: OutlinedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      side: const BorderSide(color: Color(0xFFDDDDDD)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    child: _isGoogleLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF4285F4),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              _GoogleLogo(),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Sign in with Google',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF3C4043),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
                 ),
                 const SizedBox(height: 48),
 
@@ -331,16 +377,55 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
     );
   }
 
-  Widget _buildSocialIcon(IconData icon) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEEEEEE)),
-      ),
-      child: Center(child: Icon(icon, color: const Color(0xFF1A1A1A))),
+}
+
+class _GoogleLogo extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 22,
+      height: 22,
+      child: CustomPaint(painter: _GoogleLogoPainter()),
     );
   }
+}
+
+class _GoogleLogoPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    const startAngle = -0.35;
+
+    void drawArc(Color color, double start, double sweep) {
+      final paint = Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = size.width * 0.18
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawArc(rect, start, sweep, false, paint);
+    }
+
+    // Blue (right, top-right, part of bottom)
+    drawArc(const Color(0xFF4285F4), startAngle, 1.75);
+    // Green (bottom-right)
+    drawArc(const Color(0xFF34A853), startAngle + 1.75, 1.05);
+    // Yellow (bottom-left)
+    drawArc(const Color(0xFFFBBC05), startAngle + 2.8, 0.85);
+    // Red (top-left)
+    drawArc(const Color(0xFFEA4335), startAngle + 3.65, 0.92);
+
+    // Horizontal bar of the G
+    final barPaint = Paint()
+      ..color = const Color(0xFF4285F4)
+      ..strokeWidth = size.width * 0.18
+      ..strokeCap = StrokeCap.square;
+    canvas.drawLine(
+      Offset(size.width * 0.5, size.height * 0.5),
+      Offset(size.width * 0.97, size.height * 0.5),
+      barPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

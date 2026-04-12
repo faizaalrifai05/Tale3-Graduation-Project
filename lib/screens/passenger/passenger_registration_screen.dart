@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:testtale3/models/user_model.dart';
+import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/profile_photo_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
 
@@ -18,6 +21,7 @@ class _PassengerRegistrationScreenState
   // Step tracking
   int _currentStep = 1;
   static const int _totalSteps = 2;
+  bool _isLoading = false;
 
   // Step 1 controllers
   final _nameController = TextEditingController();
@@ -52,13 +56,95 @@ class _PassengerRegistrationScreenState
     }
   }
 
-  void _goNext() {
+  Future<void> _goNext() async {
     if (_currentStep < _totalSteps) {
+      // Validate step 1 before advancing
+      final name = _nameController.text.trim();
+      final email = _emailController.text.trim();
+      final password = _passwordController.text;
+
+      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please fill in all fields to continue'),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+      if (!email.contains('@')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please enter a valid email address'),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
+      if (password.length < 8) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Password must be at least 8 characters'),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
       setState(() => _currentStep++);
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (context) => const ProfilePhotoScreen()),
+      return;
+    }
+
+    // Step 2 — submit registration
+    if (!_agreeToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please accept the Terms of Service to continue'),
+          backgroundColor: _primaryColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
       );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final error = await context
+          .read<app_auth.AuthProvider>()
+          .registerWithEmail(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+            name: _nameController.text.trim(),
+            role: UserRole.passenger,
+            phone: _phoneController.text.trim(),
+          );
+      if (!mounted) return;
+      if (error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+      } else {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const ProfilePhotoScreen()),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -368,7 +454,8 @@ class _PassengerRegistrationScreenState
 
       _buildNextButton(
         label: 'Join as Passenger',
-        onPressed: _agreeToTerms ? _goNext : null,
+        onPressed: (_agreeToTerms && !_isLoading) ? _goNext : null,
+        isLoading: _isLoading,
       ),
       const SizedBox(height: 20),
       _buildLoginLink(),
@@ -377,7 +464,9 @@ class _PassengerRegistrationScreenState
   }
 
   Widget _buildNextButton(
-      {required String label, required VoidCallback? onPressed}) {
+      {required String label,
+      required VoidCallback? onPressed,
+      bool isLoading = false}) {
     return SizedBox(
       width: double.infinity,
       height: 52,
@@ -393,18 +482,23 @@ class _PassengerRegistrationScreenState
           ),
           elevation: 0,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-            const SizedBox(width: 6),
-            const Icon(Icons.arrow_forward, size: 18),
-          ],
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.arrow_forward, size: 18),
+                ],
+              ),
       ),
     );
   }

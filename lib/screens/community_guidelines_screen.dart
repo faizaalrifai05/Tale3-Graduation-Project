@@ -20,11 +20,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back,
-                        color: _primaryColor, size: 24),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
+                  
                   const SizedBox(width: 4),
                   const Text(
                     'Before you start',
