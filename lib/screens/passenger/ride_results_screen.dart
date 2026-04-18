@@ -1,30 +1,43 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 
 class RideResultsScreen extends StatelessWidget {
   const RideResultsScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => const _FilterSheet(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Light gray background
+      backgroundColor: context.colors.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             // Header with Back, Title, and Filter
             Container(
-              color: Colors.white,
+              color: context.colors.surfaceColor,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+                    icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -33,22 +46,22 @@ class RideResultsScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         Text(
                           'Today • 2 Passengers',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF757575),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.tune, color: Color(0xFF1A1A1A)),
-                    onPressed: () {},
+                    icon: Icon(Icons.tune, color: context.colors.textPrimary),
+                    onPressed: () => _showFilterSheet(context),
                   ),
                 ],
               ),
@@ -56,17 +69,17 @@ class RideResultsScreen extends StatelessWidget {
 
             // Filter Chips
             Container(
-              color: Colors.white,
+              color: context.colors.surfaceColor,
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
               child: Row(
                 children: [
-                  _buildFilterChip('Price', true),
+                  _buildFilterChip(context, 'Price', true),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Time', false),
+                  _buildFilterChip(context, 'Time', false),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Rating', false),
+                  _buildFilterChip(context, 'Rating', false),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Vehicle', false),
+                  _buildFilterChip(context, 'Vehicle', false),
                 ],
               ),
             ),
@@ -124,16 +137,16 @@ class RideResultsScreen extends StatelessWidget {
       ),
       // Bottom Navigation
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceColor,
+          border: Border(top: BorderSide(color: context.colors.borderColor, width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: 0,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: _primaryColor,
-          unselectedItemColor: const Color(0xFF9E9E9E),
+          backgroundColor: context.colors.surfaceColor,
+          selectedItemColor: AppStyles.primaryColor,
+          unselectedItemColor: context.colors.textTertiary,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,
@@ -163,14 +176,14 @@ class RideResultsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFilterChip(String label, bool isSelected) {
+  Widget _buildFilterChip(BuildContext context, String label, bool isSelected) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: isSelected ? _primaryColor : Colors.white,
+        color: isSelected ? AppStyles.primaryColor : context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? _primaryColor : const Color(0xFFE0E0E0),
+          color: isSelected ? AppStyles.primaryColor : context.colors.borderColor,
         ),
       ),
       child: Row(
@@ -181,12 +194,12 @@ class RideResultsScreen extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-              color: isSelected ? Colors.white : const Color(0xFF757575),
+              color: isSelected ? AppStyles.onPrimary : context.colors.textSecondary,
             ),
           ),
           if (isSelected) const SizedBox(width: 4),
           if (isSelected)
-            const Icon(Icons.keyboard_arrow_down, color: Colors.white, size: 16),
+            Icon(Icons.keyboard_arrow_down, color: AppStyles.onPrimary, size: 16),
         ],
       ),
     );
@@ -209,9 +222,9 @@ class RideResultsScreen extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE0E0E0)),
+        border: Border.all(color: context.colors.borderColor),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0A000000), // Colors.black.withOpacity(0.04)
@@ -227,10 +240,10 @@ class RideResultsScreen extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 16,
-                backgroundColor: Color(0xFFE0E0E0),
-                child: Icon(Icons.person, color: Colors.white, size: 20),
+                backgroundColor: context.colors.borderColor,
+                child: Icon(Icons.person, color: AppStyles.onPrimary, size: 20),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -241,21 +254,21 @@ class RideResultsScreen extends StatelessWidget {
                       children: [
                         Text(
                           driverName,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                        Icon(Icons.star, color: AppStyles.starRatingColor, size: 14),
                         const SizedBox(width: 4),
                         Text(
                           rating,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF757575),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -263,9 +276,9 @@ class RideResultsScreen extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       carInfo,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                       ),
                     ),
                   ],
@@ -279,7 +292,7 @@ class RideResultsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: isFull ? const Color(0xFF9E9E9E) : _primaryColor,
+                      color: isFull ? context.colors.textTertiary : AppStyles.primaryColor,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -288,7 +301,7 @@ class RideResultsScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
-                      color: isFull ? const Color(0xFF9E9E9E) : const Color(0xFFE65100), // Orange for not full
+                      color: isFull ? context.colors.textTertiary : AppStyles.deepOrange,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -297,7 +310,7 @@ class RideResultsScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: context.colors.dividerColor),
           const SizedBox(height: 16),
 
           // Timeline
@@ -308,10 +321,10 @@ class RideResultsScreen extends StatelessWidget {
                 children: [
                   Text(
                     departureTime,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -319,32 +332,32 @@ class RideResultsScreen extends StatelessWidget {
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: _primaryColor,
+                      color: AppStyles.primaryColor,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: context.colors.surfaceColor, width: 2),
                     ),
                   ),
                   Container(
                     width: 2,
                     height: 24,
-                    color: const Color(0xFFE0E0E0),
+                    color: context.colors.borderColor,
                   ),
                   Container(
                     width: 8,
                     height: 8,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                       shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
+                      border: Border.all(color: context.colors.surfaceColor, width: 2),
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     arrivalTime,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ],
@@ -358,10 +371,10 @@ class RideResultsScreen extends StatelessWidget {
                     const SizedBox(height: 18),
                     Text(
                       departureLocation,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF1A1A1A),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 22),
@@ -372,10 +385,10 @@ class RideResultsScreen extends StatelessWidget {
                         Expanded(
                           child: Text(
                             arrivalLocation,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1A1A1A),
+                              color: context.colors.textPrimary,
                             ),
                           ),
                         ),
@@ -395,10 +408,10 @@ class RideResultsScreen extends StatelessWidget {
                                     );
                                   },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: _darkMaroon,
-                              foregroundColor: Colors.white,
-                              disabledBackgroundColor: const Color(0xFFE0E0E0),
-                              disabledForegroundColor: const Color(0xFF9E9E9E),
+                              backgroundColor: AppStyles.darkMaroon,
+                              foregroundColor: AppStyles.onPrimary,
+                              disabledBackgroundColor: context.colors.borderColor,
+                              disabledForegroundColor: context.colors.textTertiary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -407,7 +420,7 @@ class RideResultsScreen extends StatelessWidget {
                             ),
                             child: Text(
                               isFull ? 'FULL' : 'Book',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -427,4 +440,139 @@ class RideResultsScreen extends StatelessWidget {
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  Filter Bottom Sheet
+// ─────────────────────────────────────────────────────────────────────────────
+class _FilterSheet extends StatefulWidget {
+  const _FilterSheet();
+
+  @override
+  State<_FilterSheet> createState() => _FilterSheetState();
+}
+
+class _FilterSheetState extends State<_FilterSheet> {
+  String _sortBy = 'Price';
+  RangeValues _priceRange = const RangeValues(0, 20);
+  bool _acOnly = false;
+  bool _luggageOnly = false;
+  bool _noSmokingOnly = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Handle
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: context.colors.borderColor, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Filter & Sort', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: context.colors.textPrimary)),
+              TextButton(
+                onPressed: () => setState(() {
+                  _sortBy = 'Price';
+                  _priceRange = const RangeValues(0, 20);
+                  _acOnly = false;
+                  _luggageOnly = false;
+                  _noSmokingOnly = false;
+                }),
+                child: Text('Reset', style: TextStyle(color: AppStyles.primaryColor, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Sort by
+          Text('Sort by', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            children: ['Price', 'Time', 'Rating'].map((label) {
+              final selected = _sortBy == label;
+              return ChoiceChip(
+                label: Text(label),
+                selected: selected,
+                onSelected: (_) => setState(() => _sortBy = label),
+                selectedColor: AppStyles.primaryColor,
+                labelStyle: TextStyle(
+                  color: selected ? AppStyles.onPrimary : context.colors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
+                backgroundColor: context.colors.cardBackgroundColor,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: selected ? AppStyles.primaryColor : context.colors.borderColor)),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+
+          // Price range
+          Text('Max Price: ${_priceRange.end.toInt()} JOD', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
+          RangeSlider(
+            values: _priceRange,
+            min: 0,
+            max: 20,
+            divisions: 20,
+            activeColor: AppStyles.primaryColor,
+            inactiveColor: AppStyles.primaryColor.withValues(alpha: 0.2),
+            onChanged: (v) => setState(() => _priceRange = v),
+          ),
+          const SizedBox(height: 8),
+
+          // Features
+          Text('Features', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
+          const SizedBox(height: 8),
+          _filterToggle(Icons.ac_unit, 'Air Conditioning', _acOnly, (v) => setState(() => _acOnly = v)),
+          _filterToggle(Icons.luggage, 'Luggage Space', _luggageOnly, (v) => setState(() => _luggageOnly = v)),
+          _filterToggle(Icons.smoke_free, 'No Smoking', _noSmokingOnly, (v) => setState(() => _noSmokingOnly = v)),
+          const SizedBox(height: 20),
+
+          // Apply
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppStyles.darkMaroon,
+                foregroundColor: AppStyles.onPrimary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text('Apply Filters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _filterToggle(IconData icon, String label, bool value, ValueChanged<bool> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: AppStyles.primaryColor),
+          const SizedBox(width: 10),
+          Expanded(child: Text(label, style: TextStyle(fontSize: 14, color: context.colors.textPrimary))),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppStyles.primaryColor,
+            activeTrackColor: AppStyles.primaryColor.withValues(alpha: 0.4),
+          ),
+        ],
+      ),
+    );
+  }
+}
 

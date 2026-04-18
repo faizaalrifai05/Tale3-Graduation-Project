@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter pub:*)",
+      "Bash(adb -s emulator-5554 shell pm uninstall com.example.testtale3)",
+      "Bash(flutter clean:*)"
+    ]
+  }
+}

@@ -1,3 +1,4 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,8 +14,8 @@ class DriverRegistrationScreen extends StatefulWidget {
 }
 
 class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   final _formKey = GlobalKey<FormState>();
 
@@ -60,23 +61,23 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1A1A))),
+                color: context.colors.textPrimary)),
         content: SingleChildScrollView(
           child: Text(content,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF424242),
+                  color: context.colors.textDeep,
                   height: 1.6)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close',
+            child: Text('Close',
                 style: TextStyle(
-                    color: _primaryColor, fontWeight: FontWeight.w600)),
+                    color: AppStyles.primaryColor, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -135,8 +136,8 @@ If you have any questions about this Privacy Policy, please contact us through t
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please accept the Terms of Service to continue'),
-          backgroundColor: _primaryColor,
+          content: Text('Please accept the Terms of Service to continue'),
+          backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -147,8 +148,8 @@ If you have any questions about this Privacy Policy, please contact us through t
     if (_selectedGender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select your gender'),
-          backgroundColor: _primaryColor,
+          content: Text('Please select your gender'),
+          backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -171,18 +172,16 @@ If you have any questions about this Privacy Policy, please contact us through t
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Driver Registration',
           style: TextStyle(
-              color: Color(0xFF1A1A1A),
+              color: context.colors.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w700),
         ),
@@ -201,40 +200,40 @@ If you have any questions about this Privacy Policy, please contact us through t
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('Account Details',
+                    Text('Account Details',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF9E9E9E))),
-                    const Text('Step 1 of 4',
+                            color: context.colors.textTertiary)),
+                    Text('Step 1 of 4',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _primaryColor)),
+                            color: AppStyles.primaryColor)),
                   ],
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: 0.25,
-                  backgroundColor: const Color(0xFFEEEEEE),
+                  backgroundColor: context.colors.neutralLight,
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(_primaryColor),
+                      const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
                   borderRadius: BorderRadius.circular(2),
                   minHeight: 4,
                 ),
                 const SizedBox(height: 32),
 
-                const Text('Join Tale3 as a Driver',
+                Text('Join Tale3 as a Driver',
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A1A))),
+                        color: context.colors.textPrimary)),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Start your journey with us and maximize your\nearnings today.',
                   style: TextStyle(
                       fontSize: 14,
-                      color: Color(0xFF757575),
+                      color: context.colors.textSecondary,
                       height: 1.5),
                 ),
                 const SizedBox(height: 32),
@@ -267,13 +266,13 @@ If you have any questions about this Privacy Policy, please contact us through t
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             color: selected
-                                ? _primaryColor.withValues(alpha: 0.08)
-                                : const Color(0xFFF5F5F5),
+                                ? AppStyles.primaryColor.withValues(alpha: 0.08)
+                                : context.colors.cardBackgroundColor,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: selected
-                                  ? _primaryColor
-                                  : const Color(0xFFE0E0E0),
+                                  ? AppStyles.primaryColor
+                                  : context.colors.borderColor,
                               width: selected ? 2 : 1,
                             ),
                           ),
@@ -285,8 +284,8 @@ If you have any questions about this Privacy Policy, please contact us through t
                                     ? Icons.male
                                     : Icons.female,
                                 color: selected
-                                    ? _primaryColor
-                                    : const Color(0xFF9E9E9E),
+                                    ? AppStyles.primaryColor
+                                    : context.colors.textTertiary,
                                 size: 20,
                               ),
                               const SizedBox(width: 6),
@@ -296,8 +295,8 @@ If you have any questions about this Privacy Policy, please contact us through t
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: selected
-                                      ? _primaryColor
-                                      : const Color(0xFF757575),
+                                      ? AppStyles.primaryColor
+                                      : context.colors.textSecondary,
                                 ),
                               ),
                             ],
@@ -325,11 +324,11 @@ If you have any questions about this Privacy Policy, please contact us through t
                           DateTime.now().day),
                       builder: (context, child) => Theme(
                         data: Theme.of(context).copyWith(
-                          colorScheme: const ColorScheme.light(
-                            primary: _primaryColor,
-                            onPrimary: Colors.white,
-                            surface: Colors.white,
-                            onSurface: Color(0xFF1A1A1A),
+                          colorScheme: ColorScheme.light(
+                            primary: AppStyles.primaryColor,
+                            onPrimary: AppStyles.onPrimary,
+                            surface: AppStyles.onPrimary,
+                            onSurface: context.colors.textPrimary,
                           ),
                         ),
                         child: child!,
@@ -343,14 +342,14 @@ If you have any questions about this Privacy Policy, please contact us through t
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
+                      color: context.colors.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                      border: Border.all(color: context.colors.borderColor),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.cake_outlined,
-                            color: Color(0xFF9E9E9E), size: 20),
+                        Icon(Icons.cake_outlined,
+                            color: context.colors.textTertiary, size: 20),
                         const SizedBox(width: 12),
                         Text(
                           _selectedBirthday == null
@@ -359,13 +358,13 @@ If you have any questions about this Privacy Policy, please contact us through t
                           style: TextStyle(
                             fontSize: 14,
                             color: _selectedBirthday == null
-                                ? const Color(0xFFBDBDBD)
-                                : const Color(0xFF1A1A1A),
+                                ? context.colors.inputHintColor
+                                : context.colors.textPrimary,
                           ),
                         ),
                         const Spacer(),
-                        const Icon(Icons.calendar_today_outlined,
-                            color: Color(0xFF9E9E9E), size: 18),
+                        Icon(Icons.calendar_today_outlined,
+                            color: context.colors.textTertiary, size: 18),
                       ],
                     ),
                   ),
@@ -428,44 +427,44 @@ If you have any questions about this Privacy Policy, please contact us through t
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: InputDecoration(
                     hintText: '••••••••',
-                    hintStyle: const TextStyle(
-                        color: Color(0xFFBDBDBD),
+                    hintStyle: TextStyle(
+                        color: context.colors.inputHintColor,
                         fontSize: 14,
                         letterSpacing: 2),
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: Color(0xFF9E9E9E), size: 20),
+                    prefixIcon: Icon(Icons.lock_outline,
+                        color: context.colors.textTertiary, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: const Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                         size: 20,
                       ),
                       onPressed: () => setState(
                           () => _obscurePassword = !_obscurePassword),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF5F5F5),
+                    fillColor: context.colors.cardBackgroundColor,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Color(0xFFE0E0E0))),
+                            BorderSide(color: context.colors.borderColor)),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Color(0xFFE0E0E0))),
+                            BorderSide(color: context.colors.borderColor)),
                     focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: _primaryColor, width: 2)),
+                        borderSide: BorderSide(
+                            color: AppStyles.primaryColor, width: 2)),
                     errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Colors.red)),
+                            BorderSide(color: Colors.red)),
                     focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
+                        borderSide: BorderSide(
                             color: Colors.red, width: 1.5)),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -473,11 +472,11 @@ If you have any questions about this Privacy Policy, please contact us through t
                 ),
 
                 // Password hint
-                const Padding(
+                Padding(
                   padding: EdgeInsets.only(top: 6, left: 4),
                   child: Text(
                     'Min. 8 characters, one uppercase letter and one number',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                    style: TextStyle(fontSize: 11, color: context.colors.textTertiary),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -496,44 +495,44 @@ If you have any questions about this Privacy Policy, please contact us through t
                   },
                   decoration: InputDecoration(
                     hintText: '••••••••',
-                    hintStyle: const TextStyle(
-                        color: Color(0xFFBDBDBD),
+                    hintStyle: TextStyle(
+                        color: context.colors.inputHintColor,
                         fontSize: 14,
                         letterSpacing: 2),
-                    prefixIcon: const Icon(Icons.lock_outline,
-                        color: Color(0xFF9E9E9E), size: 20),
+                    prefixIcon: Icon(Icons.lock_outline,
+                        color: context.colors.textTertiary, size: 20),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscureConfirmPassword
                             ? Icons.visibility_off
                             : Icons.visibility,
-                        color: const Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                         size: 20,
                       ),
                       onPressed: () => setState(
                           () => _obscureConfirmPassword = !_obscureConfirmPassword),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFFF5F5F5),
+                    fillColor: context.colors.cardBackgroundColor,
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Color(0xFFE0E0E0))),
+                            BorderSide(color: context.colors.borderColor)),
                     enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Color(0xFFE0E0E0))),
+                            BorderSide(color: context.colors.borderColor)),
                     focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                            color: _primaryColor, width: 2)),
+                        borderSide: BorderSide(
+                            color: AppStyles.primaryColor, width: 2)),
                     errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide:
-                            const BorderSide(color: Colors.red)),
+                            BorderSide(color: Colors.red)),
                     focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
+                        borderSide: BorderSide(
                             color: Colors.red, width: 1.5)),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -552,7 +551,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                         value: _agreeToTerms,
                         onChanged: (v) =>
                             setState(() => _agreeToTerms = v ?? false),
-                        activeColor: _primaryColor,
+                        activeColor: AppStyles.primaryColor,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(4)),
                       ),
@@ -561,28 +560,28 @@ If you have any questions about this Privacy Policy, please contact us through t
                     Expanded(
                       child: RichText(
                         text: TextSpan(
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF757575),
+                              color: context.colors.textSecondary,
                               height: 1.5),
                           children: [
-                            const TextSpan(text: 'By joining, I agree to Tale3\'s '),
+                            TextSpan(text: 'By joining, I agree to Tale3\'s '),
                             TextSpan(
                               text: 'Terms of Service',
                               recognizer: _termsTap,
-                              style: const TextStyle(
-                                  color: _primaryColor,
+                              style: TextStyle(
+                                  color: AppStyles.primaryColor,
                                   fontWeight: FontWeight.w600),
                             ),
-                            const TextSpan(text: ' and '),
+                            TextSpan(text: ' and '),
                             TextSpan(
                               text: 'Privacy Policy',
                               recognizer: _privacyTap,
-                              style: const TextStyle(
-                                  color: _primaryColor,
+                              style: TextStyle(
+                                  color: AppStyles.primaryColor,
                                   fontWeight: FontWeight.w600),
                             ),
-                            const TextSpan(text: '.'),
+                            TextSpan(text: '.'),
                           ],
                         ),
                       ),
@@ -598,14 +597,14 @@ If you have any questions about this Privacy Policy, please contact us through t
                   child: ElevatedButton(
                     onPressed: _handleSubmit,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _darkMaroon,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFE0E0E0),
+                      backgroundColor: AppStyles.darkMaroon,
+                      foregroundColor: AppStyles.onPrimary,
+                      disabledBackgroundColor: context.colors.borderColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: const Text('Join as Driver',
+                    child: Text('Join as Driver',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
@@ -625,10 +624,10 @@ If you have any questions about this Privacy Policy, please contact us through t
   Widget _buildLabel(String text) {
     return Text(
       text,
-      style: const TextStyle(
+      style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1A1A1A)),
+          color: context.colors.textPrimary),
     );
   }
 
@@ -636,27 +635,27 @@ If you have any questions about this Privacy Policy, please contact us through t
     return InputDecoration(
       hintText: hint,
       hintStyle:
-          const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+          TextStyle(color: context.colors.inputHintColor, fontSize: 14),
       prefixIcon: icon != null
-          ? Icon(icon, color: const Color(0xFF9E9E9E), size: 20)
+          ? Icon(icon, color: context.colors.textTertiary, size: 20)
           : null,
       filled: true,
-      fillColor: const Color(0xFFF5F5F5),
+      fillColor: context.colors.cardBackgroundColor,
       border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+          borderSide: BorderSide(color: context.colors.borderColor)),
       enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+          borderSide: BorderSide(color: context.colors.borderColor)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: _primaryColor, width: 2)),
+          borderSide: BorderSide(color: AppStyles.primaryColor, width: 2)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red)),
+          borderSide: BorderSide(color: Colors.red)),
       focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+          borderSide: BorderSide(color: Colors.red, width: 1.5)),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );

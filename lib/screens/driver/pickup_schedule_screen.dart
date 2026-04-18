@@ -1,5 +1,5 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
-import '../../theme/app_styles.dart';
 
 class PickupScheduleScreen extends StatefulWidget {
   const PickupScheduleScreen({super.key});
@@ -30,15 +30,15 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
       children: [
         // ── Header ──
         Container(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           padding:
               const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
-          child: const Row(
+          child: Row(
             children: [
               Text(
                 'My Rides',
                 style: TextStyle(
-                  color: AppStyles.textPrimary,
+                  color: context.colors.textPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
@@ -49,23 +49,23 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
 
         // ── Tab bar ──
         Container(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           child: TabBar(
             controller: _tabController,
             labelColor: AppStyles.primaryColor,
-            unselectedLabelColor: AppStyles.textTertiary,
-            labelStyle: const TextStyle(
+            unselectedLabelColor: context.colors.textTertiary,
+            labelStyle: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
-            unselectedLabelStyle: const TextStyle(
+            unselectedLabelStyle: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
             indicatorColor: AppStyles.primaryColor,
             indicatorWeight: 3,
             indicatorSize: TabBarIndicatorSize.label,
-            dividerColor: AppStyles.borderColor,
+            dividerColor: context.colors.borderColor,
             tabs: const [
               Tab(text: 'Upcoming'),
               Tab(text: 'Completed'),
@@ -100,7 +100,7 @@ class _UpcomingRidesTab extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
-        _buildRideCard(
+        _buildRideCard(context,
           from: 'Amman, University St.',
           to: 'Irbid, Yarmouk University',
           date: 'Today, 2:30 PM',
@@ -108,7 +108,7 @@ class _UpcomingRidesTab extends StatelessWidget {
           seats: '3 / 4',
           status: 'active',
         ),
-        _buildRideCard(
+        _buildRideCard(context,
           from: 'Amman, 7th Circle',
           to: 'Zarqa, New City',
           date: 'Tomorrow, 8:00 AM',
@@ -116,7 +116,7 @@ class _UpcomingRidesTab extends StatelessWidget {
           seats: '1 / 4',
           status: 'upcoming',
         ),
-        _buildRideCard(
+        _buildRideCard(context,
           from: 'Irbid, City Center',
           to: 'Amman, Abdali',
           date: 'Wed, 6:00 PM',
@@ -128,7 +128,7 @@ class _UpcomingRidesTab extends StatelessWidget {
     );
   }
 
-  static Widget _buildRideCard({
+  static Widget _buildRideCard(BuildContext context, {
     required String from,
     required String to,
     required String date,
@@ -142,12 +142,12 @@ class _UpcomingRidesTab extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive
               ? AppStyles.primaryColor.withValues(alpha: 0.3)
-              : AppStyles.borderColor.withValues(alpha: 0.5),
+              : context.colors.borderColor.withValues(alpha: 0.5),
         ),
         boxShadow: isActive
             ? [
@@ -169,8 +169,8 @@ class _UpcomingRidesTab extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? const Color(0xFFE8F5E9)
-                      : const Color(0xFFF5F5F5),
+                      ? AppStyles.successLightBg
+                      : context.colors.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Row(
@@ -182,8 +182,8 @@ class _UpcomingRidesTab extends StatelessWidget {
                           : Icons.schedule_rounded,
                       size: 8,
                       color: isActive
-                          ? const Color(0xFF4CAF50)
-                          : AppStyles.textTertiary,
+                          ? AppStyles.successColor
+                          : context.colors.textTertiary,
                     ),
                     const SizedBox(width: 5),
                     Text(
@@ -192,8 +192,8 @@ class _UpcomingRidesTab extends StatelessWidget {
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: isActive
-                            ? const Color(0xFF2E7D32)
-                            : AppStyles.textSecondary,
+                            ? AppStyles.successDarkText
+                            : context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -202,7 +202,7 @@ class _UpcomingRidesTab extends StatelessWidget {
               const Spacer(),
               Text(
                 price,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppStyles.primaryColor,
@@ -238,12 +238,12 @@ class _UpcomingRidesTab extends StatelessWidget {
                     Container(
                         width: 2,
                         height: 22,
-                        color: AppStyles.borderColor),
+                        color: context.colors.borderColor),
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF4CAF50),
+                      decoration: BoxDecoration(
+                        color: AppStyles.successColor,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -257,19 +257,19 @@ class _UpcomingRidesTab extends StatelessWidget {
                   children: [
                     Text(
                       from,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppStyles.textPrimary,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 18),
                     Text(
                       to,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppStyles.textPrimary,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                   ],
@@ -279,15 +279,15 @@ class _UpcomingRidesTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 14),
-          const Divider(height: 1),
+          Divider(height: 1),
           const SizedBox(height: 12),
 
           // Bottom info row
           Row(
             children: [
-              _infoTag(Icons.access_time_rounded, date),
+              _infoTag(context, Icons.access_time_rounded, date),
               const SizedBox(width: 10),
-              _infoTag(Icons.airline_seat_recline_normal_rounded, '$seats seats'),
+              _infoTag(context, Icons.airline_seat_recline_normal_rounded, '$seats seats'),
             ],
           ),
         ],
@@ -295,26 +295,26 @@ class _UpcomingRidesTab extends StatelessWidget {
     );
   }
 
-  static Widget _infoTag(IconData icon, String text) {
+  static Widget _infoTag(BuildContext context, IconData icon, String text) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: context.colors.cardBackgroundColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 13, color: AppStyles.textTertiary),
+            Icon(icon, size: 13, color: context.colors.textTertiary),
             const SizedBox(width: 5),
             Flexible(
               child: Text(
                 text,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: AppStyles.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
@@ -338,7 +338,7 @@ class _CompletedRidesTab extends StatelessWidget {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       children: [
-        _buildCompletedCard(
+        _buildCompletedCard(context,
           from: 'Amman',
           to: 'Irbid',
           date: 'Today, 9:30 AM',
@@ -346,7 +346,7 @@ class _CompletedRidesTab extends StatelessWidget {
           passengers: 3,
           rating: 4.9,
         ),
-        _buildCompletedCard(
+        _buildCompletedCard(context,
           from: 'Zarqa',
           to: 'Amman',
           date: 'Yesterday, 4:15 PM',
@@ -354,7 +354,7 @@ class _CompletedRidesTab extends StatelessWidget {
           passengers: 2,
           rating: 5.0,
         ),
-        _buildCompletedCard(
+        _buildCompletedCard(context,
           from: 'Amman',
           to: 'Aqaba',
           date: 'Mon, 7:00 AM',
@@ -362,7 +362,7 @@ class _CompletedRidesTab extends StatelessWidget {
           passengers: 4,
           rating: 4.8,
         ),
-        _buildCompletedCard(
+        _buildCompletedCard(context,
           from: 'Irbid',
           to: 'Amman',
           date: 'Sun, 3:00 PM',
@@ -370,7 +370,7 @@ class _CompletedRidesTab extends StatelessWidget {
           passengers: 3,
           rating: 4.7,
         ),
-        _buildCompletedCard(
+        _buildCompletedCard(context,
           from: 'Amman',
           to: 'Madaba',
           date: 'Sat, 10:00 AM',
@@ -382,7 +382,7 @@ class _CompletedRidesTab extends StatelessWidget {
     );
   }
 
-  static Widget _buildCompletedCard({
+  static Widget _buildCompletedCard(BuildContext context, {
     required String from,
     required String to,
     required String date,
@@ -394,9 +394,9 @@ class _CompletedRidesTab extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppStyles.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
       ),
       child: Column(
         children: [
@@ -407,10 +407,10 @@ class _CompletedRidesTab extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: context.colors.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.route_rounded,
+                child: Icon(Icons.route_rounded,
                     color: AppStyles.primaryColor, size: 20),
               ),
               const SizedBox(width: 14),
@@ -420,18 +420,18 @@ class _CompletedRidesTab extends StatelessWidget {
                   children: [
                     Text(
                       '$from → $to',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: AppStyles.textPrimary,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       date,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppStyles.textSecondary,
+                        color: context.colors.textSecondary,
                       ),
                     ),
                   ],
@@ -439,7 +439,7 @@ class _CompletedRidesTab extends StatelessWidget {
               ),
               Text(
                 price,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                   color: AppStyles.primaryColor,
@@ -449,7 +449,7 @@ class _CompletedRidesTab extends StatelessWidget {
           ),
 
           const SizedBox(height: 12),
-          const Divider(height: 1),
+          Divider(height: 1),
           const SizedBox(height: 12),
 
           // Bottom: stats row
@@ -460,21 +460,21 @@ class _CompletedRidesTab extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: AppStyles.successLightBg,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(Icons.check_circle,
-                        size: 12, color: Color(0xFF4CAF50)),
+                        size: 12, color: AppStyles.successColor),
                     SizedBox(width: 4),
                     Text(
                       'Completed',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E7D32),
+                        color: AppStyles.successDarkText,
                       ),
                     ),
                   ],
@@ -482,28 +482,28 @@ class _CompletedRidesTab extends StatelessWidget {
               ),
               const Spacer(),
               // Passengers
-              const Icon(Icons.person_outline,
-                  size: 14, color: AppStyles.textTertiary),
+              Icon(Icons.person_outline,
+                  size: 14, color: context.colors.textTertiary),
               const SizedBox(width: 4),
               Text(
                 '$passengers',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppStyles.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
               const SizedBox(width: 16),
               // Rating
-              const Icon(Icons.star_rounded,
+              Icon(Icons.star_rounded,
                   size: 14, color: AppStyles.starRatingColor),
               const SizedBox(width: 4),
               Text(
                 rating.toString(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppStyles.textSecondary,
+                  color: context.colors.textSecondary,
                 ),
               ),
             ],

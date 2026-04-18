@@ -1,3 +1,4 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -9,8 +10,8 @@ class PasswordResetScreen extends StatefulWidget {
 }
 
 class _PasswordResetScreenState extends State<PasswordResetScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   final _emailController = TextEditingController();
   bool _isLoading = false;
@@ -27,8 +28,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
     if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please enter your email address'),
-          backgroundColor: _primaryColor,
+          content: Text('Please enter your email address'),
+          backgroundColor: context.colors.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -63,7 +64,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: _primaryColor,
+          backgroundColor: context.colors.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -73,7 +74,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: _primaryColor,
+          backgroundColor: context.colors.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -86,18 +87,16 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Password Reset',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -113,31 +112,34 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 child: Column(
                   children: [
                     const SizedBox(height: 48),
-                    // Icon circle (bullseye target look)
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF2F4),
+                    // Premium Lock/Email Icon
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
+                      curve: Curves.fastOutSlowIn,
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        color: _emailSent ? AppStyles.successLightBg : context.colors.highlightBackgroundColor,
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: _emailSent ? AppStyles.successColor.withValues(alpha: 0.2) : context.colors.primaryColor.withValues(alpha: 0.15),
+                            blurRadius: 24,
+                            spreadRadius: 8,
+                          ),
+                        ],
                       ),
                       child: Center(
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: _primaryColor, width: 4),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: _primaryColor,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return ScaleTransition(scale: animation, child: child);
+                          },
+                          child: Icon(
+                            _emailSent ? Icons.mark_email_read_rounded : Icons.lock_reset_rounded,
+                            key: ValueKey<bool>(_emailSent),
+                            size: 48,
+                            color: _emailSent ? AppStyles.successColor : context.colors.primaryColor,
                           ),
                         ),
                       ),
@@ -147,10 +149,10 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                     // Heading
                     Text(
                       _emailSent ? 'Check your inbox' : 'Forgot Password?',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A1A),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
@@ -159,9 +161,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                           ? 'A password reset link has been sent to\n${_emailController.text.trim()}'
                           : 'Enter the email address associated\nwith your Tale3 account.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF757575),
+                        color: context.colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -169,14 +171,14 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
                     if (!_emailSent) ...[
                       // Email Field
-                      const Align(
+                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'EMAIL ADDRESS',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF9E9E9E),
+                            color: context.colors.textSecondary,
                             letterSpacing: 1,
                           ),
                         ),
@@ -187,17 +189,17 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                         keyboardType: TextInputType.emailAddress,
                         decoration: InputDecoration(
                           hintText: 'name@example.com',
-                          hintStyle: const TextStyle(
-                            color: Color(0xFFBDBDBD),
+                          hintStyle: TextStyle(
+                            color: context.colors.inputHintColor,
                             fontSize: 14,
                           ),
-                          prefixIcon: const Icon(
+                          prefixIcon: Icon(
                             Icons.email_outlined,
-                            color: Color(0xFFBDBDBD),
+                            color: context.colors.inputHintColor,
                             size: 20,
                           ),
                           filled: true,
-                          fillColor: const Color(0xFFF9F9F9),
+                          fillColor: context.colors.inputFillColor,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
@@ -217,9 +219,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _sendResetLink,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _darkMaroon,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: const Color(0xFFE0E0E0),
+                            backgroundColor: context.colors.darkMaroon,
+                            foregroundColor: AppStyles.onPrimary,
+                            disabledBackgroundColor: context.colors.borderColor,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -230,9 +232,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                                   width: 20,
                                   height: 20,
                                   child: CircularProgressIndicator(
-                                      color: Colors.white, strokeWidth: 2),
+                                      color: AppStyles.onPrimary, strokeWidth: 2),
                                 )
-                              : const Text(
+                              : Text(
                                   'Send Link',
                                   style: TextStyle(
                                     fontSize: 16,
@@ -249,14 +251,14 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                         child: ElevatedButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: _darkMaroon,
-                            foregroundColor: Colors.white,
+                            backgroundColor: context.colors.darkMaroon,
+                            foregroundColor: AppStyles.onPrimary,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
-                          child: const Text(
+                          child: Text(
                             'Back to Login',
                             style: TextStyle(
                               fontSize: 16,
@@ -273,21 +275,21 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text(
+                        Text(
                           'Remember your password? ',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF757575),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
-                          child: const Text(
+                          child: Text(
                             'Log in',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: _primaryColor,
+                              color: context.colors.primaryColor,
                             ),
                           ),
                         ),

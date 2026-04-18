@@ -1,27 +1,26 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 
-class VerificationSuccessScreen extends StatelessWidget {
-  const VerificationSuccessScreen({super.key});
+class PassengerVerificationSuccessScreen extends StatelessWidget {
+  const PassengerVerificationSuccessScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.close, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Verification',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -49,15 +48,15 @@ class VerificationSuccessScreen extends StatelessWidget {
                         height: 140,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: const Color(0xFFFDE4E8).withValues(alpha: 0.5),
+                          color: context.colors.highlightBackgroundColor.withValues(alpha: 0.5),
                         ),
                       ),
                       Container(
                         width: 100,
                         height: 100,
-                        decoration: const BoxDecoration(
+                        decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: Color(0xFFFDE4E8),
+                          color: context.colors.highlightBackgroundColor,
                         ),
                       ),
                       // Top floating checkmark circle
@@ -66,11 +65,11 @@ class VerificationSuccessScreen extends StatelessWidget {
                         child: Container(
                           width: 48,
                           height: 48,
-                          decoration: const BoxDecoration(
-                            color: _primaryColor,
+                          decoration: BoxDecoration(
+                            color: AppStyles.primaryColor,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.check, color: Colors.white, size: 28),
+                          child: Icon(Icons.check, color: AppStyles.onPrimary, size: 28),
                         ),
                       ),
                       // Shield badge container below
@@ -80,12 +79,12 @@ class VerificationSuccessScreen extends StatelessWidget {
                           width: 180,
                           height: 80,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8DACD),
+                            color: context.colors.cardBackgroundColor,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.white, width: 4),
+                            border: Border.all(color: AppStyles.onPrimary, width: 4),
                           ),
-                          child: const Center(
-                            child: Icon(Icons.verified_user, color: _primaryColor, size: 40),
+                          child: Center(
+                            child: Icon(Icons.verified_user, color: AppStyles.primaryColor, size: 40),
                           ),
                         ),
                       ),
@@ -96,25 +95,25 @@ class VerificationSuccessScreen extends StatelessWidget {
               const SizedBox(height: 48),
 
               // Title
-              const Text(
+              Text(
                 'Verification\nSuccessful!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                   height: 1.2,
                 ),
               ),
               const SizedBox(height: 16),
               
               // Subtitle
-              const Text(
+              Text(
                 'Your email has been verified. You\ncan now use Tale3 to find and request a\nride. login', // "login" is present in the mockup string
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -127,7 +126,6 @@ class VerificationSuccessScreen extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Navigate to dashboard
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(
                         builder: (context) => const PassengerHomeScreen(),
@@ -136,14 +134,14 @@ class VerificationSuccessScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _darkMaroon,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppStyles.darkMaroon,
+                    foregroundColor: AppStyles.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Go to Dashboard',
                     style: TextStyle(
                       fontSize: 16,

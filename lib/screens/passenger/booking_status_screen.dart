@@ -1,26 +1,25 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/passenger/cancel_trip_screen.dart';
 
 class BookingStatusScreen extends StatelessWidget {
   const BookingStatusScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Booking Status',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -39,20 +38,20 @@ class BookingStatusScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: _primaryColor.withValues(alpha: 0.1),
+                  color: AppStyles.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Container(
                     width: 50,
                     height: 50,
-                    decoration: const BoxDecoration(
-                      color: _primaryColor,
+                    decoration: BoxDecoration(
+                      color: AppStyles.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(
+                    child: Icon(
                       Icons.check,
-                      color: Colors.white,
+                      color: AppStyles.onPrimary,
                       size: 30,
                     ),
                   ),
@@ -61,21 +60,21 @@ class BookingStatusScreen extends StatelessWidget {
               const SizedBox(height: 24),
               
               // Success Text
-              const Text(
+              Text(
                 'Booking Confirmed!',
                 style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Your ride has been confirmed. You can\ntrack its status at My Trips.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -87,21 +86,21 @@ class BookingStatusScreen extends StatelessWidget {
                 child: Container(
                   height: 150,
                   width: double.infinity,
-                  color: const Color(0xFFE8F5E9),
+                  color: AppStyles.successLightBg,
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
-                      Icon(Icons.map, size: 64, color: Colors.green[200]),
+                      Icon(Icons.map, size: 64, color: AppStyles.successColor.withValues(alpha: 0.5)),
                       // Mocking a route line and pins
                       Positioned(
                         bottom: 40,
                         left: 80,
-                        child: Icon(Icons.location_on, color: _primaryColor, size: 24),
+                        child: Icon(Icons.location_on, color: AppStyles.primaryColor, size: 24),
                       ),
                       Positioned(
                         top: 40,
                         right: 80,
-                        child: Icon(Icons.location_city, color: Colors.blue, size: 24),
+                        child: Icon(Icons.location_city, color: AppStyles.primaryColor, size: 24),
                       ),
                     ],
                   ),
@@ -113,58 +112,58 @@ class BookingStatusScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F9F9),
+                  color: context.colors.inputFillColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  border: Border.all(color: context.colors.borderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'TRIP DETAILS',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                         letterSpacing: 1,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.directions_car, color: _primaryColor, size: 20),
+                        Icon(Icons.directions_car, color: AppStyles.primaryColor, size: 20),
                         SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Toyota Camry - White\nPlate: 40-1234',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A)),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
                           ),
                         ),
                       ],
                     ),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(vertical: 12),
                       child: Divider(height: 1),
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.event_seat, color: _primaryColor, size: 20),
+                        Icon(Icons.event_seat, color: AppStyles.primaryColor, size: 20),
                         const SizedBox(width: 12),
-                        const Expanded(
+                        Expanded(
                           child: Text(
                             'Seats: 1 Seat',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A)),
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.colors.textPrimary),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFDF2F4),
+                            color: context.colors.highlightBackgroundColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
+                          child: Text(
                             '15.00 JOD',
-                            style: TextStyle(fontWeight: FontWeight.w700, color: _primaryColor, fontSize: 13),
+                            style: TextStyle(fontWeight: FontWeight.w700, color: AppStyles.primaryColor, fontSize: 13),
                           ),
                         ),
                       ],
@@ -187,13 +186,13 @@ class BookingStatusScreen extends StatelessWidget {
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _primaryColor,
-                    side: const BorderSide(color: _primaryColor, width: 1.5),
+                    foregroundColor: AppStyles.primaryColor,
+                    side: BorderSide(color: AppStyles.primaryColor, width: 1.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Cancel Ride',
                     style: TextStyle(
                       fontSize: 16,
@@ -209,16 +208,16 @@ class BookingStatusScreen extends StatelessWidget {
       
       // Bottom Navigation
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceColor,
+          border: Border(top: BorderSide(color: context.colors.borderColor, width: 1)),
         ),
         child: BottomNavigationBar(
-          currentIndex: 0, 
+          currentIndex: 0,
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: _primaryColor,
-          unselectedItemColor: const Color(0xFF9E9E9E),
+          backgroundColor: context.colors.surfaceColor,
+          selectedItemColor: AppStyles.primaryColor,
+          unselectedItemColor: context.colors.textTertiary,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,

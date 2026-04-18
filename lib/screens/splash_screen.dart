@@ -1,11 +1,15 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
+import 'package:testtale3/providers/settings_provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -29,11 +33,34 @@ class _SplashScreenState extends State<SplashScreen>
     Timer(const Duration(seconds: 4), () async {
       if (!mounted) return;
       final auth = context.read<app_auth.AuthProvider>();
+      final settings = context.read<SettingsProvider>();
+
       // Wait for Firebase to resolve auth state if not ready yet
       if (!auth.isInitialized) {
         await Future.delayed(const Duration(milliseconds: 500));
         if (!mounted) return;
       }
+
+      // Sync current system permission state into the provider
+      await settings.syncPermissions();
+      if (!mounted) return;
+
+      // Show notification permission dialog if not already granted
+      if (!settings.notificationsEnabled) {
+        final allow = await showPermissionDialog(context, PermissionType.notifications);
+        if (!mounted) return;
+        if (allow) await settings.requestNotifications();
+        if (!mounted) return;
+      }
+
+      // Show location permission dialog if not already granted
+      if (!settings.locationEnabled) {
+        final allow = await showPermissionDialog(context, PermissionType.location);
+        if (!mounted) return;
+        if (allow) await settings.requestLocation();
+        if (!mounted) return;
+      }
+
       Widget destination;
       if (auth.isLoggedIn) {
         destination = auth.userRole == UserRole.driver
@@ -70,17 +97,17 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             children: [
               const Spacer(flex: 3),
-              // Logo
-                SizedBox(
-                  width: 350,
-                  height: 300,
-              child: Container(
+              // Logo — responsive: 70% of screen width, max 320px
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.70,
+                  maxHeight: MediaQuery.sizeOf(context).height * 0.30,
+                ),
                 child: Image.asset(
-                 'assets/images/logomodified.png',
-                  fit: BoxFit.fill,
-                  ),
-                 ),
-                  ),
+                  'assets/images/logomodified.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
               const SizedBox(height: 24),
               // App name
              
@@ -95,11 +122,11 @@ class _SplashScreenState extends State<SplashScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Preparing your journey...',
+                        Text(
+                          context.l10n.preparingJourney,
                           style: TextStyle(
                             fontSize: 13,
-                            color: Color(0xFF5C0A1A), // white 70%
+                            color: context.colors.textSecondary,
                           ),
                         ),
                         AnimatedBuilder(
@@ -107,9 +134,9 @@ class _SplashScreenState extends State<SplashScreen>
                           builder: (context, child) {
                             return Text(
                               '${(_progressController.value * 100).toInt()}%',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF5C0A1A), // white 70%
+                                color: context.colors.textSecondary,
                               ),
                             );
                           },
@@ -126,9 +153,9 @@ class _SplashScreenState extends State<SplashScreen>
                           return LinearProgressIndicator(
                             value: _progressController.value,
                             minHeight: 4,
-                            backgroundColor: const Color(0x26FFFFFF), // white 15%
+                            backgroundColor: AppStyles.primaryColor.withValues(alpha: 0.15),
                             valueColor: const AlwaysStoppedAnimation<Color>(
-                              Color(0xFFE8C06A),
+                              AppStyles.progressGold,
                             ),
                           );
                         },

@@ -33,70 +33,11 @@ class Conversation {
 }
 
 /// Manages all chat conversations and messages.
+/// Conversations are populated by real-time Firebase data in production.
+/// Each user sees only their own conversations — the provider is scoped per
+/// authenticated user session (re-created on login/logout via ProxyProvider).
 class ChatProvider extends ChangeNotifier {
-  final List<Conversation> _conversations = [
-    Conversation(
-      name: 'Hassan Abdullah',
-      lastMessage: 'I\'ll have my hazard lights on so you can spot me easily.',
-      time: '10:14 AM',
-      unread: 2,
-      isOnline: true,
-      messages: [
-        ChatMessage(isMe: false, text: 'I\'ve arrived at the designated pickup zone near the fountain.', time: '10:12 AM'),
-        ChatMessage(isMe: true, text: 'Great, I\'m just finishing up. See you at the main gate in 2 minutes!', time: '10:13 AM'),
-        ChatMessage(isMe: false, text: 'Perfect. I\'m driving a white Toyota Camry, plate ABC-1234.', time: '10:13 AM'),
-        ChatMessage(isMe: false, text: 'I\'ll have my hazard lights on so you can spot me easily.', time: '10:14 AM'),
-      ],
-    ),
-    Conversation(
-      name: 'Sarah T.',
-      lastMessage: 'Thanks for the ride, really smooth!',
-      time: 'Yesterday',
-      unread: 0,
-      isOnline: false,
-      messages: [
-        ChatMessage(isMe: true, text: 'Hi Sarah, I\'m on my way to the pickup point.', time: '3:10 PM'),
-        ChatMessage(isMe: false, text: 'Great, thanks! I\'m waiting near the entrance.', time: '3:12 PM'),
-        ChatMessage(isMe: true, text: 'Almost there, 2 minutes away.', time: '3:30 PM'),
-        ChatMessage(isMe: false, text: 'Thanks for the ride, really smooth!', time: '4:05 PM'),
-      ],
-    ),
-    Conversation(
-      name: 'Ali H.',
-      lastMessage: 'Are you still at the pickup point?',
-      time: 'Yesterday',
-      unread: 1,
-      isOnline: true,
-      messages: [
-        ChatMessage(isMe: false, text: 'Hey, are we still on for tomorrow\'s ride?', time: '9:00 AM'),
-        ChatMessage(isMe: true, text: 'Yes! Departing at 8 AM from the usual spot.', time: '9:05 AM'),
-        ChatMessage(isMe: false, text: 'Are you still at the pickup point?', time: '8:10 AM'),
-      ],
-    ),
-    Conversation(
-      name: 'Lina K.',
-      lastMessage: 'Great, see you tomorrow morning!',
-      time: 'Mon',
-      unread: 0,
-      isOnline: false,
-      messages: [
-        ChatMessage(isMe: true, text: 'Hi Lina, I have a ride available tomorrow to Irbid.', time: '6:00 PM'),
-        ChatMessage(isMe: false, text: 'That\'s perfect! What time?', time: '6:05 PM'),
-        ChatMessage(isMe: true, text: '7:30 AM, pickup from University St.', time: '6:06 PM'),
-        ChatMessage(isMe: false, text: 'Great, see you tomorrow morning!', time: '6:08 PM'),
-      ],
-    ),
-    Conversation(
-      name: 'Omar S.',
-      lastMessage: 'Can I book a seat for Sunday?',
-      time: 'Sun',
-      unread: 0,
-      isOnline: false,
-      messages: [
-        ChatMessage(isMe: false, text: 'Can I book a seat for Sunday?', time: '11:00 AM'),
-      ],
-    ),
-  ];
+  final List<Conversation> _conversations = [];
 
   /// All conversations for the inbox list.
   List<Conversation> get conversations => _conversations;

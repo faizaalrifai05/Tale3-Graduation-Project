@@ -1,17 +1,26 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../models/saved_account.dart';
+import '../Services/FCM_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  static const _prefsKey = 'saved_accounts';
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   UserModel? _currentUser;
-  bool _isLoading = false;
+  final bool _isLoading = false;
   bool _isInitialized = false;
+
+  /// Accounts that have previously signed in on this device.
+  List<SavedAccount> _savedAccounts = [];
 
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
@@ -21,16 +30,73 @@ class AuthProvider extends ChangeNotifier {
   String get userPhone => _currentUser?.phone ?? '';
   String get userEmail => _currentUser?.email ?? '';
   UserRole? get userRole => _currentUser?.role;
+  List<SavedAccount> get savedAccounts => List.unmodifiable(_savedAccounts);
 
   AuthProvider() {
+    _loadSavedAccounts();
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
+
+  // ── Saved accounts (SharedPreferences) ──────────────────────────────────
+
+  Future<void> _loadSavedAccounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getStringList(_prefsKey) ?? [];
+      _savedAccounts = raw
+          .map(SavedAccount.tryDecode)
+          .whereType<SavedAccount>()
+          .toList();
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _persistAccounts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(
+        _prefsKey,
+        _savedAccounts.map((a) => jsonEncode(a.toJson())).toList(),
+      );
+    } catch (_) {}
+  }
+
+  /// Saves (or updates) the current user in the local account list.
+  Future<void> _upsertSavedAccount(UserModel user) async {
+    _savedAccounts.removeWhere((a) => a.uid == user.uid);
+    _savedAccounts.insert(
+      0,
+      SavedAccount(
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        photoUrl: user.photoUrl ?? '',
+        role: user.role == UserRole.driver ? 'driver' : 'passenger',
+      ),
+    );
+    // Keep at most 5 accounts
+    if (_savedAccounts.length > 5) _savedAccounts = _savedAccounts.sublist(0, 5);
+    notifyListeners();
+    await _persistAccounts();
+  }
+
+  /// Removes a specific account from the saved list (e.g. user removes it).
+  Future<void> removeSavedAccount(String uid) async {
+    _savedAccounts.removeWhere((a) => a.uid == uid);
+    notifyListeners();
+    await _persistAccounts();
+  }
+
+  // ────────────────────────────────────────────────────────────────────────
 
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     if (firebaseUser == null) {
       _currentUser = null;
     } else {
       await _fetchUserData(firebaseUser.uid);
+      FCMService.registerToken(firebaseUser.uid);
+      // Save this account to the local history
+      if (_currentUser != null) await _upsertSavedAccount(_currentUser!);
     }
     _isInitialized = true;
     notifyListeners();
@@ -177,6 +243,9 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
+    if (_currentUser != null) {
+      await FCMService.unregisterToken(_currentUser!.uid); // remove token on logout
+    }
     await _googleSignIn.signOut();
     await _auth.signOut();
     _currentUser = null;
@@ -252,16 +321,38 @@ class AuthProvider extends ChangeNotifier {
     if (user == null) return 'Not logged in.';
     try {
       // Reauthenticate for email/password users
-      if (password != null && user.email != null) {
-        final credential = EmailAuthProvider.credential(
-          email: user.email!,
-          password: password,
-        );
-        await user.reauthenticateWithCredential(credential);
+      final isEmailUser = user.providerData.any((p) => p.providerId == 'password');
+      if (isEmailUser) {
+        if (password == null || password.isEmpty) {
+          return 'Password is required to delete your account.';
+        }
+        if (user.email != null) {
+          final credential = EmailAuthProvider.credential(
+            email: user.email!,
+            password: password,
+          );
+          await user.reauthenticateWithCredential(credential);
+        }
       }
+
       final uid = user.uid;
-      await _db.collection('users').doc(uid).delete();
-      await user.delete();
+      final docRef = _db.collection('users').doc(uid);
+      final docSnapshot = await docRef.get();
+      final docData = docSnapshot.data();
+
+      // Temporarily delete the firestore document
+      await docRef.delete();
+
+      try {
+        await user.delete();
+      } catch (e) {
+        // If auth deletion fails, restore the firestore document!
+        if (docData != null) {
+          await docRef.set(docData);
+        }
+        rethrow;
+      }
+
       _currentUser = null;
       notifyListeners();
       return null;
