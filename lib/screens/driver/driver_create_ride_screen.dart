@@ -105,11 +105,9 @@ class DriverCreateRideScreen extends StatelessWidget {
                           onTap: () async {
                             final picked = await showDatePicker(
                               context: context,
-                              initialDate: rideProvider.selectedDate ??
-                                  DateTime.now().add(const Duration(days: 1)),
+                              initialDate: rideProvider.selectedDate ?? DateTime.now(),
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now()
-                                  .add(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
                             );
                             if (picked != null) rideProvider.setDate(picked);
                           },
@@ -126,8 +124,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                           onTap: () async {
                             final picked = await showTimePicker(
                               context: context,
-                              initialTime:
-                                  rideProvider.selectedTime ?? TimeOfDay.now(),
+                              initialTime: rideProvider.selectedTime ?? TimeOfDay.now(),
                             );
                             if (picked != null) rideProvider.setTime(picked);
                           },

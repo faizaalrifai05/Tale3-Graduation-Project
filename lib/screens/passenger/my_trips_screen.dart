@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
+import '../../models/booking_model.dart';
+import '../../providers/booking_provider.dart';
+import 'booking_status_screen.dart';
 
 class MyTripsScreen extends StatelessWidget {
   const MyTripsScreen({super.key});
@@ -10,17 +14,16 @@ class MyTripsScreen extends StatelessWidget {
       length: 3,
       child: Column(
         children: [
-          // AppBar-style header
           Container(
-            color: context.colors.surfaceColor,
+            color: Colors.white,
             padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'My Trips',
                   style: TextStyle(
-                    color: context.colors.textPrimary,
+                    color: AppStyles.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -28,10 +31,11 @@ class MyTripsScreen extends StatelessWidget {
                 const SizedBox(height: 12),
                 TabBar(
                   labelColor: AppStyles.primaryColor,
-                  unselectedLabelColor: context.colors.textTertiary,
+                  unselectedLabelColor: AppStyles.textTertiary,
                   indicatorColor: AppStyles.primaryColor,
                   indicatorWeight: 3,
-                  labelStyle: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  labelStyle: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700),
                   tabs: const [
                     Tab(text: 'UPCOMING'),
                     Tab(text: 'PAST'),
@@ -41,196 +45,162 @@ class MyTripsScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Tab content
           Expanded(
-            child: TabBarView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                // UPCOMING TAB
-                ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: StreamBuilder<List<BookingModel>>(
+              stream: context.read<BookingProvider>().myBookingsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final all = snapshot.data ?? [];
+                final upcoming =
+                    all.where((b) => b.status == 'confirmed').toList();
+                final cancelled =
+                    all.where((b) => b.status == 'cancelled').toList();
+
+                return TabBarView(
                   physics: const BouncingScrollPhysics(),
                   children: [
-                    _buildActiveTripCard(context),
-                    const SizedBox(height: 16),
-                    _buildUpcomingTripCard(context, 'Tomorrow • 08:30 AM', 'Amman → Irbid', '15.00 JOD'),
+                    _BookingList(
+                      bookings: upcoming,
+                      emptyMessage: 'No upcoming trips.',
+                    ),
+                    const Center(
+                      child: Text('No past trips yet.',
+                          style: TextStyle(color: AppStyles.textSecondary)),
+                    ),
+                    _BookingList(
+                      bookings: cancelled,
+                      emptyMessage: 'No cancelled trips.',
+                    ),
                   ],
-                ),
-                // PAST TAB
-                Center(
-                  child: Text('No past trips yet.', style: TextStyle(color: context.colors.textSecondary)),
-                ),
-                // CANCELED TAB
-                Center(
-                  child: Text('No canceled trips.', style: TextStyle(color: context.colors.textSecondary)),
-                ),
-              ],
+                );
+              },
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveTripCard(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.colors.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 120,
-            width: double.infinity,
-            color: context.colors.neutralLight,
-            child: Center(
-              child: Icon(Icons.map, color: AppStyles.primaryColor.withValues(alpha: 0.4), size: 48),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: context.colors.highlightBackgroundColor,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        'ACTIVE TRIP',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppStyles.primaryColor,
-                        ),
-                      ),
-                    ),
-                    Text(
-                      '12.50 JOD',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppStyles.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(Icons.location_on, color: AppStyles.primaryColor, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Amman, Jordan',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(Icons.location_city, color: context.colors.textTertiary, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Irbid, Jordan',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textPrimary),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Divider(height: 1),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor: context.colors.cardBackgroundColor,
-                      child: Icon(Icons.person, color: AppStyles.primaryColor),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hassan Abdullah',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
-                          ),
-                          Row(
-                            children: [
-                              Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
-                              const SizedBox(width: 4),
-                              Text('4.9', style: TextStyle(fontSize: 12, color: context.colors.textSecondary)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: context.colors.cardBackgroundColor, borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.chat_bubble_outline, color: AppStyles.primaryColor, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: context.colors.cardBackgroundColor, borderRadius: BorderRadius.circular(8)),
-                      child: Icon(Icons.phone, color: AppStyles.primaryColor, size: 20),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpcomingTripCard(BuildContext context, String time, String route, String price) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: context.colors.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(time, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textSecondary)),
-              Text(price, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppStyles.primaryColor)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(route, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: context.colors.textPrimary)),
         ],
       ),
     );
   }
 }
 
+class _BookingList extends StatelessWidget {
+  final List<BookingModel> bookings;
+  final String emptyMessage;
 
+  const _BookingList({required this.bookings, required this.emptyMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    if (bookings.isEmpty) {
+      return Center(
+        child: Text(emptyMessage,
+            style: const TextStyle(color: AppStyles.textSecondary)),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      physics: const BouncingScrollPhysics(),
+      itemCount: bookings.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) =>
+          _BookingCard(booking: bookings[index]),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final BookingModel booking;
+  const _BookingCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCancelled = booking.status == 'cancelled';
+
+    return GestureDetector(
+      onTap: isCancelled
+          ? null
+          : () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BookingStatusScreen(booking: booking),
+              ));
+            },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppStyles.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCancelled
+                        ? const Color(0xFFF5F5F5)
+                        : AppStyles.highlightBackgroundColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    isCancelled ? 'CANCELLED' : 'CONFIRMED',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: isCancelled
+                          ? AppStyles.textTertiary
+                          : AppStyles.primaryColor,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${booking.totalPrice} JOD',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: isCancelled
+                        ? AppStyles.textTertiary
+                        : AppStyles.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${booking.origin} → ${booking.destination}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppStyles.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${booking.date}  •  ${booking.time}',
+              style: const TextStyle(
+                  fontSize: 12, color: AppStyles.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''}  •  ${booking.driverName}',
+              style: const TextStyle(
+                  fontSize: 12, color: AppStyles.textTertiary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

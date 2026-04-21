@@ -1,4 +1,6 @@
-enum UserRole { driver, passenger }
+enum UserRole { driver, passenger, admin }
+
+enum VerificationStatus { unsubmitted, pending, verified, rejected }
 
 class UserModel {
   final String uid;
@@ -13,6 +15,10 @@ class UserModel {
   final String carYear;
   final String carColor;
   final String plateNumber;
+  // Driver ID verification
+  final VerificationStatus verificationStatus;
+  final String idFrontUrl;
+  final String idBackUrl;
 
   const UserModel({
     required this.uid,
@@ -26,7 +32,12 @@ class UserModel {
     this.carYear = '',
     this.carColor = '',
     this.plateNumber = '',
+    this.verificationStatus = VerificationStatus.unsubmitted,
+    this.idFrontUrl = '',
+    this.idBackUrl = '',
   });
+
+  bool get isVerified => verificationStatus == VerificationStatus.verified;
 
   UserModel copyWith({
     String? uid,
@@ -40,6 +51,9 @@ class UserModel {
     String? carYear,
     String? carColor,
     String? plateNumber,
+    VerificationStatus? verificationStatus,
+    String? idFrontUrl,
+    String? idBackUrl,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -53,6 +67,9 @@ class UserModel {
       carYear: carYear ?? this.carYear,
       carColor: carColor ?? this.carColor,
       plateNumber: plateNumber ?? this.plateNumber,
+      verificationStatus: verificationStatus ?? this.verificationStatus,
+      idFrontUrl: idFrontUrl ?? this.idFrontUrl,
+      idBackUrl: idBackUrl ?? this.idBackUrl,
     );
   }
 }

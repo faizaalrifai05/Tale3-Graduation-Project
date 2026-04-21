@@ -5,6 +5,8 @@ import '../../providers/ride_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'ride_posted_screen.dart';
 
+// ignore_for_file: use_build_context_synchronously
+
 /// Confirmation screen shown after filling the Create Ride form.
 /// Displays all ride details for review before publishing.
 class RideConfirmationScreen extends StatelessWidget {
@@ -34,9 +36,13 @@ class RideConfirmationScreen extends StatelessWidget {
       return;
     }
 
+    final origin = ride.origin;
+    final destination = ride.destination;
     ride.resetForm();
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const RidePostedScreen()),
+      MaterialPageRoute(
+        builder: (_) => RidePostedScreen(origin: origin, destination: destination),
+      ),
     );
   }
 

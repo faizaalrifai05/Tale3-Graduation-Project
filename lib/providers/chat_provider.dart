@@ -1,86 +1,145 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'auth_provider.dart';
 
-/// A single chat message.
 class ChatMessage {
-  final bool isMe;
+  final String id;
+  final String senderId;
   final String text;
-  final String time;
+  final DateTime timestamp;
 
   const ChatMessage({
-    required this.isMe,
+    required this.id,
+    required this.senderId,
     required this.text,
-    required this.time,
+    required this.timestamp,
   });
+
+  factory ChatMessage.fromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return ChatMessage(
+      id: doc.id,
+      senderId: data['senderId'] as String? ?? '',
+      text: data['text'] as String? ?? '',
+      timestamp: (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
+    );
+  }
 }
 
-/// A conversation thread (inbox row + its messages).
 class Conversation {
-  final String name;
-  final bool isOnline;
-  String lastMessage;
-  String time;
-  int unread;
-  List<ChatMessage> messages;
+  final String chatId;
+  final String otherUserId;
+  final String otherUserName;
+  final String lastMessage;
+  final DateTime lastMessageTime;
+  final int unreadCount;
 
-  Conversation({
-    required this.name,
+  const Conversation({
+    required this.chatId,
+    required this.otherUserId,
+    required this.otherUserName,
     required this.lastMessage,
-    required this.time,
-    this.unread = 0,
-    this.isOnline = false,
-    required this.messages,
+    required this.lastMessageTime,
+    required this.unreadCount,
   });
 }
 
-/// Manages all chat conversations and messages.
-/// Conversations are populated by real-time Firebase data in production.
-/// Each user sees only their own conversations — the provider is scoped per
-/// authenticated user session (re-created on login/logout via ProxyProvider).
 class ChatProvider extends ChangeNotifier {
-  final List<Conversation> _conversations = [];
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  AuthProvider _auth;
 
-  /// All conversations for the inbox list.
-  List<Conversation> get conversations => _conversations;
+  ChatProvider(this._auth);
 
-  /// Total unread count across all conversations.
-  int get totalUnread =>
-      _conversations.fold(0, (sum, c) => sum + c.unread);
-
-  /// Find a conversation by name.
-  Conversation getByName(String name) =>
-      _conversations.firstWhere((c) => c.name == name);
-
-  /// Mark a conversation as read (clear unread badge).
-  void markAsRead(String name) {
-    final conv = _conversations.firstWhere((c) => c.name == name);
-    if (conv.unread > 0) {
-      conv.unread = 0;
-      notifyListeners();
-    }
+  void updateAuth(AuthProvider auth) {
+    _auth = auth;
+    notifyListeners();
   }
 
-  /// Send a new message in a conversation and move it to the top of the list.
-  void sendMessage(String name, String text) {
-    if (text.trim().isEmpty) return;
+  String? get _uid => _auth.currentUser?.uid;
+  String get _userName => _auth.userName;
 
-    final now = TimeOfDay.now();
-    final hour = now.hourOfPeriod == 0 ? 12 : now.hourOfPeriod;
-    final period = now.period == DayPeriod.am ? 'AM' : 'PM';
-    final timeStr = '$hour:${now.minute.toString().padLeft(2, '0')} $period';
+  /// Returns a chat document ID deterministic for any two user IDs.
+  static String chatId(String uid1, String uid2) {
+    final sorted = [uid1, uid2]..sort();
+    return '${sorted[0]}_${sorted[1]}';
+  }
 
-    final message = ChatMessage(isMe: true, text: text.trim(), time: timeStr);
+  /// Stream of the current user's conversations, newest first.
+  Stream<List<Conversation>> get conversationsStream {
+    final uid = _uid;
+    if (uid == null) return const Stream.empty();
+    return _db
+        .collection('chats')
+        .where('participants', arrayContains: uid)
+        .orderBy('lastMessageTime', descending: true)
+        .snapshots()
+        .map((snap) => snap.docs.map((doc) {
+              final data = doc.data();
+              final participants =
+                  List<String>.from(data['participants'] as List? ?? []);
+              final otherUid =
+                  participants.firstWhere((p) => p != uid, orElse: () => '');
+              final names = Map<String, String>.from(
+                  data['participantNames'] as Map? ?? {});
+              final unread =
+                  Map<String, dynamic>.from(data['unread'] as Map? ?? {});
+              return Conversation(
+                chatId: doc.id,
+                otherUserId: otherUid,
+                otherUserName: names[otherUid] ?? 'Unknown',
+                lastMessage: data['lastMessage'] as String? ?? '',
+                lastMessageTime:
+                    (data['lastMessageTime'] as Timestamp?)?.toDate() ??
+                        DateTime.now(),
+                unreadCount: (unread[uid] as num?)?.toInt() ?? 0,
+              );
+            }).toList());
+  }
 
-    final index = _conversations.indexWhere((c) => c.name == name);
-    _conversations[index].messages.add(message);
-    _conversations[index].lastMessage = text.trim();
-    _conversations[index].time = timeStr;
+  /// Stream of messages for a specific chat, oldest first.
+  Stream<List<ChatMessage>> messagesStream(String id) {
+    return _db
+        .collection('chats')
+        .doc(id)
+        .collection('messages')
+        .orderBy('timestamp')
+        .snapshots()
+        .map((snap) => snap.docs.map(ChatMessage.fromDoc).toList());
+  }
 
-    // Move to top of inbox
-    if (index > 0) {
-      final conv = _conversations.removeAt(index);
-      _conversations.insert(0, conv);
-    }
+  /// Send a message. Creates the chat document if it doesn't exist yet.
+  Future<void> sendMessage({
+    required String otherUserId,
+    required String otherUserName,
+    required String text,
+  }) async {
+    final uid = _uid;
+    if (uid == null || text.trim().isEmpty) return;
+    final trimmed = text.trim();
+    final id = chatId(uid, otherUserId);
+    final chatRef = _db.collection('chats').doc(id);
+    final msgRef = chatRef.collection('messages').doc();
+    final batch = _db.batch();
+    batch.set(msgRef, {
+      'senderId': uid,
+      'text': trimmed,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+    batch.set(chatRef, {
+      'participants': [uid, otherUserId],
+      'participantNames': {uid: _userName, otherUserId: otherUserName},
+      'lastMessage': trimmed,
+      'lastMessageTime': FieldValue.serverTimestamp(),
+      'lastSenderId': uid,
+      'unread': {otherUserId: FieldValue.increment(1)},
+    }, SetOptions(merge: true));
+    await batch.commit();
+  }
 
-    notifyListeners();
+  /// Clears the unread badge for the current user in a chat.
+  Future<void> markAsRead(String id) async {
+    final uid = _uid;
+    if (uid == null) return;
+    await _db.collection('chats').doc(id).update({'unread.$uid': 0});
   }
 }

@@ -1,95 +1,40 @@
-import 'package:flutter/services.dart';
-import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
+import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
 
 class RideDetailsScreen extends StatelessWidget {
-  const RideDetailsScreen({super.key});
+  final RideModel ride;
 
-  void _showShareSheet(BuildContext context) {
-    const shareText =
-        'Check out this ride on Tale3!\n🚗 From → To • Today at 14:30\nBook now on Tale3 — the trusted carpool app.';
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.colors.surfaceColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: ctx.colors.borderColor, borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Share Ride', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
-            const SizedBox(height: 8),
-            Text(shareText, style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy Ride Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                onPressed: () {
-                  Clipboard.setData(const ClipboardData(text: shareText));
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: const Text('Ride details copied to clipboard'),
-                    backgroundColor: AppStyles.successColor,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ));
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppStyles.darkMaroon,
-                  foregroundColor: AppStyles.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  const RideDetailsScreen({super.key, required this.ride});
 
-  
-  
+  static const Color _primaryColor = Color(0xFF8B1A2B);
+  static const Color _darkMaroon = Color(0xFF5C0A1A);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8F9FA), // Light gray background
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              color: context.colors.surfaceColor,
+              color: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
-                  Expanded(
+                  const Expanded(
                     child: Center(
                       child: Text(
                         'Ride Details',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: context.colors.textPrimary,
+                          color: Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
@@ -98,13 +43,13 @@ class RideDetailsScreen extends StatelessWidget {
                     width: 36,
                     height: 36,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: context.colors.highlightBackgroundColor,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFDF2F4),
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: Icon(Icons.share, color: AppStyles.primaryColor, size: 18),
-                      onPressed: () => _showShareSheet(context),
+                      icon: const Icon(Icons.share, color: _primaryColor, size: 18),
+                      onPressed: () {},
                       padding: EdgeInsets.zero,
                     ),
                   ),
@@ -120,22 +65,16 @@ class RideDetailsScreen extends StatelessWidget {
                   children: [
                     // Driver Card
                     Container(
-                      color: context.colors.surfaceColor,
+                      color: Colors.white,
                       padding: const EdgeInsets.all(20),
                       child: Row(
                         children: [
                           GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const PassengerChatScreen(),
-                                ),
-                              );
-                            },
-                            child: CircleAvatar(
+                            onTap: () {},
+                            child: const CircleAvatar(
                               radius: 32,
-                              backgroundColor: context.colors.borderColor,
-                              child: Icon(Icons.person, color: AppStyles.onPrimary, size: 40),
+                              backgroundColor: Color(0xFFE0E0E0),
+                              child: Icon(Icons.person, color: Colors.white, size: 40),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -146,30 +85,30 @@ class RideDetailsScreen extends StatelessWidget {
                                 Row(
                                   children: [
                                     Text(
-                                      'Ahmed Al-Masri',
-                                      style: TextStyle(
+                                      ride.driverName.isEmpty ? 'Driver' : ride.driverName,
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w700,
-                                        color: context.colors.textPrimary,
+                                        color: Color(0xFF1A1A1A),
                                       ),
                                     ),
                                     const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: AppStyles.starRatingLightBg,
+                                        color: const Color(0xFFFFF8E1),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
-                                      child: Row(
+                                      child: const Row(
                                         children: [
-                                          Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
+                                          Icon(Icons.star, color: Color(0xFFFFC107), size: 12),
                                           SizedBox(width: 2),
                                           Text(
                                             '4.8',
                                             style: TextStyle(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w700,
-                                              color: AppStyles.starRatingDarkText,
+                                              color: Color(0xFFF57F17),
                                             ),
                                           ),
                                         ],
@@ -179,23 +118,23 @@ class RideDetailsScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Kia Sportage • 40-1234',
-                                  style: TextStyle(
+                                  '${ride.carShortInfo} \u2022 ${ride.plateNumber}',
+                                  style: const TextStyle(
                                     fontSize: 13,
-                                    color: context.colors.textSecondary,
+                                    color: Color(0xFF757575),
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Icon(Icons.verified, color: AppStyles.primaryColor, size: 14),
+                                    const Icon(Icons.verified, color: _primaryColor, size: 14),
                                     const SizedBox(width: 4),
-                                    Text(
+                                    const Text(
                                       'VERIFIED DRIVER',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
-                                        color: AppStyles.primaryColor,
+                                        color: _primaryColor,
                                         letterSpacing: 1,
                                       ),
                                     ),
@@ -211,7 +150,7 @@ class RideDetailsScreen extends StatelessWidget {
 
                     // Map Section
                     Container(
-                      color: context.colors.surfaceColor,
+                      color: Colors.white,
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
@@ -224,9 +163,9 @@ class RideDetailsScreen extends StatelessWidget {
                                 children: [
                                   // Placeholder map image
                                   Container(
-                                    color: context.colors.neutralLight,
+                                    color: const Color(0xFFE0F7FA),
                                     child: Center(
-                                      child: Icon(Icons.map, size: 64, color: AppStyles.primaryColor.withValues(alpha: 0.4)),
+                                      child: Icon(Icons.map, size: 64, color: Colors.blue[200]),
                                     ),
                                   ),
                                 ],
@@ -240,38 +179,38 @@ class RideDetailsScreen extends StatelessWidget {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: context.colors.cardBackgroundColor,
+                                  color: const Color(0xFFF5F5F5),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(Icons.location_on, color: AppStyles.primaryColor),
+                                child: const Icon(Icons.location_on, color: _primaryColor),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
+                                    const Text(
                                       'ROUTE',
                                       style: TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
-                                        color: context.colors.textTertiary,
+                                        color: Color(0xFF9E9E9E),
                                         letterSpacing: 1,
                                       ),
                                     ),
                                     SizedBox(height: 4),
                                     Text(
-                                      'Irbid → Amman',
+                                      '${ride.origin} → ${ride.destination}',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
-                                        color: context.colors.textPrimary,
+                                        color: Color(0xFF1A1A1A),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Column(
+                              const Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
@@ -279,7 +218,7 @@ class RideDetailsScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
-                                      color: context.colors.textTertiary,
+                                      color: Color(0xFF9E9E9E),
                                       letterSpacing: 1,
                                     ),
                                   ),
@@ -289,7 +228,7 @@ class RideDetailsScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w700,
-                                      color: context.colors.textPrimary,
+                                      color: Color(0xFF1A1A1A),
                                     ),
                                   ),
                                 ],
@@ -301,11 +240,11 @@ class RideDetailsScreen extends StatelessWidget {
                           // Time, Seats, Price Cards
                           Row(
                             children: [
-                              _buildInfoCard(context, Icons.access_time, 'DEPARTURE (EST)', '14:00'),
+                              _buildInfoCard(Icons.access_time, 'DEPARTURE', ride.time),
                               const SizedBox(width: 12),
-                              _buildInfoCard(context, Icons.event_seat, 'SEATS LEFT', '3'),
+                              _buildInfoCard(Icons.event_seat, 'SEATS LEFT', '${ride.availableSeats}'),
                               const SizedBox(width: 12),
-                              _buildInfoCard(context, Icons.payments_outlined, 'PRICE', '5 JOD', isPrice: true),
+                              _buildInfoCard(Icons.payments_outlined, 'PRICE', '${ride.pricePerSeat} JOD', isPrice: true),
                             ],
                           ),
                         ],
@@ -315,25 +254,28 @@ class RideDetailsScreen extends StatelessWidget {
 
                     // Rules and Features
                     Container(
-                      color: context.colors.surfaceColor,
+                      color: Colors.white,
                       padding: const EdgeInsets.all(20),
                       width: double.infinity,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
+                          const Text(
                             'TRIP RULES & FEATURES',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: context.colors.textTertiary,
+                              color: Color(0xFF9E9E9E),
                               letterSpacing: 1,
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildRuleItem(context, Icons.smoke_free, 'No smoking allowed'),
-                          _buildRuleItem(context, Icons.luggage, 'Luggage space available'),
-                          _buildRuleItem(context, Icons.ac_unit, 'Air conditioning'),
+                          if (ride.noSmoking) _buildRuleItem(Icons.smoke_free, 'No smoking allowed'),
+                          if (ride.luggageEnabled) _buildRuleItem(Icons.luggage, 'Luggage space available'),
+                          if (ride.acEnabled) _buildRuleItem(Icons.ac_unit, 'Air conditioning'),
+                          if (ride.petsAllowed) _buildRuleItem(Icons.pets, 'Pets allowed'),
+                          if (!ride.noSmoking && !ride.luggageEnabled && !ride.acEnabled && !ride.petsAllowed)
+                            const Text('No special rules.', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
                         ],
                       ),
                     ),
@@ -346,10 +288,10 @@ class RideDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: context.colors.surfaceColor,
-                boxShadow: [
+                color: Colors.white,
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
+                    color: Color(0x0D000000), // Colors.black.withOpacity(0.05)
                     blurRadius: 10,
                     offset: Offset(0, -5),
                   ),
@@ -360,7 +302,7 @@ class RideDetailsScreen extends StatelessWidget {
                   Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.event_seat, color: AppStyles.primaryColor, size: 24),
+                      const Icon(Icons.event_seat, color: _primaryColor, size: 24),
                       const SizedBox(height: 4),
                       Text(
                         'Select\nSeat',
@@ -368,7 +310,7 @@ class RideDetailsScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: AppStyles.primaryColor,
+                          color: _primaryColor,
                           height: 1.2,
                         ),
                       ),
@@ -379,11 +321,13 @@ class RideDetailsScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const SelectSeatScreen()),
-                        ),
-                        icon: Icon(Icons.check_circle_outline, size: 20),
-                        label: Text(
+                        onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => SelectSeatScreen(ride: ride),
+                          ));
+                        },
+                        icon: const Icon(Icons.check_circle_outline, size: 20),
+                        label: const Text(
                           'Request Booking',
                           style: TextStyle(
                             fontSize: 16,
@@ -391,8 +335,8 @@ class RideDetailsScreen extends StatelessWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppStyles.darkMaroon,
-                          foregroundColor: AppStyles.onPrimary,
+                          backgroundColor: _darkMaroon,
+                          foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -410,24 +354,24 @@ class RideDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(BuildContext context, IconData icon, String label, String value, {bool isPrice = false}) {
+  Widget _buildInfoCard(IconData icon, String label, String value, {bool isPrice = false}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: context.colors.highlightBackgroundColor,
+          color: const Color(0xFFFDF2F4),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
-            Icon(icon, color: AppStyles.primaryColor, size: 20),
+            Icon(icon, color: _primaryColor, size: 20),
             const SizedBox(height: 12),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 9,
                 fontWeight: FontWeight.w700,
-                color: context.colors.textSecondary,
+                color: Color(0xFF757575),
                 letterSpacing: 0.5,
               ),
             ),
@@ -437,7 +381,7 @@ class RideDetailsScreen extends StatelessWidget {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: isPrice ? AppStyles.primaryColor : context.colors.textPrimary,
+                color: isPrice ? _primaryColor : const Color(0xFF1A1A1A),
               ),
             ),
           ],
@@ -446,24 +390,24 @@ class RideDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRuleItem(BuildContext context, IconData icon, String label) {
+  Widget _buildRuleItem(IconData icon, String label) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: context.colors.cardBackgroundColor,
+        color: const Color(0xFFF5F5F5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppStyles.primaryColor, size: 20),
+          Icon(icon, color: _primaryColor, size: 20),
           const SizedBox(width: 12),
           Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: context.colors.textPrimary,
+              color: Color(0xFF1A1A1A),
             ),
           ),
         ],

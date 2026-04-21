@@ -63,9 +63,14 @@ class _SplashScreenState extends State<SplashScreen>
 
       Widget destination;
       if (auth.isLoggedIn) {
-        destination = auth.userRole == UserRole.driver
-            ? const DriverHomeScreen()
-            : const PassengerHomeScreen();
+        if (auth.userRole == UserRole.driver) {
+          destination = const DriverHomeScreen();
+        } else if (auth.userRole == UserRole.admin) {
+          // TODO: replace with AdminPanelScreen once created
+          destination = const PassengerHomeScreen();
+        } else {
+          destination = const PassengerHomeScreen();
+        }
       } else {
         destination = const CommunityGuidelinesScreen();
       }

@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
@@ -102,6 +104,41 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  VerificationStatus _verificationStatusFromString(String? value) {
+    switch (value) {
+      case 'pending':
+        return VerificationStatus.pending;
+      case 'verified':
+        return VerificationStatus.verified;
+      case 'rejected':
+        return VerificationStatus.rejected;
+      default:
+        return VerificationStatus.unsubmitted;
+    }
+  }
+
+  UserRole _roleFromString(String? value) {
+    switch (value) {
+      case 'driver':
+        return UserRole.driver;
+      case 'admin':
+        return UserRole.admin;
+      default:
+        return UserRole.passenger;
+    }
+  }
+
+  String _roleToString(UserRole role) {
+    switch (role) {
+      case UserRole.driver:
+        return 'driver';
+      case UserRole.admin:
+        return 'admin';
+      case UserRole.passenger:
+        return 'passenger';
+    }
+  }
+
   Future<void> _fetchUserData(String uid) async {
     try {
       final doc = await _db.collection('users').doc(uid).get();
@@ -111,7 +148,7 @@ class AuthProvider extends ChangeNotifier {
           uid: uid,
           name: data['name'] ?? '',
           email: data['email'] ?? '',
-          role: data['role'] == 'driver' ? UserRole.driver : UserRole.passenger,
+          role: _roleFromString(data['role'] as String?),
           phone: data['phone'] ?? '',
           photoUrl: data['photoUrl'],
           carMake: data['carMake'] ?? '',
@@ -119,6 +156,10 @@ class AuthProvider extends ChangeNotifier {
           carYear: data['carYear'] ?? '',
           carColor: data['carColor'] ?? '',
           plateNumber: data['plateNumber'] ?? '',
+          verificationStatus: _verificationStatusFromString(
+              data['verificationStatus'] as String?),
+          idFrontUrl: data['idFrontUrl'] ?? '',
+          idBackUrl: data['idBackUrl'] ?? '',
         );
       }
     } catch (_) {}
@@ -138,11 +179,10 @@ class AuthProvider extends ChangeNotifier {
       );
       final doc = await _db.collection('users').doc(cred.user!.uid).get();
       if (doc.exists) {
-        final storedRole =
-            doc.data()!['role'] == 'driver' ? UserRole.driver : UserRole.passenger;
+        final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != expectedRole) {
           await _auth.signOut();
-          final roleName = storedRole == UserRole.driver ? 'driver' : 'passenger';
+          final roleName = _roleToString(storedRole);
           return 'This account is registered as a $roleName. Please use the correct login screen.';
         }
       }
@@ -180,16 +220,24 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
 
       // Write to Firestore in the background — don't await it
-      _db.collection('users').doc(cred.user!.uid).set({
-        'name': name,
-        'email': email,
-        'role': role == UserRole.driver ? 'driver' : 'passenger',
-        'phone': phone,
-        'photoUrl': '',
-        'createdAt': FieldValue.serverTimestamp(),
-      }).catchError((_) {});
+     try {
+       await _db.collection('users').doc(cred.user!.uid).set({
+       'name': name,
+       'email': email,
+       'role': _roleToString(role),
+       'phone': phone,
+       'photoUrl': '',
+       'verificationStatus': 'unsubmitted',
+       'idFrontUrl': '',
+       'idBackUrl': '',
+       'createdAt': FieldValue.serverTimestamp(),
+        });
+       debugPrint('✅ Firestore write SUCCESS');
+       } catch (e) {
+         debugPrint('❌ Firestore write FAILED: $e');
+         }
 
-      return null;
+     return null;
     } on FirebaseAuthException catch (e) {
       return _friendlyError(e.code);
     } catch (_) {
@@ -215,12 +263,11 @@ class AuthProvider extends ChangeNotifier {
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
         // Existing user — check role matches
-        final storedRole =
-            doc.data()!['role'] == 'driver' ? UserRole.driver : UserRole.passenger;
+        final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != role) {
           await _auth.signOut();
           await _googleSignIn.signOut();
-          final roleName = storedRole == UserRole.driver ? 'driver' : 'passenger';
+          final roleName = _roleToString(storedRole);
           return 'This Google account is already registered as a $roleName.';
         }
       } else {
@@ -228,7 +275,7 @@ class AuthProvider extends ChangeNotifier {
         await _db.collection('users').doc(uid).set({
           'name': userCred.user!.displayName ?? '',
           'email': userCred.user!.email ?? '',
-          'role': role == UserRole.driver ? 'driver' : 'passenger',
+          'role': _roleToString(role),
           'phone': '',
           'photoUrl': userCred.user!.photoURL ?? '',
           'createdAt': FieldValue.serverTimestamp(),
@@ -239,6 +286,44 @@ class AuthProvider extends ChangeNotifier {
       return _friendlyError(e.code);
     } catch (_) {
       return 'Google Sign-In failed. Please try again.';
+    }
+  }
+
+  /// Uploads front and back ID images to Firebase Storage and sets
+  /// [verificationStatus] to [VerificationStatus.pending] in Firestore.
+  /// Returns null on success, or an error message on failure.
+  Future<String?> submitIdVerification({
+    required File frontImage,
+    required File backImage,
+  }) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return 'Not logged in.';
+    try {
+      final storage = FirebaseStorage.instance;
+      final frontRef = storage.ref('id_images/$uid/front.jpg');
+      final backRef = storage.ref('id_images/$uid/back.jpg');
+
+      await frontRef.putFile(frontImage);
+      await backRef.putFile(backImage);
+
+      final frontUrl = await frontRef.getDownloadURL();
+      final backUrl = await backRef.getDownloadURL();
+
+      await _db.collection('users').doc(uid).update({
+        'verificationStatus': 'pending',
+        'idFrontUrl': frontUrl,
+        'idBackUrl': backUrl,
+      });
+
+      _currentUser = _currentUser?.copyWith(
+        verificationStatus: VerificationStatus.pending,
+        idFrontUrl: frontUrl,
+        idBackUrl: backUrl,
+      );
+      notifyListeners();
+      return null;
+    } catch (_) {
+      return 'Failed to upload ID. Please try again.';
     }
   }
 

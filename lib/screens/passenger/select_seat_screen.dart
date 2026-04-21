@@ -1,32 +1,71 @@
-import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:testtale3/models/ride_model.dart';
+import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 
-/// Screen for passengers to select their seat(s) before booking.
-///
-/// Uses [BookingProvider] for seat selection state instead of local setState.
-/// Seat states: 0 = available, 1 = selected, 2 = occupied, 3 = driver.
-class SelectSeatScreen extends StatelessWidget {
-  const SelectSeatScreen({super.key});
+// ignore_for_file: use_build_context_synchronously
 
-  
-  
+class SelectSeatScreen extends StatefulWidget {
+  final RideModel ride;
+  const SelectSeatScreen({super.key, required this.ride});
+
+  @override
+  State<SelectSeatScreen> createState() => _SelectSeatScreenState();
+}
+
+class _SelectSeatScreenState extends State<SelectSeatScreen> {
+  static const Color _primaryColor = Color(0xFF8B1A2B);
+  static const Color _darkMaroon = Color(0xFF5C0A1A);
+
+  bool _isConfirming = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<BookingProvider>().initFromRide(widget.ride);
+    });
+  }
+
+  Future<void> _confirm() async {
+    setState(() => _isConfirming = true);
+    final BookingModel? booking =
+        await context.read<BookingProvider>().confirmBooking();
+    setState(() => _isConfirming = false);
+
+    if (booking == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking failed. Seats may no longer be available.'),
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => BookingStatusScreen(booking: booking),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
+        title: const Text(
           'Select your seat',
           style: TextStyle(
-            color: context.colors.textPrimary,
+            color: Color(0xFF1A1A1A),
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -41,24 +80,24 @@ class SelectSeatScreen extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 24),
                     child: Column(
                       children: [
-                        // Vehicle Info
                         Text(
-                          'Toyota Camry',
-                          style: TextStyle(
+                          widget.ride.carShortInfo,
+                          style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: context.colors.textPrimary,
+                            color: Color(0xFF1A1A1A),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Thursday 15 Oct • 14:30',
-                          style: TextStyle(
+                          '${widget.ride.date}  •  ${widget.ride.time}',
+                          style: const TextStyle(
                             fontSize: 14,
-                            color: context.colors.textSecondary,
+                            color: Color(0xFF757575),
                           ),
                         ),
                         const SizedBox(height: 48),
@@ -68,9 +107,10 @@ class SelectSeatScreen extends StatelessWidget {
                           width: 250,
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: context.colors.surfaceColor,
+                            color: Colors.white,
                             borderRadius: BorderRadius.circular(40),
-                            border: Border.all(color: context.colors.dividerColor, width: 3),
+                            border: Border.all(
+                                color: const Color(0xFFEEEEEE), width: 3),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -81,22 +121,22 @@ class SelectSeatScreen extends StatelessWidget {
                           ),
                           child: Column(
                             children: [
-                              // Front row (Driver left, passenger right)
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(context, bookingProvider,0),
-                                  _buildSeat(context, bookingProvider,1),
+                                  _buildSeat(bookingProvider, 0),
+                                  _buildSeat(bookingProvider, 1),
                                 ],
                               ),
                               const SizedBox(height: 40),
-                              // Back row
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(context, bookingProvider,2),
-                                  _buildSeat(context, bookingProvider,3),
-                                  _buildSeat(context, bookingProvider,4),
+                                  _buildSeat(bookingProvider, 2),
+                                  _buildSeat(bookingProvider, 3),
+                                  _buildSeat(bookingProvider, 4),
                                 ],
                               ),
                             ],
@@ -104,15 +144,19 @@ class SelectSeatScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 48),
 
-                        // Seat Legend
+                        // Legend
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildLegendItem(context, context.colors.borderColor, 'Available'),
+                            _buildLegendItem(
+                                const Color(0xFFE0E0E0), 'Available'),
                             const SizedBox(width: 16),
-                            _buildLegendItem(context, AppStyles.primaryColor, 'Selected', isSelected: true),
+                            _buildLegendItem(_primaryColor, 'Selected',
+                                isSelected: true),
                             const SizedBox(width: 16),
-                            _buildLegendItem(context, context.colors.inputHintColor, 'Occupied', iconColor: AppStyles.onPrimary),
+                            _buildLegendItem(const Color(0xFFBDBDBD),
+                                'Occupied',
+                                iconColor: Colors.white),
                           ],
                         ),
                       ],
@@ -120,14 +164,14 @@ class SelectSeatScreen extends StatelessWidget {
                   ),
                 ),
 
-                // Bottom Sticky Summary & Action
+                // Bottom Summary & Action
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: context.colors.surfaceColor,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.04),
+                        color: Color(0x0A000000),
                         blurRadius: 10,
                         offset: Offset(0, -5),
                       ),
@@ -142,20 +186,18 @@ class SelectSeatScreen extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
+                              const Text(
                                 'Selected Seat(s)',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: context.colors.textSecondary,
-                                ),
+                                    fontSize: 12, color: Color(0xFF757575)),
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                bookingProvider.selectedCount.toString(),
-                                style: TextStyle(
+                                '${bookingProvider.selectedCount}',
+                                style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: context.colors.textPrimary,
+                                  color: Color(0xFF1A1A1A),
                                 ),
                               ),
                             ],
@@ -163,20 +205,18 @@ class SelectSeatScreen extends StatelessWidget {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Text(
+                              const Text(
                                 'Total Price',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: context.colors.textSecondary,
-                                ),
+                                    fontSize: 12, color: Color(0xFF757575)),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${bookingProvider.totalPrice} JOD',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
-                                  color: AppStyles.primaryColor,
+                                  color: _primaryColor,
                                 ),
                               ),
                             ],
@@ -188,28 +228,33 @@ class SelectSeatScreen extends StatelessWidget {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const BookingStatusScreen(),
-                              ),
-                            );
-                          },
+                          onPressed: (_isConfirming ||
+                                  bookingProvider.selectedCount == 0)
+                              ? null
+                              : _confirm,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppStyles.darkMaroon,
-                            foregroundColor: AppStyles.onPrimary,
+                            backgroundColor: _darkMaroon,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor:
+                                const Color(0xFFBDBDBD),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
-                          child: Text(
-                            'Confirm Seat Selection',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isConfirming
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                      color: Colors.white, strokeWidth: 2),
+                                )
+                              : const Text(
+                                  'Confirm Seat Selection',
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600),
+                                ),
                         ),
                       ),
                     ],
@@ -223,36 +268,34 @@ class SelectSeatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSeat(BuildContext context, BookingProvider provider, int index) {
+  Widget _buildSeat(BookingProvider provider, int index) {
     final state = provider.seatStates[index] ?? 0;
 
-    // Driver seat (steering wheel symbol)
     if (state == 3) {
       return Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: context.colors.neutralLight,
+          color: const Color(0xFFE8EAF6),
           borderRadius: BorderRadius.circular(8),
         ),
-        child: Center(
-          child: Icon(Icons.drive_eta, color: AppStyles.primaryColor, size: 24),
+        child: const Center(
+          child: Icon(Icons.drive_eta, color: Color(0xFF9FA8DA), size: 24),
         ),
       );
     }
 
     Color bgColor;
     Color iconColor;
-
     if (state == 1) {
-      bgColor = AppStyles.primaryColor;
-      iconColor = AppStyles.onPrimary;
+      bgColor = _primaryColor;
+      iconColor = Colors.white;
     } else if (state == 2) {
-      bgColor = context.colors.borderColor;
-      iconColor = AppStyles.onPrimary;
+      bgColor = const Color(0xFFE0E0E0);
+      iconColor = Colors.white;
     } else {
-      bgColor = context.colors.cardBackgroundColor;
-      iconColor = context.colors.inputHintColor;
+      bgColor = const Color(0xFFF5F5F5);
+      iconColor = const Color(0xFFBDBDBD);
     }
 
     return GestureDetector(
@@ -263,16 +306,16 @@ class SelectSeatScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
-          border: state == 0 ? Border.all(color: context.colors.borderColor) : null,
+          border:
+              state == 0 ? Border.all(color: const Color(0xFFE0E0E0)) : null,
         ),
-        child: Center(
-          child: Icon(Icons.person, color: iconColor, size: 24),
-        ),
+        child: Center(child: Icon(Icons.person, color: iconColor, size: 24)),
       ),
     );
   }
 
-  Widget _buildLegendItem(BuildContext context, Color color, String label, {bool isSelected = false, Color iconColor = Colors.transparent}) {
+  Widget _buildLegendItem(Color color, String label,
+      {bool isSelected = false, Color iconColor = Colors.transparent}) {
     return Row(
       children: [
         Container(
@@ -281,7 +324,9 @@ class SelectSeatScreen extends StatelessWidget {
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(4),
-            border: isSelected ? null : Border.all(color: context.colors.borderColor),
+            border: isSelected
+                ? null
+                : Border.all(color: const Color(0xFFE0E0E0)),
           ),
           child: iconColor != Colors.transparent
               ? Icon(Icons.person, size: 10, color: iconColor)
@@ -290,9 +335,9 @@ class SelectSeatScreen extends StatelessWidget {
         const SizedBox(width: 6),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
-            color: context.colors.textSecondary,
+            color: Color(0xFF757575),
             fontWeight: FontWeight.w500,
           ),
         ),

@@ -105,6 +105,8 @@ class _DriverIdVerificationScreenState
           email: widget.email,
           password: widget.password,
           phone: widget.phone,
+          frontIdImage: _frontImage!,
+          backIdImage: _backImage!,
         ),
       ),
     );

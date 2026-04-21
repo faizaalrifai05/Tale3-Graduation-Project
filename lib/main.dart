@@ -31,9 +31,18 @@ class Tale3App extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => NavigationProvider()),
-        ChangeNotifierProvider(create: (_) => RideProvider()),
-        ChangeNotifierProvider(create: (_) => BookingProvider()),
-        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProxyProvider<AuthProvider, RideProvider>(
+          create: (ctx) => RideProvider(ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev!..updateAuth(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, BookingProvider>(
+          create: (ctx) => BookingProvider(ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev!..updateAuth(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, ChatProvider>(
+          create: (ctx) => ChatProvider(ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev!..updateAuth(auth),
+        ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
         ChangeNotifierProxyProvider<AuthProvider, SavedPlacesProvider>(
           create: (_) => SavedPlacesProvider(),

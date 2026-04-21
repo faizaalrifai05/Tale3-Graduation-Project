@@ -1,8 +1,14 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:testtale3/models/booking_model.dart';
+import 'package:testtale3/providers/booking_provider.dart';
+
+// ignore_for_file: use_build_context_synchronously
 
 class CancelTripScreen extends StatefulWidget {
-  const CancelTripScreen({super.key});
+  final BookingModel booking;
+  const CancelTripScreen({super.key, required this.booking});
 
   @override
   State<CancelTripScreen> createState() => _CancelTripScreenState();
@@ -148,8 +154,10 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Pop until passenger home (first route)
+                      onPressed: () async {
+                        await context
+                            .read<BookingProvider>()
+                            .cancelBooking(widget.booking);
                         Navigator.of(context).popUntil((route) => route.isFirst);
                       },
                       style: ElevatedButton.styleFrom(

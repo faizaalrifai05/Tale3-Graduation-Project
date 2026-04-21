@@ -1,18 +1,23 @@
-import 'package:flutter/services.dart';
-import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 
 
 class RidePostedScreen extends StatefulWidget {
-  const RidePostedScreen({super.key});
+  final String origin;
+  final String destination;
+
+  const RidePostedScreen({
+    super.key,
+    required this.origin,
+    required this.destination,
+  });
 
   @override
   State<RidePostedScreen> createState() => _RidePostedScreenState();
 }
 
 class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerProviderStateMixin {
-  
-  
+  static const Color _primaryColor = Color(0xFF8B1A2B);
+  static const Color _darkMaroon = Color(0xFF5C0A1A);
 
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -35,83 +40,21 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
     super.dispose();
   }
 
-  void _showShareSheet(BuildContext context) {
-    const origin = 'Amman';
-    const destination = 'Irbid';
-    const shareText =
-        'I posted a ride on Tale3!\n🚗 $origin → $destination\nJoin me on Tale3 — the trusted carpool app.';
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: context.colors.surfaceColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: ctx.colors.borderColor,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text('Share Trip', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
-            const SizedBox(height: 8),
-            Text(shareText, style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy Trip Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                onPressed: () {
-                  Clipboard.setData(const ClipboardData(text: shareText));
-                  Navigator.pop(ctx);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text('Trip details copied to clipboard'),
-                      backgroundColor: AppStyles.successColor,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppStyles.darkMaroon,
-                  foregroundColor: AppStyles.onPrimary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  elevation: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.close, color: context.colors.textPrimary),
+          icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        title: Text(
+        title: const Text(
           'Ride Posted',
           style: TextStyle(
-            color: context.colors.textPrimary,
+            color: Color(0xFF1A1A1A),
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -139,7 +82,7 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                           height: 180,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppStyles.primaryColor.withValues(alpha: 0.1),
+                            color: _primaryColor.withValues(alpha: 0.1),
                           ),
                         ),
                       ),
@@ -148,7 +91,7 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppStyles.primaryColor.withValues(alpha: 0.2),
+                          color: _primaryColor.withValues(alpha: 0.2),
                         ),
                       ),
                       Container(
@@ -156,11 +99,11 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: AppStyles.primaryColor,
+                          color: _primaryColor,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.directions_car,
-                          color: AppStyles.onPrimary,
+                          color: Colors.white,
                           size: 32,
                         ),
                       ),
@@ -171,21 +114,21 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
               const SizedBox(height: 32),
 
               // Status Text
-              Text(
+              const Text(
                 'Your ride is live!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: context.colors.textPrimary,
+                  color: Color(0xFF1A1A1A),
                 ),
               ),
               const SizedBox(height: 12),
-              Text(
+              const Text(
                 'Subscribers are being calculated and\nmatching you with passengers...', // Original mockup text
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: context.colors.textSecondary,
+                  color: Color(0xFF757575),
                   height: 1.5,
                 ),
               ),
@@ -195,49 +138,49 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: context.colors.inputFillColor,
+                  color: const Color(0xFFF9F9F9),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: context.colors.borderColor),
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: context.colors.highlightBackgroundColor,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFDF2F4),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.route, color: AppStyles.primaryColor, size: 20),
+                      child: const Icon(Icons.route, color: _primaryColor, size: 20),
                     ),
                     const SizedBox(width: 16),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Departure',
-                          style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
+                          style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Amman',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
+                          widget.origin.isEmpty ? 'Origin' : widget.origin,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    Icon(Icons.arrow_forward, color: context.colors.inputHintColor, size: 16),
+                    const Icon(Icons.arrow_forward, color: Color(0xFFBDBDBD), size: 16),
                     const Spacer(),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           'Destination',
-                          style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
+                          style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Irbid',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
+                          widget.destination.isEmpty ? 'Destination' : widget.destination,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
                         ),
                       ],
                     ),
@@ -251,9 +194,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () => _showShareSheet(context),
-                  icon: Icon(Icons.share, size: 20),
-                  label: Text(
+                  onPressed: () {},
+                  icon: const Icon(Icons.share, size: 20),
+                  label: const Text(
                     'Share Trip',
                     style: TextStyle(
                       fontSize: 16,
@@ -261,8 +204,8 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppStyles.darkMaroon,
-                    foregroundColor: AppStyles.onPrimary,
+                    backgroundColor: _darkMaroon,
+                    foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -280,14 +223,14 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                    Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: context.colors.textPrimary,
-                    backgroundColor: context.colors.cardBackgroundColor,
+                    foregroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: const Color(0xFFF5F5F5),
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Go to Dashboard',
                     style: TextStyle(
                       fontSize: 16,
