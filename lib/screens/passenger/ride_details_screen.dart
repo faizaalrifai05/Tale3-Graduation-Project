@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:testtale3/screens/chat_screen.dart';
+import 'package:testtale3/models/ride_model.dart';
+import 'package:testtale3/screens/passenger/select_seat_screen.dart';
 
 class RideDetailsScreen extends StatelessWidget {
-  const RideDetailsScreen({super.key});
+  final RideModel ride;
+
+  const RideDetailsScreen({super.key, required this.ride});
 
   static const Color _primaryColor = Color(0xFF8B1A2B);
   static const Color _darkMaroon = Color(0xFF5C0A1A);
@@ -67,13 +70,7 @@ class RideDetailsScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) => const ChatScreen(),
-                                ),
-                              );
-                            },
+                            onTap: () {},
                             child: const CircleAvatar(
                               radius: 32,
                               backgroundColor: Color(0xFFE0E0E0),
@@ -87,9 +84,9 @@ class RideDetailsScreen extends StatelessWidget {
                               children: [
                                 Row(
                                   children: [
-                                    const Text(
-                                      'Ahmed Al-Masri',
-                                      style: TextStyle(
+                                    Text(
+                                      ride.driverName.isEmpty ? 'Driver' : ride.driverName,
+                                      style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w700,
                                         color: Color(0xFF1A1A1A),
@@ -120,9 +117,9 @@ class RideDetailsScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                const Text(
-                                  'Kia Sportage • 40-1234',
-                                  style: TextStyle(
+                                Text(
+                                  '${ride.carShortInfo} \u2022 ${ride.plateNumber}',
+                                  style: const TextStyle(
                                     fontSize: 13,
                                     color: Color(0xFF757575),
                                   ),
@@ -188,11 +185,11 @@ class RideDetailsScreen extends StatelessWidget {
                                 child: const Icon(Icons.location_on, color: _primaryColor),
                               ),
                               const SizedBox(width: 16),
-                              const Expanded(
+                              Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
+                                    const Text(
                                       'ROUTE',
                                       style: TextStyle(
                                         fontSize: 10,
@@ -203,7 +200,7 @@ class RideDetailsScreen extends StatelessWidget {
                                     ),
                                     SizedBox(height: 4),
                                     Text(
-                                      'Irbid → Amman',
+                                      '${ride.origin} → ${ride.destination}',
                                       style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
@@ -243,11 +240,11 @@ class RideDetailsScreen extends StatelessWidget {
                           // Time, Seats, Price Cards
                           Row(
                             children: [
-                              _buildInfoCard(Icons.access_time, 'DEPARTURE (EST)', '14:00'),
+                              _buildInfoCard(Icons.access_time, 'DEPARTURE', ride.time),
                               const SizedBox(width: 12),
-                              _buildInfoCard(Icons.event_seat, 'SEATS LEFT', '3'),
+                              _buildInfoCard(Icons.event_seat, 'SEATS LEFT', '${ride.availableSeats}'),
                               const SizedBox(width: 12),
-                              _buildInfoCard(Icons.payments_outlined, 'PRICE', '5 JOD', isPrice: true),
+                              _buildInfoCard(Icons.payments_outlined, 'PRICE', '${ride.pricePerSeat} JOD', isPrice: true),
                             ],
                           ),
                         ],
@@ -273,9 +270,12 @@ class RideDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          _buildRuleItem(Icons.smoke_free, 'No smoking allowed'),
-                          _buildRuleItem(Icons.luggage, 'Luggage space available'),
-                          _buildRuleItem(Icons.ac_unit, 'Air conditioning'),
+                          if (ride.noSmoking) _buildRuleItem(Icons.smoke_free, 'No smoking allowed'),
+                          if (ride.luggageEnabled) _buildRuleItem(Icons.luggage, 'Luggage space available'),
+                          if (ride.acEnabled) _buildRuleItem(Icons.ac_unit, 'Air conditioning'),
+                          if (ride.petsAllowed) _buildRuleItem(Icons.pets, 'Pets allowed'),
+                          if (!ride.noSmoking && !ride.luggageEnabled && !ride.acEnabled && !ride.petsAllowed)
+                            const Text('No special rules.', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
                         ],
                       ),
                     ),
@@ -321,7 +321,11 @@ class RideDetailsScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => SelectSeatScreen(ride: ride),
+                          ));
+                        },
                         icon: const Icon(Icons.check_circle_outline, size: 20),
                         label: const Text(
                           'Request Booking',

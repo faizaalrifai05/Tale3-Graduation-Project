@@ -7,7 +7,6 @@ import '../../providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/chat_screen.dart';
-import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
 
 class PassengerHomeScreen extends StatelessWidget {
@@ -525,7 +524,7 @@ class _HomeTab extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RideDetailsScreen()),
+          MaterialPageRoute(builder: (_) => const RideResultsScreen()),
         );
       },
       child: Container(

@@ -97,11 +97,59 @@ class DriverCreateRideScreen extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildInputBlock('Date', '15 Oct 2026', Icons.calendar_today),
+                        child: GestureDetector(
+                          onTap: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now().add(const Duration(days: 1)),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 60)),
+                              builder: (ctx, child) => Theme(
+                                data: Theme.of(ctx).copyWith(
+                                  colorScheme: const ColorScheme.light(primary: _primaryColor),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                            if (picked != null) {
+                              final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              rideProvider.setDate('${picked.day} ${months[picked.month - 1]} ${picked.year}');
+                            }
+                          },
+                          child: _buildInputBlock(
+                            'Date',
+                            rideProvider.date.isEmpty ? 'Select date' : rideProvider.date,
+                            Icons.calendar_today,
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildInputBlock('Time', '14:30', Icons.access_time),
+                        child: GestureDetector(
+                          onTap: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.now(),
+                              builder: (ctx, child) => Theme(
+                                data: Theme.of(ctx).copyWith(
+                                  colorScheme: const ColorScheme.light(primary: _primaryColor),
+                                ),
+                                child: child!,
+                              ),
+                            );
+                            if (picked != null) {
+                              final h = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
+                              final m = picked.minute.toString().padLeft(2, '0');
+                              final p = picked.period == DayPeriod.am ? 'AM' : 'PM';
+                              rideProvider.setTime('$h:$m $p');
+                            }
+                          },
+                          child: _buildInputBlock(
+                            'Time',
+                            rideProvider.time.isEmpty ? 'Select time' : rideProvider.time,
+                            Icons.access_time,
+                          ),
+                        ),
                       ),
                     ],
                   ),

@@ -2,7 +2,14 @@ import 'package:flutter/material.dart';
 
 
 class RidePostedScreen extends StatefulWidget {
-  const RidePostedScreen({super.key});
+  final String origin;
+  final String destination;
+
+  const RidePostedScreen({
+    super.key,
+    required this.origin,
+    required this.destination,
+  });
 
   @override
   State<RidePostedScreen> createState() => _RidePostedScreenState();
@@ -154,9 +161,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                           style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Amman',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                        Text(
+                          widget.origin.isEmpty ? 'Origin' : widget.origin,
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
                         ),
                       ],
                     ),
@@ -171,8 +178,8 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                           style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
-                        const Text(
-                          'Irbid',
+                        Text(
+                          widget.destination.isEmpty ? 'Destination' : widget.destination,
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
                         ),
                       ],

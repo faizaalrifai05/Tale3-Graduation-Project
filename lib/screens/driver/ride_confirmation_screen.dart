@@ -4,6 +4,8 @@ import '../../theme/app_styles.dart';
 import '../../providers/ride_provider.dart';
 import 'ride_posted_screen.dart';
 
+// ignore_for_file: use_build_context_synchronously
+
 /// Confirmation screen shown after filling the Create Ride form.
 /// Displays all ride details for review before publishing.
 class RideConfirmationScreen extends StatelessWidget {
@@ -360,14 +362,26 @@ class RideConfirmationScreen extends StatelessWidget {
                     child: SizedBox(
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.read<RideProvider>().publishRide();
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) => const RidePostedScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: ride.isPublishing
+                            ? null
+                            : () async {
+                                final error =
+                                    await context.read<RideProvider>().publishRide();
+                                if (error != null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(error)),
+                                  );
+                                  return;
+                                }
+                                Navigator.of(context).pushReplacement(
+                                  MaterialPageRoute(
+                                    builder: (_) => RidePostedScreen(
+                                      origin: ride.origin,
+                                      destination: ride.destination,
+                                    ),
+                                  ),
+                                );
+                              },
                         icon: const Icon(Icons.check_circle_outline,
                             size: 20),
                         label: const Text(

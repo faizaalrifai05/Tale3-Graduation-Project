@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +11,8 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
   final String email;
   final String password;
   final String phone;
+  final File frontIdImage;
+  final File backIdImage;
 
   const DriverVehicleDetailsScreen({
     super.key,
@@ -17,6 +20,8 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
     required this.email,
     required this.password,
     required this.phone,
+    required this.frontIdImage,
+    required this.backIdImage,
   });
 
   @override
@@ -85,6 +90,14 @@ class _DriverVehicleDetailsScreenState
         plateNumber: _plateController.text.trim(),
       );
       if (!mounted) return;
+
+      // Step 3: Upload ID images and set verificationStatus = pending
+      await authProvider.submitIdVerification(
+        frontImage: widget.frontIdImage,
+        backImage: widget.backIdImage,
+      );
+      if (!mounted) return;
+
       Navigator.of(context).push(
         MaterialPageRoute(
             builder: (_) => const DriverVerificationStatusScreen()),

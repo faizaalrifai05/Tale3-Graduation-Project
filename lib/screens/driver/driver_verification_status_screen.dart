@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:testtale3/models/user_model.dart';
+import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 
 class DriverVerificationStatusScreen extends StatelessWidget {
@@ -8,6 +11,36 @@ class DriverVerificationStatusScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final verificationStatus = context
+        .watch<app_auth.AuthProvider>()
+        .currentUser
+        ?.verificationStatus;
+
+    String idStatusLabel;
+    IconData idStatusIcon;
+    Color idStatusColor;
+    switch (verificationStatus) {
+      case VerificationStatus.verified:
+        idStatusLabel = 'Verified';
+        idStatusIcon = Icons.check_circle;
+        idStatusColor = const Color(0xFF4CAF50);
+        break;
+      case VerificationStatus.rejected:
+        idStatusLabel = 'Rejected';
+        idStatusIcon = Icons.cancel;
+        idStatusColor = const Color(0xFFE53935);
+        break;
+      case VerificationStatus.pending:
+        idStatusLabel = 'Pending Review';
+        idStatusIcon = Icons.access_time_filled;
+        idStatusColor = const Color(0xFFFF9800);
+        break;
+      default:
+        idStatusLabel = 'Not Submitted';
+        idStatusIcon = Icons.radio_button_unchecked;
+        idStatusColor = const Color(0xFF9E9E9E);
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -86,9 +119,9 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               _buildStatusCard(
                 icon: Icons.badge_outlined,
                 title: 'ID Verification',
-                status: 'Pending Review',
-                statusIcon: Icons.access_time_filled,
-                statusColor: const Color(0xFFFF9800),
+                status: idStatusLabel,
+                statusIcon: idStatusIcon,
+                statusColor: idStatusColor,
               ),
               const SizedBox(height: 16),
               _buildStatusCard(

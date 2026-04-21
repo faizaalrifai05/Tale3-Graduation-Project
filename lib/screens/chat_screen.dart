@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_styles.dart';
 import '../providers/chat_provider.dart';
-
+import '../providers/auth_provider.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -21,16 +21,23 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  String _formatTime(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inDays == 0) {
+      final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+      final min = dt.minute.toString().padLeft(2, '0');
+      final period = dt.hour < 12 ? 'AM' : 'PM';
+      return '$hour:$min $period';
+    }
+    if (diff.inDays == 1) return 'Yesterday';
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    return days[dt.weekday - 1];
+  }
+
   @override
   Widget build(BuildContext context) {
-    final chatProvider = context.watch<ChatProvider>();
-    
-    // Filter conversations based on search query
-    final conversations = chatProvider.conversations.where((conv) {
-      if (_searchQuery.isEmpty) return true;
-      return conv.name.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-             conv.lastMessage.toLowerCase().contains(_searchQuery.toLowerCase());
-    }).toList();
+    final chatProvider = context.read<ChatProvider>();
 
     return Column(
       children: [
@@ -75,17 +82,12 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             child: TextField(
               controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+              onChanged: (value) => setState(() => _searchQuery = value),
               decoration: const InputDecoration(
                 hintText: 'Search conversations\u2026',
-                hintStyle:
-                    TextStyle(color: AppStyles.textTertiary, fontSize: 14),
-                prefixIcon: Icon(Icons.search,
-                    color: AppStyles.textTertiary, size: 20),
+                hintStyle: TextStyle(color: AppStyles.textTertiary, fontSize: 14),
+                prefixIcon:
+                    Icon(Icons.search, color: AppStyles.textTertiary, size: 20),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(vertical: 12),
               ),
@@ -97,30 +99,55 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // ── Conversation list ──
         Expanded(
-          child: conversations.isEmpty 
-          ? const Center(
-              child: Text(
-                'No conversations found.',
-                style: TextStyle(color: AppStyles.textTertiary, fontSize: 15),
-              ),
-            )
-          : ListView.separated(
-            physics: const BouncingScrollPhysics(),
-            itemCount: conversations.length,
-            separatorBuilder: (context, index) =>
-                const Divider(height: 1, indent: 76, color: AppStyles.borderColor),
-            itemBuilder: (context, index) {
-              final conv = conversations[index];
-              return _ConversationTile(
-                conversation: conv,
-                onTap: () {
-                  // Clear unread via provider
-                  context.read<ChatProvider>().markAsRead(conv.name);
-                  // Navigate to conversation
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => _ConversationScreen(conversationName: conv.name),
-                    ),
+          child: StreamBuilder<List<Conversation>>(
+            stream: chatProvider.conversationsStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final all = snapshot.data ?? [];
+              final conversations = _searchQuery.isEmpty
+                  ? all
+                  : all
+                      .where((c) =>
+                          c.otherUserName
+                              .toLowerCase()
+                              .contains(_searchQuery.toLowerCase()) ||
+                          c.lastMessage
+                              .toLowerCase()
+                              .contains(_searchQuery.toLowerCase()))
+                      .toList();
+
+              if (conversations.isEmpty) {
+                return const Center(
+                  child: Text(
+                    'No conversations yet.',
+                    style: TextStyle(
+                        color: AppStyles.textTertiary, fontSize: 15),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                physics: const BouncingScrollPhysics(),
+                itemCount: conversations.length,
+                separatorBuilder: (_, __) => const Divider(
+                    height: 1, indent: 76, color: AppStyles.borderColor),
+                itemBuilder: (context, index) {
+                  final conv = conversations[index];
+                  return _ConversationTile(
+                    conversation: conv,
+                    timeLabel: _formatTime(conv.lastMessageTime),
+                    onTap: () {
+                      chatProvider.markAsRead(conv.chatId);
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => _ConversationScreen(
+                          chatId: conv.chatId,
+                          otherUserId: conv.otherUserId,
+                          otherUserName: conv.otherUserName,
+                        ),
+                      ));
+                    },
                   );
                 },
               );
@@ -133,17 +160,22 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONVERSATION TILE  (one row in the inbox)
+//  CONVERSATION TILE
 // ─────────────────────────────────────────────────────────────────────────────
 class _ConversationTile extends StatelessWidget {
   final Conversation conversation;
+  final String timeLabel;
   final VoidCallback onTap;
 
-  const _ConversationTile({required this.conversation, required this.onTap});
+  const _ConversationTile({
+    required this.conversation,
+    required this.timeLabel,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasUnread = conversation.unread > 0;
+    final hasUnread = conversation.unreadCount > 0;
 
     return Material(
       color: Colors.white,
@@ -153,46 +185,27 @@ class _ConversationTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
             children: [
-              // Avatar + online indicator
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 26,
-                    backgroundColor: AppStyles.highlightBackgroundColor,
-                    child: Text(
-                      conversation.name[0],
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppStyles.primaryColor,
-                      ),
-                    ),
+              CircleAvatar(
+                radius: 26,
+                backgroundColor: AppStyles.highlightBackgroundColor,
+                child: Text(
+                  conversation.otherUserName.isNotEmpty
+                      ? conversation.otherUserName[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppStyles.primaryColor,
                   ),
-                  if (conversation.isOnline)
-                    Positioned(
-                      bottom: 1,
-                      right: 1,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF4CAF50),
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                        ),
-                      ),
-                    ),
-                ],
+                ),
               ),
               const SizedBox(width: 14),
-
-              // Name + last message
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      conversation.name,
+                      conversation.otherUserName,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight:
@@ -219,21 +232,18 @@ class _ConversationTile extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-
-              // Time + unread badge
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    conversation.time,
+                    timeLabel,
                     style: TextStyle(
                       fontSize: 11,
                       color: hasUnread
                           ? AppStyles.primaryColor
                           : AppStyles.textTertiary,
-                      fontWeight: hasUnread
-                          ? FontWeight.w600
-                          : FontWeight.normal,
+                      fontWeight:
+                          hasUnread ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -246,7 +256,7 @@ class _ConversationTile extends StatelessWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
-                        conversation.unread.toString(),
+                        conversation.unreadCount.toString(),
                         style: const TextStyle(
                             color: Colors.white,
                             fontSize: 11,
@@ -266,12 +276,18 @@ class _ConversationTile extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONVERSATION SCREEN  (the actual chat messages)
+//  CONVERSATION SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class _ConversationScreen extends StatefulWidget {
-  final String conversationName;
+  final String chatId;
+  final String otherUserId;
+  final String otherUserName;
 
-  const _ConversationScreen({required this.conversationName});
+  const _ConversationScreen({
+    required this.chatId,
+    required this.otherUserId,
+    required this.otherUserName,
+  });
 
   @override
   State<_ConversationScreen> createState() => _ConversationScreenState();
@@ -281,32 +297,26 @@ class _ConversationScreenState extends State<_ConversationScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
-      }
-    });
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
-
-    context.read<ChatProvider>().sendMessage(widget.conversationName, text);
     _controller.clear();
-
-    Future.delayed(const Duration(milliseconds: 100), () {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
+    await context.read<ChatProvider>().sendMessage(
+          otherUserId: widget.otherUserId,
+          otherUserName: widget.otherUserName,
+          text: text,
         );
-      }
-    });
+    Future.delayed(const Duration(milliseconds: 150), _scrollToBottom);
   }
 
   @override
@@ -316,10 +326,18 @@ class _ConversationScreenState extends State<_ConversationScreen> {
     super.dispose();
   }
 
+  String _formatTime(DateTime dt) {
+    final hour = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final min = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour < 12 ? 'AM' : 'PM';
+    return '$hour:$min $period';
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Watch provider so UI rebuilds when a message is sent
-    final conv = context.watch<ChatProvider>().getByName(widget.conversationName);
+    final chatProvider = context.read<ChatProvider>();
+    final currentUid =
+        context.read<AuthProvider>().currentUser?.uid ?? '';
 
     return Scaffold(
       backgroundColor: AppStyles.backgroundColor,
@@ -333,67 +351,31 @@ class _ConversationScreenState extends State<_ConversationScreen> {
         ),
         title: Row(
           children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 18,
-                  backgroundColor: AppStyles.highlightBackgroundColor,
-                  child: Text(
-                    conv.name[0],
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppStyles.primaryColor,
-                    ),
-                  ),
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: AppStyles.highlightBackgroundColor,
+              child: Text(
+                widget.otherUserName.isNotEmpty
+                    ? widget.otherUserName[0].toUpperCase()
+                    : '?',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppStyles.primaryColor,
                 ),
-                if (conv.isOnline)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  conv.name,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: AppStyles.textPrimary,
-                  ),
-                ),
-                Text(
-                  conv.isOnline ? 'Online' : 'Offline',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: conv.isOnline
-                        ? const Color(0xFF4CAF50)
-                        : AppStyles.textTertiary,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+            Text(
+              widget.otherUserName,
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppStyles.textPrimary,
+              ),
             ),
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.phone_outlined,
-                color: AppStyles.textPrimary, size: 22),
-            onPressed: () {},
-          ),
           IconButton(
             icon: const Icon(Icons.more_vert,
                 color: AppStyles.textPrimary, size: 22),
@@ -405,13 +387,33 @@ class _ConversationScreenState extends State<_ConversationScreen> {
         children: [
           // ── Messages ──
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              itemCount: conv.messages.length,
-              itemBuilder: (context, index) {
-                return _buildBubble(conv.messages[index], conv.name);
+            child: StreamBuilder<List<ChatMessage>>(
+              stream: chatProvider.messagesStream(widget.chatId),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final messages = snapshot.data ?? [];
+                WidgetsBinding.instance.addPostFrameCallback(
+                    (_) => _scrollToBottom());
+                return ListView.builder(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 20),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final msg = messages[index];
+                    final isMe = msg.senderId == currentUid;
+                    return _buildBubble(
+                      msg,
+                      isMe: isMe,
+                      senderInitial: widget.otherUserName.isNotEmpty
+                          ? widget.otherUserName[0].toUpperCase()
+                          : '?',
+                    );
+                  },
+                );
               },
             ),
           ),
@@ -436,17 +438,6 @@ class _ConversationScreenState extends State<_ConversationScreen> {
             ),
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: AppStyles.cardBackgroundColor,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.attach_file,
-                      color: AppStyles.textSecondary, size: 20),
-                ),
-                const SizedBox(width: 10),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -463,7 +454,8 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                         hintStyle: TextStyle(
                             color: AppStyles.textTertiary, fontSize: 14),
                         border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        contentPadding:
+                            EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -478,8 +470,8 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                       color: AppStyles.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.send,
-                        color: Colors.white, size: 18),
+                    child:
+                        const Icon(Icons.send, color: Colors.white, size: 18),
                   ),
                 ),
               ],
@@ -490,20 +482,24 @@ class _ConversationScreenState extends State<_ConversationScreen> {
     );
   }
 
-  Widget _buildBubble(ChatMessage msg, String senderName) {
+  Widget _buildBubble(
+    ChatMessage msg, {
+    required bool isMe,
+    required String senderInitial,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         mainAxisAlignment:
-            msg.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!msg.isMe) ...[
+          if (!isMe) ...[
             CircleAvatar(
               radius: 13,
               backgroundColor: AppStyles.highlightBackgroundColor,
               child: Text(
-                senderName[0],
+                senderInitial,
                 style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -514,29 +510,28 @@ class _ConversationScreenState extends State<_ConversationScreen> {
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment: msg.isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: msg.isMe ? AppStyles.primaryColor : Colors.white,
+                    color: isMe ? AppStyles.primaryColor : Colors.white,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
-                      bottomLeft: Radius.circular(msg.isMe ? 16 : 4),
-                      bottomRight: Radius.circular(msg.isMe ? 4 : 16),
+                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 16),
                     ),
-                    border: msg.isMe
+                    border: isMe
                         ? null
                         : Border.all(color: AppStyles.borderColor),
                   ),
                   child: Text(
                     msg.text,
                     style: TextStyle(
-                      color: msg.isMe ? Colors.white : AppStyles.textPrimary,
+                      color: isMe ? Colors.white : AppStyles.textPrimary,
                       fontSize: 14,
                       height: 1.4,
                     ),
@@ -544,14 +539,14 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  msg.time,
+                  _formatTime(msg.timestamp),
                   style: const TextStyle(
                       color: AppStyles.textTertiary, fontSize: 10),
                 ),
               ],
             ),
           ),
-          if (msg.isMe) ...[
+          if (isMe) ...[
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 13,

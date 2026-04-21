@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
+import '../../models/booking_model.dart';
+import '../../providers/booking_provider.dart';
+import 'booking_status_screen.dart';
 
 class MyTripsScreen extends StatelessWidget {
   const MyTripsScreen({super.key});
@@ -10,7 +14,6 @@ class MyTripsScreen extends StatelessWidget {
       length: 3,
       child: Column(
         children: [
-          // AppBar-style header
           Container(
             color: Colors.white,
             padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
@@ -31,7 +34,8 @@ class MyTripsScreen extends StatelessWidget {
                   unselectedLabelColor: AppStyles.textTertiary,
                   indicatorColor: AppStyles.primaryColor,
                   indicatorWeight: 3,
-                  labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                  labelStyle: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w700),
                   tabs: const [
                     Tab(text: 'UPCOMING'),
                     Tab(text: 'PAST'),
@@ -41,196 +45,162 @@ class MyTripsScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Tab content
           Expanded(
-            child: TabBarView(
-              physics: const BouncingScrollPhysics(),
-              children: [
-                // UPCOMING TAB
-                ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: StreamBuilder<List<BookingModel>>(
+              stream: context.read<BookingProvider>().myBookingsStream,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final all = snapshot.data ?? [];
+                final upcoming =
+                    all.where((b) => b.status == 'confirmed').toList();
+                final cancelled =
+                    all.where((b) => b.status == 'cancelled').toList();
+
+                return TabBarView(
                   physics: const BouncingScrollPhysics(),
                   children: [
-                    _buildActiveTripCard(),
-                    const SizedBox(height: 16),
-                    _buildUpcomingTripCard('Tomorrow • 08:30 AM', 'Amman → Irbid', '15.00 JOD'),
+                    _BookingList(
+                      bookings: upcoming,
+                      emptyMessage: 'No upcoming trips.',
+                    ),
+                    const Center(
+                      child: Text('No past trips yet.',
+                          style: TextStyle(color: AppStyles.textSecondary)),
+                    ),
+                    _BookingList(
+                      bookings: cancelled,
+                      emptyMessage: 'No cancelled trips.',
+                    ),
                   ],
-                ),
-                // PAST TAB
-                const Center(
-                  child: Text('No past trips yet.', style: TextStyle(color: AppStyles.textSecondary)),
-                ),
-                // CANCELED TAB
-                const Center(
-                  child: Text('No canceled trips.', style: TextStyle(color: AppStyles.textSecondary)),
-                ),
-              ],
+                );
+              },
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildActiveTripCard() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppStyles.borderColor),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.04),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            height: 120,
-            width: double.infinity,
-            color: const Color(0xFFE0F7FA),
-            child: const Center(
-              child: Icon(Icons.map, color: Colors.blueAccent, size: 48),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppStyles.highlightBackgroundColor,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'ACTIVE TRIP',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w800,
-                          color: AppStyles.primaryColor,
-                        ),
-                      ),
-                    ),
-                    const Text(
-                      '12.50 JOD',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        color: AppStyles.primaryColor,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Row(
-                  children: [
-                    Icon(Icons.location_on, color: AppStyles.primaryColor, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Amman, Jordan',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppStyles.textPrimary),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Row(
-                  children: [
-                    Icon(Icons.location_city, color: AppStyles.textTertiary, size: 16),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Irbid, Jordan',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppStyles.textPrimary),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Divider(height: 1),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const CircleAvatar(
-                      radius: 20,
-                      backgroundColor: AppStyles.cardBackgroundColor,
-                      child: Icon(Icons.person, color: AppStyles.primaryColor),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Hassan Abdullah',
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppStyles.textPrimary),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
-                              const SizedBox(width: 4),
-                              const Text('4.9', style: TextStyle(fontSize: 12, color: AppStyles.textSecondary)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: AppStyles.cardBackgroundColor, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.chat_bubble_outline, color: AppStyles.primaryColor, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(color: AppStyles.cardBackgroundColor, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.phone, color: AppStyles.primaryColor, size: 20),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUpcomingTripCard(String time, String route, String price) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppStyles.borderColor),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(time, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppStyles.textSecondary)),
-              Text(price, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppStyles.primaryColor)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Text(route, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: AppStyles.textPrimary)),
         ],
       ),
     );
   }
 }
 
+class _BookingList extends StatelessWidget {
+  final List<BookingModel> bookings;
+  final String emptyMessage;
 
+  const _BookingList({required this.bookings, required this.emptyMessage});
+
+  @override
+  Widget build(BuildContext context) {
+    if (bookings.isEmpty) {
+      return Center(
+        child: Text(emptyMessage,
+            style: const TextStyle(color: AppStyles.textSecondary)),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      physics: const BouncingScrollPhysics(),
+      itemCount: bookings.length,
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (context, index) =>
+          _BookingCard(booking: bookings[index]),
+    );
+  }
+}
+
+class _BookingCard extends StatelessWidget {
+  final BookingModel booking;
+  const _BookingCard({required this.booking});
+
+  @override
+  Widget build(BuildContext context) {
+    final isCancelled = booking.status == 'cancelled';
+
+    return GestureDetector(
+      onTap: isCancelled
+          ? null
+          : () {
+              Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => BookingStatusScreen(booking: booking),
+              ));
+            },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppStyles.borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCancelled
+                        ? const Color(0xFFF5F5F5)
+                        : AppStyles.highlightBackgroundColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    isCancelled ? 'CANCELLED' : 'CONFIRMED',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      color: isCancelled
+                          ? AppStyles.textTertiary
+                          : AppStyles.primaryColor,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${booking.totalPrice} JOD',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: isCancelled
+                        ? AppStyles.textTertiary
+                        : AppStyles.primaryColor,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${booking.origin} → ${booking.destination}',
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppStyles.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${booking.date}  •  ${booking.time}',
+              style: const TextStyle(
+                  fontSize: 12, color: AppStyles.textSecondary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''}  •  ${booking.driverName}',
+              style: const TextStyle(
+                  fontSize: 12, color: AppStyles.textTertiary),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
