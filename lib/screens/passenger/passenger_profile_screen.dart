@@ -1,10 +1,10 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
-import '../../theme/app_styles.dart';
 import 'package:testtale3/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/auth_provider.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
-import 'package:testtale3/screens/saved_places_screen.dart';
+import 'package:testtale3/screens/passenger/passenger_saved_places_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 
@@ -64,16 +64,16 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.camera_alt, color: AppStyles.primaryColor),
-                title: const Text('Take a photo'),
+                leading: Icon(Icons.camera_alt, color: AppStyles.primaryColor),
+                title: Text('Take a photo'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera, setSheetState);
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.photo_library, color: AppStyles.primaryColor),
-                title: const Text('Choose from gallery'),
+                leading: Icon(Icons.photo_library, color: AppStyles.primaryColor),
+                title: Text('Choose from gallery'),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery, setSheetState);
@@ -93,7 +93,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -114,21 +114,21 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0E0),
+                    color: context.colors.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Edit Profile',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: AppStyles.textPrimary,
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Divider(),
+                Divider(),
                 const SizedBox(height: 20),
 
                 // Profile photo picker
@@ -153,10 +153,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                   fit: BoxFit.cover,
                                 ),
                               )
-                            : const CircleAvatar(
-                                backgroundColor: Color(0xFFE0E0E0),
+                            : CircleAvatar(
+                                backgroundColor: context.colors.borderColor,
                                 child: Icon(Icons.person,
-                                    color: Colors.white, size: 48),
+                                    color: AppStyles.onPrimary, size: 48),
                               ),
                       ),
                       Positioned(
@@ -164,12 +164,12 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                         right: 0,
                         child: Container(
                           padding: const EdgeInsets.all(7),
-                          decoration: const BoxDecoration(
+                          decoration: BoxDecoration(
                             color: AppStyles.primaryColor,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 14),
+                          child: Icon(Icons.camera_alt,
+                              color: AppStyles.onPrimary, size: 14),
                         ),
                       ),
                     ],
@@ -178,7 +178,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 const SizedBox(height: 6),
                 Text(
                   'Tap to change photo',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                  style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
                 ),
                 const SizedBox(height: 24),
 
@@ -214,17 +214,17 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: const Row(
+                          content: Row(
                             children: [
                               Icon(Icons.check_circle_outline,
-                                  color: Colors.white, size: 20),
+                                  color: AppStyles.onPrimary, size: 20),
                               SizedBox(width: 12),
                               Text('Profile updated',
                                   style: TextStyle(
                                       fontWeight: FontWeight.w500)),
                             ],
                           ),
-                          backgroundColor: const Color(0xFF2E7D32),
+                          backgroundColor: AppStyles.successDarkText,
                           behavior: SnackBarBehavior.floating,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -234,12 +234,12 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppStyles.darkMaroon,
-                      foregroundColor: Colors.white,
+                      foregroundColor: AppStyles.onPrimary,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: const Text('Save Changes',
+                    child: Text('Save Changes',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
@@ -266,10 +266,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: AppStyles.textTertiary,
+            color: context.colors.textTertiary,
             letterSpacing: 1,
           ),
         ),
@@ -280,10 +280,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle:
-                const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
-            prefixIcon: Icon(icon, color: const Color(0xFFBDBDBD), size: 20),
+                TextStyle(color: context.colors.inputHintColor, fontSize: 14),
+            prefixIcon: Icon(icon, color: context.colors.inputHintColor, size: 20),
             filled: true,
-            fillColor: const Color(0xFFF9F9F9),
+            fillColor: context.colors.inputFillColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -309,7 +309,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     return Stack(
       children: [
         // Background
-        Container(color: AppStyles.backgroundColor),
+        Container(color: context.colors.backgroundColor),
 
         Column(
           children: [
@@ -318,7 +318,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             // ════════════════════════════════════════════════════════
             Container(
               width: double.infinity,
-              decoration: const BoxDecoration(
+              decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppStyles.primaryColor, AppStyles.darkMaroon],
                   begin: Alignment.topLeft,
@@ -339,10 +339,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'My Profile',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: AppStyles.onPrimary,
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
                             ),
@@ -351,20 +351,20 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                             children: [
                               TextButton.icon(
                                 onPressed: _openEditSheet,
-                                icon: const Icon(Icons.edit_outlined,
-                                    size: 16, color: Colors.white),
-                                label: const Text(
+                                icon: Icon(Icons.edit_outlined,
+                                    size: 16, color: AppStyles.onPrimary),
+                                label: Text(
                                   'Edit',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: AppStyles.onPrimary,
                                   ),
                                 ),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.settings_outlined,
-                                    color: Colors.white),
+                                icon: Icon(Icons.settings_outlined,
+                                    color: AppStyles.onPrimary),
                                 onPressed: () {
                                   Navigator.of(context).push(MaterialPageRoute(
                                       builder: (_) => const SettingsScreen()));
@@ -402,12 +402,12 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                             fit: BoxFit.cover,
                                           ),
                                         )
-                                      : const Padding(
+                                      : Padding(
                                           padding: EdgeInsets.all(2),
                                           child: CircleAvatar(
                                             backgroundColor: Color(0x33FFFFFF),
                                             child: Icon(Icons.person,
-                                                color: Colors.white, size: 42),
+                                                color: AppStyles.onPrimary, size: 42),
                                           ),
                                         ),
                                 ),
@@ -417,14 +417,14 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(6),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFFF4D4D),
+                                      color: AppStyles.cameraButtonColor,
                                       shape: BoxShape.circle,
                                       border: Border.all(
                                           color: AppStyles.darkMaroon,
                                           width: 2),
                                     ),
-                                    child: const Icon(Icons.camera_alt,
-                                        color: Colors.white, size: 12),
+                                    child: Icon(Icons.camera_alt,
+                                        color: AppStyles.onPrimary, size: 12),
                                   ),
                                 ),
                               ],
@@ -439,23 +439,23 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                               children: [
                                 Text(
                                   shownName.isEmpty ? 'Passenger Name' : shownName,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    color: AppStyles.onPrimary,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(Icons.phone_outlined,
-                                        size: 14, color: Colors.white70),
+                                    Icon(Icons.phone_outlined,
+                                        size: 14, color: AppStyles.onPrimary),
                                     const SizedBox(width: 6),
                                     Text(
                                       displayPhone,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 14,
-                                        color: Colors.white70,
+                                        color: AppStyles.onPrimary,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -503,18 +503,18 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16)),
-                                  title: const Text('Log Out',
+                                  title: Text('Log Out',
                                       style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w700)),
-                                  content: const Text(
+                                  content: Text(
                                       'Are you sure you want to log out?',
                                       style: TextStyle(fontSize: 14)),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
-                                      child: const Text('Cancel'),
+                                      child: Text('Cancel'),
                                     ),
                                     ElevatedButton(
                                       onPressed: () =>
@@ -522,13 +522,13 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor:
                                             AppStyles.primaryColor,
-                                        foregroundColor: Colors.white,
+                                        foregroundColor: AppStyles.onPrimary,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(8)),
                                         elevation: 0,
                                       ),
-                                      child: const Text('Log Out'),
+                                      child: Text('Log Out'),
                                     ),
                                   ],
                                 ),
@@ -542,9 +542,9 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 );
                               }
                             },
-                            icon: const Icon(Icons.logout,
+                            icon: Icon(Icons.logout,
                                 color: AppStyles.primaryColor),
-                            label: const Text(
+                            label: Text(
                               'Log Out',
                               style: TextStyle(
                                 color: AppStyles.primaryColor,
@@ -553,7 +553,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                               ),
                             ),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
+                              side: BorderSide(
                                   color: AppStyles.primaryColor),
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12)),
@@ -582,26 +582,26 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             borderRadius: BorderRadius.circular(20),
             elevation: 8,
             shadowColor: AppStyles.primaryColor.withValues(alpha: 0.15),
-            color: Colors.white,
+            color: context.colors.surfaceColor,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
                   _buildStatCard(
                       icon: Icons.star_rounded,
-                      iconColor: const Color(0xFFFFD700),
+                      iconColor: AppStyles.goldStar,
                       value: '4.8',
                       label: 'Rating'),
-                  Container(width: 1, height: 40, color: const Color(0xFFEEEEEE)),
+                  Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.directions_car_rounded,
                       iconColor: AppStyles.primaryColor,
                       value: '42',
                       label: 'Trips'),
-                  Container(width: 1, height: 40, color: const Color(0xFFEEEEEE)),
+                  Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.calendar_today_rounded,
-                      iconColor: const Color(0xFF4CAF50),
+                      iconColor: AppStyles.successColor,
                       value: '2',
                       label: 'Years'),
                 ],
@@ -617,17 +617,17 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
 
   Widget _buildSection({required String title, required Widget child}) {
     return Container(
-      color: Colors.white,
+      color: context.colors.surfaceColor,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: AppStyles.textTertiary,
+              color: context.colors.textTertiary,
               letterSpacing: 0.8,
             ),
           ),
@@ -654,10 +654,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               const SizedBox(width: 4),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
             ],
@@ -665,10 +665,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppStyles.textTertiary,
+              color: context.colors.textTertiary,
             ),
           ),
         ],
@@ -682,25 +682,25 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF9F9F9),
+          color: context.colors.inputFillColor,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: AppStyles.primaryColor, size: 20),
       ),
       title: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.w600,
-          color: AppStyles.textPrimary,
+          color: context.colors.textPrimary,
         ),
       ),
       trailing:
-          const Icon(Icons.chevron_right, color: AppStyles.textTertiary),
+          Icon(Icons.chevron_right, color: context.colors.textTertiary),
       onTap: () {
         if (title == 'Saved Places') {
           Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const SavedPlacesScreen()),
+            MaterialPageRoute(builder: (_) => const PassengerSavedPlacesScreen()),
           );
         }
       },

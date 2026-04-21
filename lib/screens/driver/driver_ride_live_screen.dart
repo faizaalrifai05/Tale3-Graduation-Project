@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 
 class DriverRideLiveScreen extends StatefulWidget {
@@ -8,8 +10,8 @@ class DriverRideLiveScreen extends StatefulWidget {
 }
 
 class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with SingleTickerProviderStateMixin {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -32,21 +34,81 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
     super.dispose();
   }
 
+  void _showShareSheet(BuildContext context) {
+    const shareText =
+        'I\'m on a live ride on Tale3!\n🚗 Downtown Dubai → Dubai Marina\nJoin me on Tale3 — the trusted carpool app.';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: ctx.colors.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text('Share Ride', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
+            const SizedBox(height: 8),
+            Text(shareText, style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Copy Ride Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                onPressed: () {
+                  Clipboard.setData(const ClipboardData(text: shareText));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Ride details copied to clipboard'),
+                      backgroundColor: AppStyles.successColor,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppStyles.darkMaroon,
+                  foregroundColor: AppStyles.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.close, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'My Ride',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -74,7 +136,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                           height: 180,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: _primaryColor.withValues(alpha: 0.1),
+                            color: AppStyles.primaryColor.withValues(alpha: 0.1),
                           ),
                         ),
                       ),
@@ -83,7 +145,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                         height: 120,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _primaryColor.withValues(alpha: 0.2),
+                          color: AppStyles.primaryColor.withValues(alpha: 0.2),
                         ),
                       ),
                       Container(
@@ -91,11 +153,11 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                         height: 80,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: _primaryColor,
+                          color: AppStyles.primaryColor,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.directions_car,
-                          color: Colors.white,
+                          color: AppStyles.onPrimary,
                           size: 32,
                         ),
                       ),
@@ -106,21 +168,21 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
               const SizedBox(height: 32),
 
               // Status Text
-              const Text(
+              Text(
                 'Your ride is live!',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Subscribers are being calculated and\nmatching you with passengers...',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -130,64 +192,64 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F9F9),
+                  color: context.colors.inputFillColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  border: Border.all(color: context.colors.borderColor),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF2F4),
+                      decoration: BoxDecoration(
+                        color: context.colors.highlightBackgroundColor,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.route, color: _primaryColor, size: 20),
+                      child: Icon(Icons.route, color: AppStyles.primaryColor, size: 20),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Departure',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF757575),
+                              color: context.colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Downtown Dubai',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
+                              color: context.colors.textPrimary,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward, color: Color(0xFFBDBDBD), size: 16),
+                    Icon(Icons.arrow_forward, color: context.colors.inputHintColor, size: 16),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Destination',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF757575),
+                              color: context.colors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Text(
+                          Text(
                             'Dubai Marina',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
+                              color: context.colors.textPrimary,
                             ),
                           ),
                         ],
@@ -203,9 +265,9 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.share, size: 20),
-                  label: const Text(
+                  onPressed: () => _showShareSheet(context),
+                  icon: Icon(Icons.share, size: 20),
+                  label: Text(
                     'Share Trip',
                     style: TextStyle(
                       fontSize: 16,
@@ -213,8 +275,8 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _darkMaroon,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppStyles.darkMaroon,
+                    foregroundColor: AppStyles.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -232,14 +294,14 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                     Navigator.of(context).popUntil((route) => route.isFirst);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A1A1A),
-                    backgroundColor: const Color(0xFFF5F5F5),
+                    foregroundColor: context.colors.textPrimary,
+                    backgroundColor: context.colors.cardBackgroundColor,
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Go to Dashboard',
                     style: TextStyle(
                       fontSize: 16,

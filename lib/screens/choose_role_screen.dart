@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_registration_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
@@ -8,17 +10,17 @@ class ChooseRoleScreen extends StatelessWidget {
   final bool isLogin;
   const ChooseRoleScreen({super.key, this.isLogin = false});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final size = MediaQuery.sizeOf(context);
+    final isSmall = size.height < 680;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -27,9 +29,9 @@ class ChooseRoleScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             children: [
-              const SizedBox(height: 8),
+              SizedBox(height: isSmall ? 4 : 8),
 
-              // Tale3 logo
+              // ── Logo ────────────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -37,101 +39,79 @@ class ChooseRoleScreen extends StatelessWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: _primaryColor,
+                      color: AppStyles.primaryColor,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(
                       Icons.directions_car,
-                      color: Colors.white,
+                      color: AppStyles.onPrimary,
                       size: 16,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Text(
-                    'Tale3',
+                  Text(
+                    l10n.appName,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ],
               ),
 
-              
-              
-
               const Spacer(flex: 2),
 
-              // Choose Your Role heading
+              // ── Heading ─────────────────────────────────────────────
               Text(
-                isLogin ? 'Log in to your account' : 'Choose Your Role',
-                style: const TextStyle(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                isLogin ? 'سجل الدخول لحسابك' : 'اختر دورك',
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF9E9E9E),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isLogin 
-                    ? 'Welcome back! How would you like\nto log in today?' 
-                    : 'How would you like to use Tale3?\nChoose one to get started.',
+                isLogin ? l10n.loginTitle : l10n.chooseRole,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
+                  fontSize: isSmall ? 22 : 26,
+                  fontWeight: FontWeight.w800,
+                  color: context.colors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isLogin ? l10n.loginSubtitle : l10n.chooseRoleSubtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
 
               const Spacer(flex: 2),
 
-              // Role cards
+              // ── Role cards ──────────────────────────────────────────
               _buildRoleCard(
                 context: context,
                 icon: Icons.person_outline,
-                title: 'Passenger',
-                titleAr: 'راكب',
-                description: 'Find & book rides between cities',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => isLogin 
-                          ? const PassengerLoginScreen() 
-                          : const PassengerRegistrationScreen(),
-                    ),
-                  );
-                },
+                title: l10n.passenger,
+                description: l10n.passengerDesc,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => isLogin
+                      ? const PassengerLoginScreen()
+                      : const PassengerRegistrationScreen(),
+                )),
               ),
               const SizedBox(height: 16),
               _buildRoleCard(
                 context: context,
                 icon: Icons.directions_car_outlined,
-                title: 'Driver',
-                titleAr: 'سائق',
-                description: 'Offer rides & earn money driving',
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (context) => isLogin 
-                          ? const DriverLoginScreen() 
-                          : const DriverRegistrationScreen(),
-                    ),
-                  );
-                },
+                title: l10n.driver,
+                description: l10n.driverDesc,
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => isLogin
+                      ? const DriverLoginScreen()
+                      : const DriverRegistrationScreen(),
+                )),
               ),
 
               const Spacer(flex: 3),
-              const SizedBox(height: 24),
+              SizedBox(height: isSmall ? 16 : 24),
             ],
           ),
         ),
@@ -143,7 +123,6 @@ class ChooseRoleScreen extends StatelessWidget {
     required BuildContext context,
     required IconData icon,
     required String title,
-    required String titleAr,
     required String description,
     required VoidCallback onTap,
   }) {
@@ -153,12 +132,9 @@ class ChooseRoleScreen extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFFDF2F4), // Light pink/rose background
+          color: context.colors.highlightBackgroundColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: const Color(0xFFF5D5DB),
-            width: 1,
-          ),
+          border: Border.all(color: context.colors.roleBorderColor),
         ),
         child: Row(
           children: [
@@ -166,58 +142,43 @@ class ChooseRoleScreen extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: const Color(0x1A8B1A2B),
+                color: AppStyles.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(icon, color: _primaryColor, size: 24),
+              child: Icon(icon, color: AppStyles.primaryColor, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        titleAr,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF9E9E9E),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF757575),
+                      color: context.colors.textSecondary,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(
+            Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: Color(0xFF9E9E9E),
+              color: context.colors.textTertiary,
             ),
           ],
         ),
       ),
     );
   }
-
-
 }
-

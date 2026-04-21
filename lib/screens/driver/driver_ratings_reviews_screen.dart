@@ -1,25 +1,24 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 
 class RatingsReviewsScreen extends StatelessWidget {
   const RatingsReviewsScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Ratings & Reviews',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -33,19 +32,19 @@ class RatingsReviewsScreen extends StatelessWidget {
             children: [
               // Rating Overview
               Container(
-                color: Colors.white,
+                color: context.colors.surfaceColor,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
                 child: Row(
                   children: [
                     // Big Score
                     Column(
                       children: [
-                        const Text(
+                        Text(
                           '4.8',
                           style: TextStyle(
                             fontSize: 48,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                             height: 1,
                           ),
                         ),
@@ -54,17 +53,17 @@ class RatingsReviewsScreen extends StatelessWidget {
                           children: List.generate(5, (index) {
                             return Icon(
                               index < 4 ? Icons.star : Icons.star_half,
-                              color: const Color(0xFFFFC107),
+                              color: AppStyles.starRatingColor,
                               size: 16,
                             );
                           }),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           '1,418 reviews',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF757575),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                       ],
@@ -75,11 +74,11 @@ class RatingsReviewsScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildDistributionBar(5, 0.8),
-                          _buildDistributionBar(4, 0.15),
-                          _buildDistributionBar(3, 0.03),
-                          _buildDistributionBar(2, 0.01),
-                          _buildDistributionBar(1, 0.01),
+                          _buildDistributionBar(context, 5, 0.8),
+                          _buildDistributionBar(context, 4, 0.15),
+                          _buildDistributionBar(context, 3, 0.03),
+                          _buildDistributionBar(context, 2, 0.01),
+                          _buildDistributionBar(context, 1, 0.01),
                         ],
                       ),
                     ),
@@ -90,7 +89,7 @@ class RatingsReviewsScreen extends StatelessWidget {
 
               // Reviews Header
               Container(
-                color: Colors.white,
+                color: context.colors.surfaceColor,
                 padding: const EdgeInsets.all(20),
                 width: double.infinity,
                 child: Column(
@@ -98,21 +97,21 @@ class RatingsReviewsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Passenger Feedback',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         Row(
                           children: [
-                            const Text(
+                            Text(
                               'Sort by',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF757575),
+                                color: context.colors.textSecondary,
                               ),
                             ),
                             const SizedBox(width: 4),
@@ -121,10 +120,10 @@ class RatingsReviewsScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
-                                color: _primaryColor,
+                                color: AppStyles.primaryColor,
                               ),
                             ),
-                            Icon(Icons.keyboard_arrow_down, color: _primaryColor, size: 16),
+                            Icon(Icons.keyboard_arrow_down, color: AppStyles.primaryColor, size: 16),
                           ],
                         ),
                       ],
@@ -132,23 +131,23 @@ class RatingsReviewsScreen extends StatelessWidget {
                     const SizedBox(height: 24),
                     
                     // Reviews List
-                    _buildReviewItem(
+                    _buildReviewItem(context,
                       'Sarah Jenkins',
                       '1 day ago',
                       5.0,
                       'The driver was incredibly polite and drove very safely. The car was incredibly clean and smelling very nice! Highly recommend.',
                       12,
                     ),
-                    const Divider(height: 32, color: Color(0xFFEEEEEE)),
-                    _buildReviewItem(
+                    Divider(height: 32, color: context.colors.dividerColor),
+                    _buildReviewItem(context,
                       'Thomas Khalil',
                       '3 days ago',
                       4.0,
                       'Good ride, cheap booking online, my route changed and driver cooperated however air conditioning was a bit weak in the back.',
                       4,
                     ),
-                    const Divider(height: 32, color: Color(0xFFEEEEEE)),
-                    _buildReviewItem(
+                    Divider(height: 32, color: context.colors.dividerColor),
+                    _buildReviewItem(context,
                       'Aisha Al-Saidi',
                       '1 week ago',
                       5.0,
@@ -165,16 +164,16 @@ class RatingsReviewsScreen extends StatelessWidget {
 
       // Bottom Navigation
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceColor,
+          border: Border(top: BorderSide(color: context.colors.borderColor, width: 1)),
         ),
         child: BottomNavigationBar(
           currentIndex: 3, // Since it reviews driver, let's keep it generally on profile or unselected
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: _primaryColor,
-          unselectedItemColor: const Color(0xFF9E9E9E),
+          backgroundColor: context.colors.surfaceColor,
+          selectedItemColor: AppStyles.primaryColor,
+          unselectedItemColor: context.colors.textTertiary,
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,
@@ -205,7 +204,7 @@ class RatingsReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDistributionBar(int stars, double percentage) {
+  Widget _buildDistributionBar(BuildContext context, int stars, double percentage) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -214,23 +213,23 @@ class RatingsReviewsScreen extends StatelessWidget {
             width: 12,
             child: Text(
               stars.toString(),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF757575),
+                color: context.colors.textSecondary,
               ),
             ),
           ),
           const SizedBox(width: 4),
-          const Icon(Icons.star, color: Color(0xFF757575), size: 10),
+          Icon(Icons.star, color: context.colors.textSecondary, size: 10),
           const SizedBox(width: 8),
           Expanded(
             child: ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: LinearProgressIndicator(
                 value: percentage,
-                backgroundColor: const Color(0xFFF5F5F5),
-                valueColor: AlwaysStoppedAnimation<Color>(_primaryColor),
+                backgroundColor: context.colors.cardBackgroundColor,
+                valueColor: AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
                 minHeight: 6,
               ),
             ),
@@ -240,7 +239,7 @@ class RatingsReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(String name, String time, double rating, String comment, int helpfulCount) {
+  Widget _buildReviewItem(BuildContext context, String name, String time, double rating, String comment, int helpfulCount) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -248,13 +247,13 @@ class RatingsReviewsScreen extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 16,
-              backgroundColor: const Color(0xFFF5F5F5),
+              backgroundColor: context.colors.cardBackgroundColor,
               child: Text(
                 name[0].toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
-                  color: _primaryColor,
+                  color: AppStyles.primaryColor,
                 ),
               ),
             ),
@@ -265,17 +264,17 @@ class RatingsReviewsScreen extends StatelessWidget {
                 children: [
                   Text(
                     name,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   Text(
                     time,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
-                      color: Color(0xFF9E9E9E),
+                      color: context.colors.textTertiary,
                     ),
                   ),
                 ],
@@ -284,19 +283,19 @@ class RatingsReviewsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF8E1),
+                color: AppStyles.starRatingLightBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.star, color: Color(0xFFFFC107), size: 12),
+                  Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
                   const SizedBox(width: 4),
                   Text(
                     rating.toString(),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFFF57F17),
+                      color: AppStyles.starRatingDarkText,
                     ),
                   ),
                 ],
@@ -307,36 +306,36 @@ class RatingsReviewsScreen extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           comment,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF424242),
+            color: context.colors.textDeep,
             height: 1.5,
           ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            _buildHelpfulAction(Icons.thumb_up_outlined, helpfulCount.toString()),
+            _buildHelpfulAction(context, Icons.thumb_up_outlined, helpfulCount.toString()),
             const SizedBox(width: 16),
-            _buildHelpfulAction(Icons.thumb_down_outlined, ''),
+            _buildHelpfulAction(context, Icons.thumb_down_outlined, ''),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildHelpfulAction(IconData icon, String label) {
+  Widget _buildHelpfulAction(BuildContext context, IconData icon, String label) {
     return Row(
       children: [
-        Icon(icon, color: const Color(0xFF9E9E9E), size: 16),
+        Icon(icon, color: context.colors.textTertiary, size: 16),
         if (label.isNotEmpty) ...[
           const SizedBox(width: 4),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF757575),
+              color: context.colors.textSecondary,
             ),
           ),
         ],

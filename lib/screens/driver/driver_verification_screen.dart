@@ -1,37 +1,58 @@
+import 'dart:async';
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-class EmailVerificationScreen extends StatefulWidget {
-  const EmailVerificationScreen({super.key});
+class DriverVerificationScreen extends StatefulWidget {
+  const DriverVerificationScreen({super.key});
 
   @override
-  State<EmailVerificationScreen> createState() =>
-      _EmailVerificationScreenState();
+  State<DriverVerificationScreen> createState() =>
+      _DriverVerificationScreenState();
 }
 
-class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
-
+class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
   final List<TextEditingController> _otpControllers =
       List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _otpFocusNodes = List.generate(4, (_) => FocusNode());
 
+  int _resendCooldown = 0;
+  Timer? _resendTimer;
+
   @override
   void dispose() {
-    for (final c in _otpControllers) {
-      c.dispose();
-    }
-    for (final f in _otpFocusNodes) {
-      f.dispose();
-    }
+    for (final c in _otpControllers) { c.dispose(); }
+    for (final f in _otpFocusNodes) { f.dispose(); }
+    _resendTimer?.cancel();
     super.dispose();
+  }
+
+  void _startResendCooldown() {
+    setState(() => _resendCooldown = 60);
+    _resendTimer?.cancel();
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) { t.cancel(); return; }
+      setState(() {
+        _resendCooldown--;
+        if (_resendCooldown <= 0) t.cancel();
+      });
+    });
+  }
+
+  void _handleResend() {
+    if (_resendCooldown > 0) return;
+    _startResendCooldown();
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: const Text('Verification code resent'),
+      backgroundColor: AppStyles.successColor,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
@@ -41,7 +62,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: _primaryColor),
+                    icon: Icon(Icons.arrow_back, color: AppStyles.primaryColor),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   const SizedBox(width: 4),
@@ -57,20 +78,20 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   children: [
                     const SizedBox(height: 16),
                     // Heading
-                    const Text(
+                    Text(
                       'Verify your Email',
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A1A),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'We\'ve sent a 4-digit code to your email\naddress. Please enter it below to continue.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF757575),
+                        color: context.colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -90,10 +111,10 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             textAlign: TextAlign.center,
                             keyboardType: TextInputType.number,
                             maxLength: 1,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1A1A),
+                              color: context.colors.textPrimary,
                             ),
                             inputFormatters: [
                               FilteringTextInputFormatter.digitsOnly,
@@ -101,23 +122,23 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                             decoration: InputDecoration(
                               counterText: '',
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: context.colors.surfaceColor,
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE0E0E0),
+                                borderSide: BorderSide(
+                                  color: context.colors.borderColor,
                                 ),
                               ),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE0E0E0),
+                                borderSide: BorderSide(
+                                  color: context.colors.borderColor,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide: const BorderSide(
-                                  color: _primaryColor,
+                                borderSide: BorderSide(
+                                  color: AppStyles.primaryColor,
                                   width: 2,
                                 ),
                               ),
@@ -137,30 +158,34 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     const SizedBox(height: 40),
 
                     // Resend Section
-                    const Center(
+                    Center(
                       child: Text(
                         'Didn\'t receive the code?',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF9E9E9E),
+                          color: context.colors.textTertiary,
                         ),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Center(
                       child: TextButton(
-                        onPressed: () {},
+                        onPressed: _resendCooldown > 0 ? null : _handleResend,
                         style: TextButton.styleFrom(
                           padding: EdgeInsets.zero,
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Resend Code',
+                        child: Text(
+                          _resendCooldown > 0
+                              ? 'Resend in ${_resendCooldown}s'
+                              : 'Resend Code',
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _primaryColor,
+                            color: _resendCooldown > 0
+                                ? context.colors.textTertiary
+                                : AppStyles.primaryColor,
                           ),
                         ),
                       ),
@@ -176,14 +201,14 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           // Handle verification
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _darkMaroon,
-                          foregroundColor: Colors.white,
+                          backgroundColor: AppStyles.darkMaroon,
+                          foregroundColor: AppStyles.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(

@@ -1,7 +1,8 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../theme/app_styles.dart';
 import '../../providers/ride_provider.dart';
+import '../../providers/auth_provider.dart';
 import 'ride_posted_screen.dart';
 
 // ignore_for_file: use_build_context_synchronously
@@ -11,23 +12,55 @@ import 'ride_posted_screen.dart';
 class RideConfirmationScreen extends StatelessWidget {
   const RideConfirmationScreen({super.key});
 
+  Future<void> _publish(BuildContext context) async {
+    final ride = context.read<RideProvider>();
+    final auth = context.read<AuthProvider>();
+
+    final error = await ride.publishRide(
+      driverId: auth.currentUser?.uid ?? '',
+      driverName: auth.userName,
+    );
+
+    if (!context.mounted) return;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error),
+          backgroundColor: AppStyles.errorColor,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      return;
+    }
+
+    final origin = ride.origin;
+    final destination = ride.destination;
+    ride.resetForm();
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => RidePostedScreen(origin: origin, destination: destination),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final ride = context.watch<RideProvider>();
 
     return Scaffold(
-      backgroundColor: AppStyles.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppStyles.textPrimary),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Review Ride',
           style: TextStyle(
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -46,11 +79,11 @@ class RideConfirmationScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Header text ──
-                    const Text(
+                    Text(
                       'Please review your ride details\nbefore publishing.',
                       style: TextStyle(
                         fontSize: 15,
-                        color: AppStyles.textSecondary,
+                        color: context.colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -89,13 +122,13 @@ class RideConfirmationScreen extends StatelessWidget {
                                     Container(
                                       width: 2,
                                       height: 28,
-                                      color: AppStyles.borderColor,
+                                      color: context.colors.borderColor,
                                     ),
                                     Container(
                                       width: 10,
                                       height: 10,
-                                      decoration: const BoxDecoration(
-                                        color: Color(0xFF4CAF50),
+                                      decoration: BoxDecoration(
+                                        color: AppStyles.successColor,
                                         shape: BoxShape.circle,
                                       ),
                                     ),
@@ -107,12 +140,12 @@ class RideConfirmationScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'FROM',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
-                                        color: AppStyles.textTertiary,
+                                        color: context.colors.textTertiary,
                                         letterSpacing: 1,
                                       ),
                                     ),
@@ -121,19 +154,19 @@ class RideConfirmationScreen extends StatelessWidget {
                                       ride.origin.isEmpty
                                           ? 'Not specified'
                                           : ride.origin,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppStyles.textPrimary,
+                                        color: context.colors.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(height: 16),
-                                    const Text(
+                                    Text(
                                       'TO',
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
-                                        color: AppStyles.textTertiary,
+                                        color: context.colors.textTertiary,
                                         letterSpacing: 1,
                                       ),
                                     ),
@@ -142,10 +175,10 @@ class RideConfirmationScreen extends StatelessWidget {
                                       ride.destination.isEmpty
                                           ? 'Not specified'
                                           : ride.destination,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w600,
-                                        color: AppStyles.textPrimary,
+                                        color: context.colors.textPrimary,
                                       ),
                                     ),
                                   ],
@@ -173,12 +206,12 @@ class RideConfirmationScreen extends StatelessWidget {
                               _DetailItem(
                                 icon: Icons.calendar_today_rounded,
                                 label: 'Date',
-                                value: '15 Oct 2026',
+                                value: ride.dateLabel,
                               ),
                               _DetailItem(
                                 icon: Icons.access_time_rounded,
                                 label: 'Time',
-                                value: '14:30',
+                                value: ride.timeLabel,
                               ),
                             ],
                           ),
@@ -219,24 +252,24 @@ class RideConfirmationScreen extends StatelessWidget {
                             runSpacing: 8,
                             children: [
                               if (ride.acChecked)
-                                _featureChip(
+                                _featureChip(context,
                                     Icons.ac_unit_rounded, 'Air Conditioning'),
                               if (ride.luggageChecked)
-                                _featureChip(
+                                _featureChip(context,
                                     Icons.luggage_rounded, 'Luggage'),
                               if (ride.petsChecked)
-                                _featureChip(Icons.pets_rounded, 'Pets Allowed'),
+                                _featureChip(context, Icons.pets_rounded, 'Pets Allowed'),
                               if (ride.noSmokingChecked)
-                                _featureChip(
+                                _featureChip(context,
                                     Icons.smoke_free_rounded, 'No Smoking'),
                               if (!ride.acChecked &&
                                   !ride.luggageChecked &&
                                   !ride.petsChecked &&
                                   !ride.noSmokingChecked)
-                                const Text(
+                                Text(
                                   'No features selected',
                                   style: TextStyle(
-                                    color: AppStyles.textTertiary,
+                                    color: context.colors.textTertiary,
                                     fontSize: 13,
                                   ),
                                 ),
@@ -259,9 +292,9 @@ class RideConfirmationScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                             Text(
                               ride.additionalNotes,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                color: AppStyles.textSecondary,
+                                color: context.colors.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -277,7 +310,7 @@ class RideConfirmationScreen extends StatelessWidget {
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppStyles.highlightBackgroundColor,
+                        color: context.colors.highlightBackgroundColor,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
                           color: AppStyles.primaryColor.withValues(alpha: 0.15),
@@ -286,17 +319,17 @@ class RideConfirmationScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             'Total if fully booked',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: AppStyles.textPrimary,
+                              color: context.colors.textPrimary,
                             ),
                           ),
                           Text(
                             '\$${ride.price * ride.seats}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: AppStyles.primaryColor,
@@ -319,7 +352,7 @@ class RideConfirmationScreen extends StatelessWidget {
                 bottom: MediaQuery.of(context).padding.bottom + 16,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: context.colors.surfaceColor,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.05),
@@ -338,14 +371,14 @@ class RideConfirmationScreen extends StatelessWidget {
                       child: OutlinedButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppStyles.textPrimary,
+                          foregroundColor: context.colors.textPrimary,
                           side:
-                              const BorderSide(color: AppStyles.borderColor),
+                              BorderSide(color: context.colors.borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Edit',
                           style: TextStyle(
                             fontSize: 15,
@@ -364,28 +397,19 @@ class RideConfirmationScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: ride.isPublishing
                             ? null
-                            : () async {
-                                final error =
-                                    await context.read<RideProvider>().publishRide();
-                                if (error != null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text(error)),
-                                  );
-                                  return;
-                                }
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(
-                                    builder: (_) => RidePostedScreen(
-                                      origin: ride.origin,
-                                      destination: ride.destination,
-                                    ),
-                                  ),
-                                );
-                              },
-                        icon: const Icon(Icons.check_circle_outline,
-                            size: 20),
-                        label: const Text(
-                          'Confirm & Publish',
+                            : () => _publish(context),
+                        icon: ride.isPublishing
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: AppStyles.onPrimary,
+                                ),
+                              )
+                            : const Icon(Icons.check_circle_outline, size: 20),
+                        label: Text(
+                          ride.isPublishing ? 'Publishing...' : 'Confirm & Publish',
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -393,7 +417,7 @@ class RideConfirmationScreen extends StatelessWidget {
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppStyles.darkMaroon,
-                          foregroundColor: Colors.white,
+                          foregroundColor: AppStyles.onPrimary,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -411,11 +435,11 @@ class RideConfirmationScreen extends StatelessWidget {
     );
   }
 
-  static Widget _featureChip(IconData icon, String label) {
+  static Widget _featureChip(BuildContext context, IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
+        color: context.colors.cardBackgroundColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -425,10 +449,10 @@ class RideConfirmationScreen extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppStyles.textPrimary,
+              color: context.colors.textPrimary,
             ),
           ),
         ],
@@ -450,9 +474,9 @@ class _SectionCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppStyles.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
       ),
       child: child,
     );
@@ -472,10 +496,10 @@ class _SectionHeader extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
           ),
         ),
       ],
@@ -499,7 +523,7 @@ class _DetailItem extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
+              color: context.colors.cardBackgroundColor,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, size: 16, color: AppStyles.primaryColor),
@@ -510,19 +534,19 @@ class _DetailItem extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
-                  color: AppStyles.textTertiary,
+                  color: context.colors.textTertiary,
                   letterSpacing: 0.5,
                 ),
               ),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppStyles.textPrimary,
+                  color: context.colors.textPrimary,
                 ),
               ),
             ],

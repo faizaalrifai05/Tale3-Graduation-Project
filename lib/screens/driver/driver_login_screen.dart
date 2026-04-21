@@ -9,7 +9,8 @@ import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
 
 class DriverLoginScreen extends StatefulWidget {
-  const DriverLoginScreen({super.key});
+  final String? preFilledEmail;
+  const DriverLoginScreen({super.key, this.preFilledEmail});
 
   @override
   State<DriverLoginScreen> createState() => _DriverLoginScreenState();
@@ -23,6 +24,14 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.preFilledEmail != null) {
+      _emailController.text = widget.preFilledEmail!;
+    }
+  }
 
   @override
   void dispose() {
@@ -89,18 +98,16 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Driver Login',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -117,30 +124,30 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 const SizedBox(height: 32),
-                const Text(
+                Text(
                   'Welcome Captain',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Ready to hit the road? Log in to continue.',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
+                  style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
                 ),
                 const SizedBox(height: 48),
 
                 // ── Email ──────────────────────────────────────────────────
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Email Address',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ),
@@ -155,14 +162,14 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 const SizedBox(height: 24),
 
                 // ── Password ───────────────────────────────────────────────
-                const Align(
+                Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
                     'Password',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ),
@@ -179,7 +186,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                         _obscurePassword
                             ? Icons.visibility_off_outlined
                             : Icons.visibility_outlined,
-                        color: const Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                         size: 20,
                       ),
                       onPressed: () =>
@@ -201,7 +208,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Forgot Password?',
                       style: TextStyle(
                         fontSize: 12,
@@ -221,8 +228,8 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                     onPressed: _isLoading ? null : _handleLogin,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppStyles.darkMaroon,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFE0E0E0),
+                      foregroundColor: AppStyles.onPrimary,
+                      disabledBackgroundColor: context.colors.borderColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
@@ -232,11 +239,11 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              color: Colors.white,
+                              color: AppStyles.onPrimary,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Login as Driver',
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600),
@@ -250,18 +257,18 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                   children: [
                     Expanded(
                         child: Container(
-                            height: 1, color: const Color(0xFFEEEEEE))),
-                    const Padding(
+                            height: 1, color: context.colors.dividerColor)),
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
                         'Or continue with',
                         style:
-                            TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+                            TextStyle(fontSize: 12, color: context.colors.textTertiary),
                       ),
                     ),
                     Expanded(
                         child: Container(
-                            height: 1, color: const Color(0xFFEEEEEE))),
+                            height: 1, color: context.colors.dividerColor)),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -273,8 +280,8 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                   child: OutlinedButton(
                     onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
                     style: OutlinedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      side: const BorderSide(color: Color(0xFFDDDDDD)),
+                      backgroundColor: context.colors.surfaceColor,
+                      side: BorderSide(color: AppStyles.googleBorder),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
@@ -285,7 +292,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFF4285F4),
+                              color: AppStyles.googleBlue,
                             ),
                           )
                         : Row(
@@ -293,12 +300,12 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                             children: [
                               _GoogleLogo(),
                               const SizedBox(width: 12),
-                              const Text(
+                              Text(
                                 'Sign in with Google',
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF3C4043),
+                                  color: AppStyles.googleText,
                                 ),
                               ),
                             ],
@@ -311,15 +318,15 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('New to Tale3? ',
+                    Text('New to Tale3? ',
                         style:
-                            TextStyle(fontSize: 14, color: Color(0xFF757575))),
+                            TextStyle(fontSize: 14, color: context.colors.textSecondary)),
                     GestureDetector(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const DriverRegistrationScreen()),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Register Now!',
                         style: TextStyle(
                           fontSize: 14,
@@ -346,9 +353,9 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       {required String hintText, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hintText,
-      hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+      hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
       filled: true,
-      fillColor: const Color(0xFFF9F9F9),
+      fillColor: context.colors.inputFillColor,
       suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -356,21 +363,21 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+        borderSide: BorderSide(color: context.colors.borderColor),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide:
-            const BorderSide(color: AppStyles.primaryColor, width: 1.5),
+            BorderSide(color: AppStyles.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppStyles.errorColor),
+        borderSide: BorderSide(color: AppStyles.errorColor),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide:
-            const BorderSide(color: AppStyles.errorColor, width: 1.5),
+            BorderSide(color: AppStyles.errorColor, width: 1.5),
       ),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -406,17 +413,17 @@ class _GoogleLogoPainter extends CustomPainter {
     }
 
     // Blue (right, top-right, part of bottom)
-    drawArc(const Color(0xFF4285F4), startAngle, 1.75);
+    drawArc(AppStyles.googleBlue, startAngle, 1.75);
     // Green (bottom-right)
-    drawArc(const Color(0xFF34A853), startAngle + 1.75, 1.05);
+    drawArc(AppStyles.googleGreen, startAngle + 1.75, 1.05);
     // Yellow (bottom-left)
-    drawArc(const Color(0xFFFBBC05), startAngle + 2.8, 0.85);
+    drawArc(AppStyles.googleYellow, startAngle + 2.8, 0.85);
     // Red (top-left)
-    drawArc(const Color(0xFFEA4335), startAngle + 3.65, 0.92);
+    drawArc(AppStyles.googleRed, startAngle + 3.65, 0.92);
 
     // Horizontal bar of the G
     final barPaint = Paint()
-      ..color = const Color(0xFF4285F4)
+      ..color = AppStyles.googleBlue
       ..strokeWidth = size.width * 0.18
       ..strokeCap = StrokeCap.square;
     canvas.drawLine(

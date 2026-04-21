@@ -1,9 +1,14 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_styles.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/models/saved_account.dart';
+import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
+import 'package:testtale3/screens/driver/driver_login_screen.dart';
+import 'package:testtale3/screens/choose_role_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -44,19 +49,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final auth = context.watch<AuthProvider>();
 
     return Scaffold(
-      backgroundColor: AppStyles.backgroundColor,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Settings',
           style: TextStyle(
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppStyles.textPrimary),
+        iconTheme: IconThemeData(color: context.colors.textPrimary),
         centerTitle: true,
       ),
       body: ListView(
@@ -88,19 +93,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildToggleTile(
             Icons.notifications_none,
             'Push Notifications',
-            value: settings.pushNotificationsEnabled,
-            onChanged: (v) => settings.togglePushNotifications(v),
+            value: settings.notificationsEnabled,
+            onChanged: (v) => settings.toggleNotifications(v),
+          ),
+          _buildToggleTile(
+            Icons.location_on_outlined,
+            'Location',
+            value: settings.locationEnabled,
+            onChanged: (v) => settings.toggleLocation(v),
           ),
           _buildSettingsTile(
             Icons.language,
-            'Language',
-            trailingText: settings.language,
+            context.l10n.language,
+            trailingText: settings.languageLabel,
             onTap: () => _showLanguagePicker(settings),
           ),
           _buildSettingsTile(
             Icons.dark_mode_outlined,
-            'Dark Mode',
-            trailingText: settings.themeMode,
+            context.l10n.darkMode,
+            trailingText: settings.themeModeLabel,
             onTap: () => _showThemeModePicker(settings),
           ),
           const SizedBox(height: 24),
@@ -133,7 +144,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Tale3 App Version 1.0.0',
               style: TextStyle(
-                color: AppStyles.textTertiary,
+                color: context.colors.textTertiary,
                 fontSize: 12,
               ),
             ),
@@ -152,10 +163,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       padding: const EdgeInsets.only(left: 20, right: 20, bottom: 8),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: AppStyles.textTertiary,
+          color: context.colors.textTertiary,
           letterSpacing: 1.2,
         ),
       ),
@@ -172,24 +183,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required VoidCallback onTap,
   }) {
     return Container(
-      color: Colors.white,
+      color: context.colors.surfaceColor,
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.colors.inputFillColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: AppStyles.primaryColor, size: 20),
+          child: Icon(icon, color: context.colors.primaryColor, size: 20),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
           ),
         ),
         trailing: Row(
@@ -198,14 +209,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
             if (trailingText != null)
               Text(
                 trailingText,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: AppStyles.textSecondary,
+                  color: context.colors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             if (trailingText != null) const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppStyles.textTertiary),
+            Icon(Icons.chevron_right, color: context.colors.textTertiary),
           ],
         ),
         onTap: onTap,
@@ -223,30 +234,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required ValueChanged<bool> onChanged,
   }) {
     return Container(
-      color: Colors.white,
+      color: context.colors.surfaceColor,
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
+            color: context.colors.inputFillColor,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: AppStyles.primaryColor, size: 20),
+          child: Icon(icon, color: context.colors.primaryColor, size: 20),
         ),
         title: Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
           ),
         ),
         trailing: Switch(
           value: value,
           onChanged: onChanged,
-          activeThumbColor: AppStyles.primaryColor,
+          activeThumbColor: context.colors.primaryColor,
         ),
       ),
     );
@@ -257,29 +268,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ─────────────────────────────────────────────────────────
   Widget _buildDeleteAccountTile() {
     return Container(
-      color: Colors.white,
+      color: context.colors.surfaceColor,
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
         leading: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFFFFF0F0),
+            color: context.colors.errorLightBg,
             borderRadius: BorderRadius.circular(8),
           ),
           child:
-              const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+              Icon(Icons.delete_outline, color: AppStyles.errorColor, size: 20),
         ),
-        title: const Text(
+        title: Text(
           'Delete Account',
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
-            color: Colors.red,
+            color: AppStyles.errorColor,
           ),
         ),
         trailing:
-            const Icon(Icons.chevron_right, color: AppStyles.textTertiary),
+            Icon(Icons.chevron_right, color: context.colors.textTertiary),
         onTap: () => _showDeleteAccountConfirmation(),
       ),
     );
@@ -298,21 +309,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           width: 40,
           height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFFE0E0E0),
+            color: context.colors.borderColor,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(height: 20),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: AppStyles.textPrimary,
+            color: context.colors.textPrimary,
           ),
         ),
         const SizedBox(height: 4),
-        const Divider(),
+        Divider(),
       ],
     );
   }
@@ -325,15 +336,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppStyles.darkMaroon,
-          foregroundColor: Colors.white,
+          backgroundColor: context.colors.darkMaroon,
+          foregroundColor: AppStyles.onPrimary,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
         ),
         child: Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -354,10 +365,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
-            color: AppStyles.textTertiary,
+            color: context.colors.textTertiary,
             letterSpacing: 1,
           ),
         ),
@@ -368,11 +379,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           obscureText: obscureText,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
-            prefixIcon: Icon(icon, color: const Color(0xFFBDBDBD), size: 20),
+            hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
+            prefixIcon: Icon(icon, color: context.colors.inputHintColor, size: 20),
             suffixIcon: suffixIcon,
             filled: true,
-            fillColor: const Color(0xFFF9F9F9),
+            fillColor: context.colors.inputFillColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -393,20 +404,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             Icon(
               isError ? Icons.error_outline : Icons.check_circle_outline,
-              color: Colors.white,
+              color: AppStyles.onPrimary,
               size: 20,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(fontWeight: FontWeight.w500),
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
             ),
           ],
         ),
         backgroundColor:
-            isError ? Colors.red.shade700 : const Color(0xFF2E7D32),
+            isError ? AppStyles.errorColor : AppStyles.successDarkText,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
@@ -418,75 +429,274 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ═══════════════════════════════════════════════════════════
   //  SWITCH ACCOUNT
   // ═══════════════════════════════════════════════════════════
+  //  SWITCH ACCOUNT — multi-account sheet
+  // ═══════════════════════════════════════════════════════════
   void _showSwitchAccountSheet() {
+    final auth = context.read<AuthProvider>();
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _sheetHeader('Switch Account'),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDF2F4),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.swap_horiz_rounded,
-                        color: AppStyles.primaryColor, size: 28),
-                    SizedBox(width: 14),
-                    Expanded(
+        // StatefulBuilder so we can rebuild the list after removing an account
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            final accounts = auth.savedAccounts;
+            final currentUid = auth.currentUser?.uid;
+
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _sheetHeader('Switch Account'),
+                  const SizedBox(height: 4),
+
+                  // ── Account list ───────────────────────────────────
+                  if (accounts.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
-                        'You will be signed out and taken back to the role selection screen.',
+                        'No saved accounts.',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: AppStyles.textSecondary,
-                          height: 1.5,
+                          fontSize: 14,
+                          color: context.colors.textSecondary,
+                        ),
+                      ),
+                    )
+                  else
+                    ...accounts.map((account) {
+                      final isCurrent = account.uid == currentUid;
+                      return _buildAccountTile(
+                        ctx: ctx,
+                        account: account,
+                        isCurrent: isCurrent,
+                        onTap: isCurrent
+                            ? null // already logged in — no action
+                            : () => _switchToAccount(ctx, account),
+                        onRemove: isCurrent
+                            ? null // can't remove currently active account
+                            : () {
+                                auth.removeSavedAccount(account.uid);
+                                setSheetState(() {});
+                              },
+                      );
+                    }),
+
+                  const SizedBox(height: 12),
+                  Divider(),
+                  const SizedBox(height: 8),
+
+                  // ── Add new account ────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _addNewAccount(ctx),
+                      icon: const Icon(Icons.add),
+                      label: Text(
+                        'Add New Account',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: context.colors.primaryColor,
+                        side: BorderSide(
+                            color: context.colors.primaryColor, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // ── Cancel ────────────────────────────────────────
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: context.colors.textSecondary,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              _sheetButton('Switch Account', () {
-                context.read<AuthProvider>().logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                    builder: (_) => const WelcomeScreen(),
                   ),
-                  (route) => false,
-                );
-              }),
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppStyles.textSecondary,
-                    ),
-                  ),
-                ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
+    );
+  }
+
+  // ── Single account tile ──────────────────────────────────────────────────
+  Widget _buildAccountTile({
+    required BuildContext ctx,
+    required SavedAccount account,
+    required bool isCurrent,
+    required VoidCallback? onTap,
+    required VoidCallback? onRemove,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: isCurrent
+            ? context.colors.highlightBackgroundColor
+            : context.colors.inputFillColor,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: isCurrent
+                    ? context.colors.primaryColor.withValues(alpha: 0.5)
+                    : context.colors.borderColor,
+                width: isCurrent ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                // Avatar
+                _buildAvatar(account),
+                const SizedBox(width: 14),
+
+                // Name + email + role chip
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              account.name,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          _buildRoleChip(account.isDriver),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        account.email,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Right side: checkmark if current, remove button otherwise
+                if (isCurrent)
+                  Icon(Icons.check_circle,
+                      color: context.colors.primaryColor, size: 20)
+                else if (onRemove != null)
+                  IconButton(
+                    icon: Icon(Icons.close,
+                        size: 18, color: context.colors.textTertiary),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    tooltip: 'Remove',
+                    onPressed: onRemove,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Circle avatar with photo or initials fallback
+  Widget _buildAvatar(SavedAccount account) {
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: AppStyles.primaryColor.withValues(alpha: 0.12),
+      backgroundImage: account.photoUrl.isNotEmpty
+          ? NetworkImage(account.photoUrl)
+          : null,
+      child: account.photoUrl.isEmpty
+          ? Text(
+              account.initials,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: AppStyles.primaryColor,
+              ),
+            )
+          : null,
+    );
+  }
+
+  // Small role badge
+  Widget _buildRoleChip(bool isDriver) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: isDriver
+            ? AppStyles.primaryColor.withValues(alpha: 0.1)
+            : AppStyles.successColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(
+        isDriver ? 'Driver' : 'Passenger',
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: isDriver ? AppStyles.primaryColor : AppStyles.successDarkText,
+        ),
+      ),
+    );
+  }
+
+  /// Sign out current user then navigate to the saved account's login screen.
+  Future<void> _switchToAccount(BuildContext ctx, SavedAccount account) async {
+    Navigator.pop(ctx); // close sheet
+    await context.read<AuthProvider>().signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => account.isDriver
+            ? DriverLoginScreen(preFilledEmail: account.email)
+            : PassengerLoginScreen(preFilledEmail: account.email),
+      ),
+      (route) => false,
+    );
+  }
+
+  /// Sign out current user then go to role-choice screen to register/login fresh.
+  Future<void> _addNewAccount(BuildContext ctx) async {
+    Navigator.pop(ctx); // close sheet
+    await context.read<AuthProvider>().signOut();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
+      (route) => false,
     );
   }
 
@@ -501,7 +711,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -529,12 +739,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: AppStyles.primaryColor, width: 2),
+                              color: context.colors.primaryColor, width: 2),
                         ),
-                        child: const CircleAvatar(
-                          backgroundColor: Color(0xFFE0E0E0),
+                        child:  CircleAvatar(
+                          backgroundColor: context.colors.borderColor,
                           child:
-                              Icon(Icons.person, color: Colors.white, size: 40),
+                              Icon(Icons.person, color: AppStyles.onPrimary, size: 40),
                         ),
                       ),
                       Positioned(
@@ -542,12 +752,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         right: 0,
                         child: Container(
                           padding: const EdgeInsets.all(6),
-                          decoration: const BoxDecoration(
-                            color: AppStyles.primaryColor,
+                          decoration: BoxDecoration(
+                            color: context.colors.primaryColor,
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.camera_alt,
-                              color: Colors.white, size: 14),
+                          child: Icon(Icons.camera_alt,
+                              color: AppStyles.onPrimary, size: 14),
                         ),
                       ),
                     ],
@@ -603,7 +813,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -627,12 +837,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Container(
                       width: 64,
                       height: 64,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF2F4),
+                      decoration: BoxDecoration(
+                        color: context.colors.highlightBackgroundColor,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.lock_outline,
-                          color: AppStyles.primaryColor, size: 28),
+                      child: Icon(Icons.lock_outline,
+                          color: context.colors.primaryColor, size: 28),
                     ),
                     const SizedBox(height: 24),
 
@@ -647,7 +857,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _obscureCurrent
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: const Color(0xFFBDBDBD),
+                          color: context.colors.inputHintColor,
                           size: 20,
                         ),
                         onPressed: () => setSheetState(
@@ -666,7 +876,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _obscureNew
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: const Color(0xFFBDBDBD),
+                          color: context.colors.inputHintColor,
                           size: 20,
                         ),
                         onPressed: () =>
@@ -685,7 +895,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           _obscureConfirm
                               ? Icons.visibility_off_outlined
                               : Icons.visibility_outlined,
-                          color: const Color(0xFFBDBDBD),
+                          color: context.colors.inputHintColor,
                           size: 20,
                         ),
                         onPressed: () => setSheetState(
@@ -742,13 +952,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ═══════════════════════════════════════════════════════════
   void _showLanguagePicker(SettingsProvider settings) {
     final languages = [
-      {'code': 'English', 'native': 'English', 'flag': '🇺🇸'},
-      {'code': 'العربية', 'native': 'Arabic', 'flag': '🇸🇦'},
+      (locale: const Locale('en'), flag: '🇺🇸', label: 'English', native: 'English'),
+      (locale: const Locale('ar'), flag: '🇸🇦', label: 'العربية', native: 'Arabic'),
     ];
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -758,23 +968,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _sheetHeader('Select Language'),
+              _sheetHeader(context.l10n.selectLanguage),
               const SizedBox(height: 8),
               ...languages.map((lang) {
-                final isSelected = settings.language == lang['code'];
+                final isSelected = settings.locale == lang.locale;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Material(
                     color: isSelected
-                        ? const Color(0xFFFDF2F4)
-                        : const Color(0xFFF9F9F9),
+                        ? context.colors.highlightBackgroundColor
+                        : context.colors.inputFillColor,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        settings.setLanguage(lang['code']!);
+                        settings.setLocale(lang.locale);
                         Navigator.pop(ctx);
-                        _showSnackBar('Language set to ${lang['native']}');
+                        _showSnackBar('Language set to ${lang.native}');
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -783,43 +993,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? AppStyles.primaryColor
-                                : const Color(0xFFE0E0E0),
+                                ? context.colors.primaryColor
+                                : context.colors.borderColor,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Text(lang['flag']!,
-                                style: const TextStyle(fontSize: 24)),
+                            Text(lang.flag, style: TextStyle(fontSize: 24)),
                             const SizedBox(width: 16),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    lang['native']!,
+                                    lang.label,
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
-                                          ? AppStyles.primaryColor
-                                          : AppStyles.textPrimary,
+                                          ? context.colors.primaryColor
+                                          : context.colors.textPrimary,
                                     ),
                                   ),
                                   Text(
-                                    lang['code']!,
-                                    style: const TextStyle(
+                                    lang.native,
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppStyles.textSecondary,
+                                      color: context.colors.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                             if (isSelected)
-                              const Icon(Icons.check_circle,
-                                  color: AppStyles.primaryColor, size: 22),
+                              Icon(Icons.check_circle,
+                                  color: context.colors.primaryColor, size: 22),
                           ],
                         ),
                       ),
@@ -839,27 +1048,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   //  4. THEME MODE PICKER
   // ═══════════════════════════════════════════════════════════
   void _showThemeModePicker(SettingsProvider settings) {
+    final l10n = context.l10n;
     final modes = [
-      {
-        'mode': 'System',
-        'icon': Icons.settings_suggest_outlined,
-        'desc': 'Follow device settings'
-      },
-      {
-        'mode': 'Light',
-        'icon': Icons.light_mode_outlined,
-        'desc': 'Always light theme'
-      },
-      {
-        'mode': 'Dark',
-        'icon': Icons.dark_mode_outlined,
-        'desc': 'Always dark theme'
-      },
+      (mode: ThemeMode.system, icon: Icons.settings_suggest_outlined,
+       label: l10n.themeSystem, desc: l10n.themeSystemDesc),
+      (mode: ThemeMode.light,  icon: Icons.light_mode_outlined,
+       label: l10n.themeLight,  desc: l10n.themeLightDesc),
+      (mode: ThemeMode.dark,   icon: Icons.dark_mode_outlined,
+       label: l10n.themeDark,   desc: l10n.themeDarkDesc),
     ];
 
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -869,24 +1070,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _sheetHeader('Appearance'),
+              _sheetHeader(l10n.appearance),
               const SizedBox(height: 8),
               ...modes.map((m) {
-                final isSelected = settings.themeMode == m['mode'];
+                final isSelected = settings.themeMode == m.mode;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Material(
                     color: isSelected
-                        ? const Color(0xFFFDF2F4)
-                        : const Color(0xFFF9F9F9),
+                        ? context.colors.highlightBackgroundColor
+                        : context.colors.inputFillColor,
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        settings.setThemeMode(m['mode'] as String);
+                        settings.setThemeMode(m.mode);
                         Navigator.pop(ctx);
-                        _showSnackBar(
-                            'Theme set to ${m['mode']}');
+                        _showSnackBar('Theme set to ${m.label}');
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(
@@ -895,8 +1095,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: isSelected
-                                ? AppStyles.primaryColor
-                                : const Color(0xFFE0E0E0),
+                                ? context.colors.primaryColor
+                                : context.colors.borderColor,
                             width: isSelected ? 2 : 1,
                           ),
                         ),
@@ -906,16 +1106,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: isSelected
-                                    ? AppStyles.primaryColor
+                                    ? context.colors.primaryColor
                                         .withValues(alpha: 0.1)
-                                    : const Color(0xFFF0F0F0),
+                                    : context.colors.cardBackgroundColor,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
-                                m['icon'] as IconData,
+                                m.icon,
                                 color: isSelected
-                                    ? AppStyles.primaryColor
-                                    : AppStyles.textSecondary,
+                                    ? context.colors.primaryColor
+                                    : context.colors.textSecondary,
                                 size: 22,
                               ),
                             ),
@@ -925,28 +1125,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    m['mode'] as String,
+                                    m.label,
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                       color: isSelected
-                                          ? AppStyles.primaryColor
-                                          : AppStyles.textPrimary,
+                                          ? context.colors.primaryColor
+                                          : context.colors.textPrimary,
                                     ),
                                   ),
                                   Text(
-                                    m['desc'] as String,
-                                    style: const TextStyle(
+                                    m.desc,
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: AppStyles.textSecondary,
+                                      color: context.colors.textSecondary,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                             if (isSelected)
-                              const Icon(Icons.check_circle,
-                                  color: AppStyles.primaryColor, size: 22),
+                              Icon(Icons.check_circle,
+                                  color: context.colors.primaryColor, size: 22),
                           ],
                         ),
                       ),
@@ -997,7 +1197,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1044,7 +1244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1067,19 +1267,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Container(
                   width: 64,
                   height: 64,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFDF2F4),
+                  decoration: BoxDecoration(
+                    color: context.colors.highlightBackgroundColor,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.headset_mic_outlined,
-                      color: AppStyles.primaryColor, size: 28),
+                  child: Icon(Icons.headset_mic_outlined,
+                      color: context.colors.primaryColor, size: 28),
                 ),
                 const SizedBox(height: 12),
-                const Text(
+                Text(
                   'We\'d love to hear from you',
                   style: TextStyle(
                     fontSize: 14,
-                    color: AppStyles.textSecondary,
+                    color: context.colors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -1107,29 +1307,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F9F9),
+        color: context.colors.inputFillColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         children: [
-          Icon(icon, color: AppStyles.primaryColor, size: 20),
+          Icon(icon, color: context.colors.primaryColor, size: 20),
           const SizedBox(width: 16),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 11,
-                    color: AppStyles.textTertiary,
+                    color: context.colors.textTertiary,
                     fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
-                    color: AppStyles.textPrimary,
+                    color: context.colors.textPrimary,
                     fontWeight: FontWeight.w600),
               ),
             ],
@@ -1146,7 +1346,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -1166,54 +1366,54 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: ListView(
                       controller: scrollController,
                       physics: const BouncingScrollPhysics(),
-                      children: const [
-                        SizedBox(height: 16),
-                        _PolicySection(
+                      children: [
+                        const SizedBox(height: 16),
+                        const _PolicySection(
                           title: '1. Terms of Service',
                           body:
                               'By using Tale3, you agree to these terms. Tale3 provides a carpooling platform connecting drivers and passengers for shared rides. Users must be at least 18 years old and hold a valid government-issued ID to use the service.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '2. User Responsibilities',
                           body:
                               'You are responsible for maintaining the confidentiality of your account credentials. You agree to provide accurate information during registration and to keep your profile up to date. Any misuse of the platform may result in account suspension.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '3. Ride Policies',
                           body:
                               'Drivers must hold a valid driving license and vehicle registration. Both parties should confirm ride details before departure. Cancellations within 30 minutes of the scheduled pickup may affect your reliability score.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '4. Privacy Policy',
                           body:
                               'We collect personal information such as name, email, phone number, and location data to operate our services. Your data is encrypted and stored securely. We do not sell your personal information to third parties.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '5. Data Usage',
                           body:
                               'Location data is used solely for ride matching and navigation. Usage analytics help us improve the app experience. You can request data deletion by contacting support@tale3.app.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '6. Limitation of Liability',
                           body:
                               'Tale3 acts as a platform connecting drivers and passengers. We are not responsible for the conduct of users during rides. Users participate in rides at their own risk.',
                         ),
-                        _PolicySection(
+                        const _PolicySection(
                           title: '7. Contact',
                           body:
                               'For questions regarding these terms or your privacy, please contact us at legal@tale3.app or call +966 50 000 0000.',
                         ),
-                        SizedBox(height: 16),
+                        const SizedBox(height: 16),
                         Center(
                           child: Text(
                             'Last updated: April 2026',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppStyles.textTertiary,
+                              color: context.colors.textTertiary,
                             ),
                           ),
                         ),
-                        SizedBox(height: 32),
+                        const SizedBox(height: 32),
                       ],
                     ),
                   ),
@@ -1241,20 +1441,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFFF0F0),
+                decoration: BoxDecoration(
+                  color: context.colors.errorLightBg,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.warning_amber_rounded,
-                    color: Colors.red, size: 22),
+                child: Icon(Icons.warning_amber_rounded,
+                    color: AppStyles.errorColor, size: 22),
               ),
               const SizedBox(width: 12),
-              const Text(
+              Text(
                 'Delete Account',
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppStyles.textPrimary),
+                    color: context.colors.textPrimary),
               ),
             ],
           ),
@@ -1262,11 +1462,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'This action is permanent and cannot be undone. All your data, ride history, and ratings will be permanently removed.',
                 style: TextStyle(
                     fontSize: 14,
-                    color: AppStyles.textSecondary,
+                    color: context.colors.textSecondary,
                     height: 1.5),
               ),
               const SizedBox(height: 16),
@@ -1276,7 +1476,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 decoration: InputDecoration(
                   labelText: 'Enter your password to confirm',
                   labelStyle:
-                      const TextStyle(fontSize: 13, color: AppStyles.textSecondary),
+                      TextStyle(fontSize: 13, color: context.colors.textSecondary),
                   border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10)),
                   contentPadding: const EdgeInsets.symmetric(
@@ -1288,10 +1488,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: const Text(
+              child: Text(
                 'Cancel',
                 style: TextStyle(
-                    color: AppStyles.textSecondary,
+                    color: context.colors.textSecondary,
                     fontWeight: FontWeight.w600),
               ),
             ),
@@ -1314,13 +1514,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: AppStyles.errorColor,
+                foregroundColor: AppStyles.onPrimary,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              child: const Text('Delete',
+              child: Text('Delete',
                   style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],
@@ -1354,10 +1554,10 @@ class _FaqTileState extends State<_FaqTile>
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
-        color: _expanded ? const Color(0xFFFDF2F4) : const Color(0xFFF9F9F9),
+        color: _expanded ? context.colors.highlightBackgroundColor : context.colors.inputFillColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: _expanded ? AppStyles.primaryColor : const Color(0xFFE0E0E0),
+          color: _expanded ? context.colors.primaryColor : context.colors.borderColor,
         ),
       ),
       child: Material(
@@ -1379,8 +1579,8 @@ class _FaqTileState extends State<_FaqTile>
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                           color: _expanded
-                              ? AppStyles.primaryColor
-                              : AppStyles.textPrimary,
+                              ? context.colors.primaryColor
+                              : context.colors.textPrimary,
                         ),
                       ),
                     ),
@@ -1390,8 +1590,8 @@ class _FaqTileState extends State<_FaqTile>
                       child: Icon(
                         Icons.keyboard_arrow_down,
                         color: _expanded
-                            ? AppStyles.primaryColor
-                            : AppStyles.textTertiary,
+                            ? context.colors.primaryColor
+                            : context.colors.textTertiary,
                       ),
                     ),
                   ],
@@ -1402,9 +1602,9 @@ class _FaqTileState extends State<_FaqTile>
                     padding: const EdgeInsets.only(top: 12),
                     child: Text(
                       widget.answer,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: AppStyles.textSecondary,
+                        color: context.colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -1438,18 +1638,18 @@ class _PolicySection extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppStyles.textPrimary,
+              color: context.colors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             body,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
-              color: AppStyles.textSecondary,
+              color: context.colors.textSecondary,
               height: 1.6,
             ),
           ),

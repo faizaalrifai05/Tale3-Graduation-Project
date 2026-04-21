@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../theme/app_styles.dart';
-import '../providers/chat_provider.dart';
-import '../providers/auth_provider.dart';
+import '../../theme/app_styles.dart';
+import '../../providers/chat_provider.dart';
+import '../../providers/auth_provider.dart';
 
-class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+class PassengerChatScreen extends StatefulWidget {
+  const PassengerChatScreen({super.key});
 
   @override
-  State<ChatScreen> createState() => _ChatScreenState();
+  State<PassengerChatScreen> createState() => _PassengerChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _PassengerChatScreenState extends State<PassengerChatScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
@@ -43,15 +43,15 @@ class _ChatScreenState extends State<ChatScreen> {
       children: [
         // ── Header ──
         Container(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 16),
           child: Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Messages',
                   style: TextStyle(
-                    color: AppStyles.textPrimary,
+                    color: context.colors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
                   ),
@@ -60,11 +60,11 @@ class _ChatScreenState extends State<ChatScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppStyles.cardBackgroundColor,
+                  color: context.colors.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.edit_outlined,
-                    color: AppStyles.textPrimary, size: 20),
+                child: Icon(Icons.edit_outlined,
+                    color: context.colors.textPrimary, size: 20),
               ),
             ],
           ),
@@ -72,30 +72,29 @@ class _ChatScreenState extends State<ChatScreen> {
 
         // ── Search bar ──
         Container(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14),
             decoration: BoxDecoration(
-              color: AppStyles.cardBackgroundColor,
+              color: context.colors.cardBackgroundColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TextField(
               controller: _searchController,
               onChanged: (value) => setState(() => _searchQuery = value),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 hintText: 'Search conversations\u2026',
-                hintStyle: TextStyle(color: AppStyles.textTertiary, fontSize: 14),
-                prefixIcon:
-                    Icon(Icons.search, color: AppStyles.textTertiary, size: 20),
+                hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
+                prefixIcon: Icon(Icons.search, color: context.colors.textTertiary, size: 20),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
         ),
 
-        const Divider(height: 1, color: AppStyles.borderColor),
+        Divider(height: 1, color: context.colors.borderColor),
 
         // ── Conversation list ──
         Expanded(
@@ -110,20 +109,15 @@ class _ChatScreenState extends State<ChatScreen> {
                   ? all
                   : all
                       .where((c) =>
-                          c.otherUserName
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()) ||
-                          c.lastMessage
-                              .toLowerCase()
-                              .contains(_searchQuery.toLowerCase()))
+                          c.otherUserName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                          c.lastMessage.toLowerCase().contains(_searchQuery.toLowerCase()))
                       .toList();
 
               if (conversations.isEmpty) {
-                return const Center(
+                return Center(
                   child: Text(
                     'No conversations yet.',
-                    style: TextStyle(
-                        color: AppStyles.textTertiary, fontSize: 15),
+                    style: TextStyle(color: context.colors.textTertiary, fontSize: 15),
                   ),
                 );
               }
@@ -131,8 +125,8 @@ class _ChatScreenState extends State<ChatScreen> {
               return ListView.separated(
                 physics: const BouncingScrollPhysics(),
                 itemCount: conversations.length,
-                separatorBuilder: (_, __) => const Divider(
-                    height: 1, indent: 76, color: AppStyles.borderColor),
+                separatorBuilder: (_, __) => Divider(
+                    height: 1, indent: 76, color: context.colors.borderColor),
                 itemBuilder: (context, index) {
                   final conv = conversations[index];
                   return _ConversationTile(
@@ -160,8 +154,6 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  CONVERSATION TILE
-// ─────────────────────────────────────────────────────────────────────────────
 class _ConversationTile extends StatelessWidget {
   final Conversation conversation;
   final String timeLabel;
@@ -178,7 +170,7 @@ class _ConversationTile extends StatelessWidget {
     final hasUnread = conversation.unreadCount > 0;
 
     return Material(
-      color: Colors.white,
+      color: context.colors.surfaceColor,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -187,12 +179,12 @@ class _ConversationTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 26,
-                backgroundColor: AppStyles.highlightBackgroundColor,
+                backgroundColor: context.colors.highlightBackgroundColor,
                 child: Text(
                   conversation.otherUserName.isNotEmpty
                       ? conversation.otherUserName[0].toUpperCase()
                       : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     color: AppStyles.primaryColor,
@@ -208,9 +200,8 @@ class _ConversationTile extends StatelessWidget {
                       conversation.otherUserName,
                       style: TextStyle(
                         fontSize: 15,
-                        fontWeight:
-                            hasUnread ? FontWeight.w700 : FontWeight.w600,
-                        color: AppStyles.textPrimary,
+                        fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w600,
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -220,12 +211,8 @@ class _ConversationTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 13,
-                        color: hasUnread
-                            ? AppStyles.textPrimary
-                            : AppStyles.textSecondary,
-                        fontWeight: hasUnread
-                            ? FontWeight.w500
-                            : FontWeight.normal,
+                        color: hasUnread ? context.colors.textPrimary : context.colors.textSecondary,
+                        fontWeight: hasUnread ? FontWeight.w500 : FontWeight.normal,
                       ),
                     ),
                   ],
@@ -239,18 +226,14 @@ class _ConversationTile extends StatelessWidget {
                     timeLabel,
                     style: TextStyle(
                       fontSize: 11,
-                      color: hasUnread
-                          ? AppStyles.primaryColor
-                          : AppStyles.textTertiary,
-                      fontWeight:
-                          hasUnread ? FontWeight.w600 : FontWeight.normal,
+                      color: hasUnread ? AppStyles.primaryColor : context.colors.textTertiary,
+                      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
                   const SizedBox(height: 5),
                   if (hasUnread)
                     Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: AppStyles.primaryColor,
                         borderRadius: BorderRadius.circular(10),
@@ -258,9 +241,7 @@ class _ConversationTile extends StatelessWidget {
                       child: Text(
                         conversation.unreadCount.toString(),
                         style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700),
+                            color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                       ),
                     )
                   else
@@ -275,8 +256,6 @@ class _ConversationTile extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  CONVERSATION SCREEN
 // ─────────────────────────────────────────────────────────────────────────────
 class _ConversationScreen extends StatefulWidget {
   final String chatId;
@@ -336,56 +315,44 @@ class _ConversationScreenState extends State<_ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.read<ChatProvider>();
-    final currentUid =
-        context.read<AuthProvider>().currentUser?.uid ?? '';
+    final currentUid = context.read<AuthProvider>().currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: AppStyles.backgroundColor,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppStyles.textPrimary),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
         title: Row(
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: AppStyles.highlightBackgroundColor,
+              backgroundColor: context.colors.highlightBackgroundColor,
               child: Text(
                 widget.otherUserName.isNotEmpty
                     ? widget.otherUserName[0].toUpperCase()
                     : '?',
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppStyles.primaryColor,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700, color: AppStyles.primaryColor),
               ),
             ),
             const SizedBox(width: 10),
             Text(
               widget.otherUserName,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppStyles.textPrimary,
+                color: context.colors.textPrimary,
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert,
-                color: AppStyles.textPrimary, size: 22),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         children: [
-          // ── Messages ──
           Expanded(
             child: StreamBuilder<List<ChatMessage>>(
               stream: chatProvider.messagesStream(widget.chatId),
@@ -394,40 +361,31 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final messages = snapshot.data ?? [];
-                WidgetsBinding.instance.addPostFrameCallback(
-                    (_) => _scrollToBottom());
+                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
                 return ListView.builder(
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final msg = messages[index];
                     final isMe = msg.senderId == currentUid;
-                    return _buildBubble(
-                      msg,
-                      isMe: isMe,
-                      senderInitial: widget.otherUserName.isNotEmpty
-                          ? widget.otherUserName[0].toUpperCase()
-                          : '?',
-                    );
+                    return _buildBubble(msg, isMe: isMe,
+                        senderInitial: widget.otherUserName.isNotEmpty
+                            ? widget.otherUserName[0].toUpperCase()
+                            : '?');
                   },
                 );
               },
             ),
           ),
-
-          // ── Input bar ──
           Container(
             padding: EdgeInsets.only(
-              left: 12,
-              right: 12,
-              top: 10,
+              left: 12, right: 12, top: 10,
               bottom: MediaQuery.of(context).padding.bottom + 10,
             ),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: context.colors.surfaceColor,
               boxShadow: [
                 BoxShadow(
                   color: Colors.black.withValues(alpha: 0.05),
@@ -442,20 +400,18 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     decoration: BoxDecoration(
-                      color: AppStyles.cardBackgroundColor,
+                      color: context.colors.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(24),
                     ),
                     child: TextField(
                       controller: _controller,
                       textCapitalization: TextCapitalization.sentences,
                       onSubmitted: (_) => _sendMessage(),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Type a message\u2026',
-                        hintStyle: TextStyle(
-                            color: AppStyles.textTertiary, fontSize: 14),
+                        hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
                         border: InputBorder.none,
-                        contentPadding:
-                            EdgeInsets.symmetric(vertical: 12),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
                       ),
                     ),
                   ),
@@ -470,8 +426,7 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                       color: AppStyles.primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child:
-                        const Icon(Icons.send, color: Colors.white, size: 18),
+                    child: const Icon(Icons.send, color: Colors.white, size: 18),
                   ),
                 ),
               ],
@@ -482,67 +437,50 @@ class _ConversationScreenState extends State<_ConversationScreen> {
     );
   }
 
-  Widget _buildBubble(
-    ChatMessage msg, {
-    required bool isMe,
-    required String senderInitial,
-  }) {
+  Widget _buildBubble(ChatMessage msg, {required bool isMe, required String senderInitial}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             CircleAvatar(
               radius: 13,
-              backgroundColor: AppStyles.highlightBackgroundColor,
-              child: Text(
-                senderInitial,
-                style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppStyles.primaryColor),
-              ),
+              backgroundColor: context.colors.highlightBackgroundColor,
+              child: Text(senderInitial,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppStyles.primaryColor)),
             ),
             const SizedBox(width: 8),
           ],
           Flexible(
             child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: isMe ? AppStyles.primaryColor : Colors.white,
+                    color: isMe ? AppStyles.primaryColor : context.colors.surfaceColor,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(16),
                       topRight: const Radius.circular(16),
                       bottomLeft: Radius.circular(isMe ? 16 : 4),
                       bottomRight: Radius.circular(isMe ? 4 : 16),
                     ),
-                    border: isMe
-                        ? null
-                        : Border.all(color: AppStyles.borderColor),
+                    border: isMe ? null : Border.all(color: context.colors.borderColor),
                   ),
                   child: Text(
                     msg.text,
                     style: TextStyle(
-                      color: isMe ? Colors.white : AppStyles.textPrimary,
+                      color: isMe ? Colors.white : context.colors.textPrimary,
                       fontSize: 14,
                       height: 1.4,
                     ),
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  _formatTime(msg.timestamp),
-                  style: const TextStyle(
-                      color: AppStyles.textTertiary, fontSize: 10),
-                ),
+                Text(_formatTime(msg.timestamp),
+                    style: TextStyle(color: context.colors.textTertiary, fontSize: 10)),
               ],
             ),
           ),
@@ -550,9 +488,8 @@ class _ConversationScreenState extends State<_ConversationScreen> {
             const SizedBox(width: 8),
             CircleAvatar(
               radius: 13,
-              backgroundColor: AppStyles.highlightBackgroundColor,
-              child: const Icon(Icons.person,
-                  size: 14, color: AppStyles.primaryColor),
+              backgroundColor: context.colors.highlightBackgroundColor,
+              child: Icon(Icons.person, size: 14, color: AppStyles.primaryColor),
             ),
           ],
         ],

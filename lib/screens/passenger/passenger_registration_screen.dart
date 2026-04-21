@@ -1,9 +1,12 @@
+import 'package:testtale3/theme/app_styles.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
-import 'package:testtale3/screens/profile_photo_screen.dart';
+import 'package:testtale3/screens/passenger/passenger_verification_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
 
 class PassengerRegistrationScreen extends StatefulWidget {
@@ -16,7 +19,7 @@ class PassengerRegistrationScreen extends StatefulWidget {
 
 class _PassengerRegistrationScreenState
     extends State<PassengerRegistrationScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
+  
 
   // Step tracking
   int _currentStep = 1;
@@ -34,6 +37,15 @@ class _PassengerRegistrationScreenState
   final _phoneController = TextEditingController();
   String? _selectedGender;
   bool _agreeToTerms = false;
+  File? _profilePhoto;
+
+  Future<void> _pickImage(ImageSource source) async {
+    final picked =
+        await ImagePicker().pickImage(source: source, imageQuality: 85);
+    if (picked != null && mounted) {
+      setState(() => _profilePhoto = File(picked.path));
+    }
+  }
 
   @override
   void dispose() {
@@ -66,8 +78,8 @@ class _PassengerRegistrationScreenState
       if (name.isEmpty || email.isEmpty || password.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Please fill in all fields to continue'),
-            backgroundColor: _primaryColor,
+            content: Text('Please fill in all fields to continue'),
+            backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -78,8 +90,8 @@ class _PassengerRegistrationScreenState
       if (!email.contains('@')) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Please enter a valid email address'),
-            backgroundColor: _primaryColor,
+            content: Text('Please enter a valid email address'),
+            backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -90,8 +102,8 @@ class _PassengerRegistrationScreenState
       if (password.length < 8) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Password must be at least 8 characters'),
-            backgroundColor: _primaryColor,
+            content: Text('Password must be at least 8 characters'),
+            backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -107,8 +119,8 @@ class _PassengerRegistrationScreenState
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please accept the Terms of Service to continue'),
-          backgroundColor: _primaryColor,
+          content: Text('Please accept the Terms of Service to continue'),
+          backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -132,7 +144,7 @@ class _PassengerRegistrationScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error),
-            backgroundColor: _primaryColor,
+            backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -140,7 +152,11 @@ class _PassengerRegistrationScreenState
         );
       } else {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const ProfilePhotoScreen()),
+          MaterialPageRoute(
+            builder: (_) => PassengerVerificationScreen(
+              email: _emailController.text.trim(),
+            ),
+          ),
         );
       }
     } finally {
@@ -159,18 +175,16 @@ class _PassengerRegistrationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: _goBack,
         ),
-        title: const Text(
+        title: Text(
           'Passenger Registration',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w700,
           ),
@@ -190,18 +204,18 @@ class _PassengerRegistrationScreenState
                 children: [
                   Text(
                     _stepTitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF9E9E9E),
+                      color: context.colors.textTertiary,
                     ),
                   ),
                   Text(
                     'Step $_currentStep of $_totalSteps',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
-                      color: _primaryColor,
+                      color: AppStyles.primaryColor,
                     ),
                   ),
                 ],
@@ -209,9 +223,9 @@ class _PassengerRegistrationScreenState
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: _currentStep / _totalSteps,
-                backgroundColor: const Color(0xFFEEEEEE),
+                backgroundColor: context.colors.dividerColor,
                 valueColor:
-                    const AlwaysStoppedAnimation<Color>(_primaryColor),
+                    const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
                 borderRadius: BorderRadius.circular(2),
                 minHeight: 4,
               ),
@@ -222,10 +236,10 @@ class _PassengerRegistrationScreenState
                 _currentStep == 1
                     ? 'Create your account'
                     : 'Tell us about yourself',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -233,9 +247,9 @@ class _PassengerRegistrationScreenState
                 _currentStep == 1
                     ? 'Fill in your details to join the Tale3 community.'
                     : 'Just a couple more details to personalise your experience.',
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -269,12 +283,12 @@ class _PassengerRegistrationScreenState
       const SizedBox(height: 16),
 
       // Password field
-      const Text(
+      Text(
         'Password',
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF1A1A1A),
+          color: context.colors.textPrimary,
         ),
       ),
       const SizedBox(height: 8),
@@ -283,14 +297,14 @@ class _PassengerRegistrationScreenState
         obscureText: _obscurePassword,
         decoration: InputDecoration(
           hintText: '••••••••',
-          hintStyle: const TextStyle(
-            color: Color(0xFFBDBDBD),
+          hintStyle: TextStyle(
+            color: context.colors.inputHintColor,
             fontSize: 14,
             letterSpacing: 2,
           ),
-          prefixIcon: const Icon(
+          prefixIcon: Icon(
             Icons.lock_outline,
-            color: Color(0xFF9E9E9E),
+            color: context.colors.textTertiary,
             size: 20,
           ),
           suffixIcon: IconButton(
@@ -298,25 +312,25 @@ class _PassengerRegistrationScreenState
               _obscurePassword
                   ? Icons.visibility_off_outlined
                   : Icons.visibility_outlined,
-              color: const Color(0xFF9E9E9E),
+              color: context.colors.textTertiary,
               size: 20,
             ),
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
           ),
           filled: true,
-          fillColor: const Color(0xFFF5F5F5),
+          fillColor: context.colors.cardBackgroundColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: context.colors.borderColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: context.colors.borderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _primaryColor, width: 2),
+            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -333,6 +347,59 @@ class _PassengerRegistrationScreenState
 
   List<Widget> _buildStep2() {
     return [
+      Center(
+        child: GestureDetector(
+          onTap: () => _pickImage(ImageSource.gallery),
+          child: Stack(
+            alignment: Alignment.bottomRight,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.colors.cardBackgroundColor,
+                  border: Border.all(
+                    color: _profilePhoto != null
+                        ? AppStyles.primaryColor
+                        : context.colors.borderColor,
+                    width: 2,
+                  ),
+                ),
+                child: _profilePhoto != null
+                    ? ClipOval(
+                        child: Image.file(_profilePhoto!,
+                            fit: BoxFit.cover, width: 100, height: 100),
+                      )
+                    : Icon(Icons.person,
+                        size: 50, color: context.colors.inputHintColor),
+              ),
+              Positioned(
+                bottom: 2,
+                right: 2,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppStyles.primaryColor,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: Icon(Icons.camera_alt,
+                      size: 16, color: AppStyles.onPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 24),
       _buildLabeledTextField(
         label: 'Phone Number',
         controller: _phoneController,
@@ -355,12 +422,12 @@ class _PassengerRegistrationScreenState
       // University optional
       Row(
         children: [
-          const Text(
+          Text(
             'University / Workplace',
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1A1A),
+              color: context.colors.textPrimary,
             ),
           ),
           const SizedBox(width: 8),
@@ -369,7 +436,7 @@ class _PassengerRegistrationScreenState
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: Colors.grey[400],
+              color: context.colors.textTertiary,
               letterSpacing: 1,
             ),
           ),
@@ -381,22 +448,22 @@ class _PassengerRegistrationScreenState
         decoration: InputDecoration(
           hintText: 'Where do you commute to?',
           hintStyle:
-              const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
-          prefixIcon: const Icon(Icons.school_outlined,
-              color: Color(0xFF9E9E9E), size: 20),
+              TextStyle(color: context.colors.inputHintColor, fontSize: 14),
+          prefixIcon: Icon(Icons.school_outlined,
+              color: context.colors.textTertiary, size: 20),
           filled: true,
-          fillColor: const Color(0xFFF5F5F5),
+          fillColor: context.colors.cardBackgroundColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: context.colors.borderColor),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+            borderSide: BorderSide(color: context.colors.borderColor),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _primaryColor, width: 2),
+            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
           ),
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -415,7 +482,7 @@ class _PassengerRegistrationScreenState
               value: _agreeToTerms,
               onChanged: (v) =>
                   setState(() => _agreeToTerms = v ?? false),
-              activeColor: _primaryColor,
+              activeColor: AppStyles.primaryColor,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4)),
             ),
@@ -423,24 +490,24 @@ class _PassengerRegistrationScreenState
           const SizedBox(width: 12),
           Expanded(
             child: RichText(
-              text: const TextSpan(
+              text: TextSpan(
                 style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF757575),
+                    color: context.colors.textSecondary,
                     height: 1.5),
                 children: [
                   TextSpan(text: 'By joining, I agree to Tale3\'s '),
                   TextSpan(
                     text: 'Terms of Service',
                     style: TextStyle(
-                        color: _primaryColor,
+                        color: AppStyles.primaryColor,
                         fontWeight: FontWeight.w600),
                   ),
                   TextSpan(text: ' and '),
                   TextSpan(
                     text: 'Privacy Policy',
                     style: TextStyle(
-                        color: _primaryColor,
+                        color: AppStyles.primaryColor,
                         fontWeight: FontWeight.w600),
                   ),
                   TextSpan(text: '.'),
@@ -473,10 +540,10 @@ class _PassengerRegistrationScreenState
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF5C0A1A),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFE0E0E0),
-          disabledForegroundColor: const Color(0xFF9E9E9E),
+          backgroundColor: AppStyles.darkMaroon,
+          foregroundColor: AppStyles.onPrimary,
+          disabledBackgroundColor: context.colors.borderColor,
+          disabledForegroundColor: context.colors.textTertiary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -487,16 +554,16 @@ class _PassengerRegistrationScreenState
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
-                    color: Colors.white, strokeWidth: 2),
+                    color: AppStyles.onPrimary, strokeWidth: 2),
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(label,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 6),
-                  const Icon(Icons.arrow_forward, size: 18),
+                  Icon(Icons.arrow_forward, size: 18),
                 ],
               ),
       ),
@@ -508,21 +575,21 @@ class _PassengerRegistrationScreenState
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
+          Text(
             'Already have an account? ',
-            style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
+            style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
           ),
           GestureDetector(
             onTap: () => Navigator.of(context).pushReplacement(
               MaterialPageRoute(
                   builder: (context) => const PassengerLoginScreen()),
             ),
-            child: const Text(
+            child: Text(
               'Log In',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
-                color: _primaryColor,
+                color: AppStyles.primaryColor,
               ),
             ),
           ),
@@ -544,10 +611,10 @@ class _PassengerRegistrationScreenState
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -558,24 +625,24 @@ class _PassengerRegistrationScreenState
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle:
-                const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+                TextStyle(color: context.colors.inputHintColor, fontSize: 14),
             prefixIcon: icon != null
-                ? Icon(icon, color: const Color(0xFF9E9E9E), size: 20)
+                ? Icon(icon, color: context.colors.textTertiary, size: 20)
                 : null,
             filled: true,
-            fillColor: const Color(0xFFF5F5F5),
+            fillColor: context.colors.cardBackgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: BorderSide(color: context.colors.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: BorderSide(color: context.colors.borderColor),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide:
-                  const BorderSide(color: _primaryColor, width: 2),
+                  BorderSide(color: AppStyles.primaryColor, width: 2),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -598,10 +665,10 @@ class _PassengerRegistrationScreenState
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -612,29 +679,29 @@ class _PassengerRegistrationScreenState
               .map((e) => DropdownMenuItem(
                   value: e,
                   child:
-                      Text(e, style: const TextStyle(fontSize: 14))))
+                      Text(e, style: TextStyle(fontSize: 14))))
               .toList(),
-          icon: const Icon(Icons.keyboard_arrow_down,
-              color: Color(0xFF9E9E9E)),
+          icon: Icon(Icons.keyboard_arrow_down,
+              color: context.colors.textTertiary),
           decoration: InputDecoration(
             hintText: hintText,
             hintStyle:
-                const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+                TextStyle(color: context.colors.inputHintColor, fontSize: 14),
             prefixIcon:
-                Icon(icon, color: const Color(0xFF9E9E9E), size: 20),
+                Icon(icon, color: context.colors.textTertiary, size: 20),
             filled: true,
-            fillColor: const Color(0xFFF5F5F5),
+            fillColor: context.colors.cardBackgroundColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: BorderSide(color: context.colors.borderColor),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+              borderSide: BorderSide(color: context.colors.borderColor),
             ),
             focusedBorder: const OutlineInputBorder(
               borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: _primaryColor, width: 2),
+              borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

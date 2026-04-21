@@ -1,3 +1,4 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
@@ -11,24 +12,22 @@ import 'package:testtale3/screens/driver/ride_confirmation_screen.dart';
 class DriverCreateRideScreen extends StatelessWidget {
   const DriverCreateRideScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Create Ride',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -46,12 +45,12 @@ class DriverCreateRideScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Route Settings
-                  const Text(
+                  Text(
                     'Route settings',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -59,96 +58,76 @@ class DriverCreateRideScreen extends StatelessWidget {
                   // Origin/Destination block
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF9F9F9),
+                      color: context.colors.inputFillColor,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                      border: Border.all(color: context.colors.borderColor),
                     ),
                     child: Column(
                       children: [
                         TextField(
                           onChanged: rideProvider.setOrigin,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Origin (e.g. Downtown Dubai)',
-                            hintStyle: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
-                            prefixIcon: Icon(Icons.radio_button_unchecked, color: _primaryColor, size: 20),
+                            hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
+                            prefixIcon: Icon(Icons.radio_button_unchecked, color: AppStyles.primaryColor, size: 20),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 16),
                           ),
-                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                         ),
-                        const Divider(height: 1, indent: 48),
+                        Divider(height: 1, indent: 48),
                         TextField(
                           onChanged: rideProvider.setDestination,
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'Destination (e.g. Dubai Marina)',
-                            hintStyle: TextStyle(color: Color(0xFF9E9E9E), fontSize: 14),
-                            prefixIcon: Icon(Icons.location_on, color: _primaryColor, size: 20),
+                            hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
+                            prefixIcon: Icon(Icons.location_on, color: AppStyles.primaryColor, size: 20),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.symmetric(vertical: 16),
                           ),
-                          style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                          style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Date & Time
+                  // Date & Time — tappable pickers
                   Row(
                     children: [
                       Expanded(
-                        child: GestureDetector(
+                        child: _buildPickerBlock(
+                          context: context,
+                          label: 'Date',
+                          value: rideProvider.dateLabel,
+                          icon: Icons.calendar_today,
+                          isEmpty: rideProvider.selectedDate == null,
                           onTap: () async {
                             final picked = await showDatePicker(
                               context: context,
-                              initialDate: DateTime.now().add(const Duration(days: 1)),
+                              initialDate: rideProvider.selectedDate ?? DateTime.now(),
                               firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 60)),
-                              builder: (ctx, child) => Theme(
-                                data: Theme.of(ctx).copyWith(
-                                  colorScheme: const ColorScheme.light(primary: _primaryColor),
-                                ),
-                                child: child!,
-                              ),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
                             );
-                            if (picked != null) {
-                              final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                              rideProvider.setDate('${picked.day} ${months[picked.month - 1]} ${picked.year}');
-                            }
+                            if (picked != null) rideProvider.setDate(picked);
                           },
-                          child: _buildInputBlock(
-                            'Date',
-                            rideProvider.date.isEmpty ? 'Select date' : rideProvider.date,
-                            Icons.calendar_today,
-                          ),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: GestureDetector(
+                        child: _buildPickerBlock(
+                          context: context,
+                          label: 'Time',
+                          value: rideProvider.timeLabel,
+                          icon: Icons.access_time,
+                          isEmpty: rideProvider.selectedTime == null,
                           onTap: () async {
                             final picked = await showTimePicker(
                               context: context,
-                              initialTime: TimeOfDay.now(),
-                              builder: (ctx, child) => Theme(
-                                data: Theme.of(ctx).copyWith(
-                                  colorScheme: const ColorScheme.light(primary: _primaryColor),
-                                ),
-                                child: child!,
-                              ),
+                              initialTime: rideProvider.selectedTime ?? TimeOfDay.now(),
                             );
-                            if (picked != null) {
-                              final h = picked.hourOfPeriod == 0 ? 12 : picked.hourOfPeriod;
-                              final m = picked.minute.toString().padLeft(2, '0');
-                              final p = picked.period == DayPeriod.am ? 'AM' : 'PM';
-                              rideProvider.setTime('$h:$m $p');
-                            }
+                            if (picked != null) rideProvider.setTime(picked);
                           },
-                          child: _buildInputBlock(
-                            'Time',
-                            rideProvider.time.isEmpty ? 'Select time' : rideProvider.time,
-                            Icons.access_time,
-                          ),
                         ),
                       ),
                     ],
@@ -162,25 +141,25 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Available Seats', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                            Text('Available Seats', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
                             const SizedBox(height: 8),
                             Container(
                               height: 52,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF9F9F9),
+                                color: context.colors.inputFillColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE0E0E0)),
+                                border: Border.all(color: context.colors.borderColor),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.remove, color: Color(0xFF1A1A1A), size: 16),
+                                    icon: Icon(Icons.remove, color: context.colors.textPrimary, size: 16),
                                     onPressed: rideProvider.decrementSeats,
                                   ),
-                                  Text('${rideProvider.seats}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                  Text('${rideProvider.seats}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                                   IconButton(
-                                    icon: const Icon(Icons.add, color: Color(0xFF1A1A1A), size: 16),
+                                    icon: Icon(Icons.add, color: context.colors.textPrimary, size: 16),
                                     onPressed: rideProvider.incrementSeats,
                                   ),
                                 ],
@@ -194,25 +173,25 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Price per seat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
+                            Text('Price per seat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
                             const SizedBox(height: 8),
                             Container(
                               height: 52,
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF9F9F9),
+                                color: context.colors.inputFillColor,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: const Color(0xFFE0E0E0)),
+                                border: Border.all(color: context.colors.borderColor),
                               ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                 children: [
                                   IconButton(
-                                    icon: const Icon(Icons.remove, color: Color(0xFF1A1A1A), size: 16),
+                                    icon: Icon(Icons.remove, color: context.colors.textPrimary, size: 16),
                                     onPressed: rideProvider.decrementPrice,
                                   ),
-                                  Text('\$${rideProvider.price}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                                  Text('\$${rideProvider.price}', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                                   IconButton(
-                                    icon: const Icon(Icons.add, color: Color(0xFF1A1A1A), size: 16),
+                                    icon: Icon(Icons.add, color: context.colors.textPrimary, size: 16),
                                     onPressed: rideProvider.incrementPrice,
                                   ),
                                 ],
@@ -226,12 +205,12 @@ class DriverCreateRideScreen extends StatelessWidget {
                   const SizedBox(height: 32),
 
                   // Features – driven by RideProvider
-                  const Text(
+                  Text(
                     'Features & Preferences',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -241,20 +220,20 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.acChecked,
                           onChanged: (v) => rideProvider.toggleAc(v ?? false),
-                          title: const Text('Air Conditioning', style: TextStyle(fontSize: 13)),
+                          title: Text('Air Conditioning', style: TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
-                          activeColor: _primaryColor,
+                          activeColor: AppStyles.primaryColor,
                         ),
                       ),
                       Expanded(
                         child: CheckboxListTile(
                           value: rideProvider.luggageChecked,
                           onChanged: (v) => rideProvider.toggleLuggage(v ?? false),
-                          title: const Text('Luggage', style: TextStyle(fontSize: 13)),
+                          title: Text('Luggage', style: TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
-                          activeColor: _primaryColor,
+                          activeColor: AppStyles.primaryColor,
                         ),
                       ),
                     ],
@@ -265,20 +244,20 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.petsChecked,
                           onChanged: (v) => rideProvider.togglePets(v ?? false),
-                          title: const Text('Pets Allowed', style: TextStyle(fontSize: 13)),
+                          title: Text('Pets Allowed', style: TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
-                          activeColor: _primaryColor,
+                          activeColor: AppStyles.primaryColor,
                         ),
                       ),
                       Expanded(
                         child: CheckboxListTile(
                           value: rideProvider.noSmokingChecked,
                           onChanged: (v) => rideProvider.toggleNoSmoking(v ?? false),
-                          title: const Text('No Smoking', style: TextStyle(fontSize: 13)),
+                          title: Text('No Smoking', style: TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
-                          activeColor: _primaryColor,
+                          activeColor: AppStyles.primaryColor,
                         ),
                       ),
                     ],
@@ -286,12 +265,12 @@ class DriverCreateRideScreen extends StatelessWidget {
                   const SizedBox(height: 24),
 
                   // Additional Notes
-                  const Text(
+                  Text(
                     'Additional Notes',
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -300,20 +279,20 @@ class DriverCreateRideScreen extends StatelessWidget {
                     onChanged: rideProvider.setAdditionalNotes,
                     decoration: InputDecoration(
                       hintText: 'Add any specific details here...',
-                      hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+                      hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
                       filled: true,
-                      fillColor: const Color(0xFFF9F9F9),
+                      fillColor: context.colors.inputFillColor,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                        borderSide: BorderSide(color: context.colors.borderColor),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+                        borderSide: BorderSide(color: context.colors.borderColor),
                       ),
                       focusedBorder: const OutlineInputBorder(
                         borderRadius: BorderRadius.all(Radius.circular(12)),
-                        borderSide: BorderSide(color: _primaryColor, width: 2),
+                        borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
                       ),
                     ),
                   ),
@@ -332,14 +311,14 @@ class DriverCreateRideScreen extends StatelessWidget {
                         );
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _darkMaroon,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppStyles.darkMaroon,
+                        foregroundColor: AppStyles.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Publish Ride',
                         style: TextStyle(
                           fontSize: 16,
@@ -358,26 +337,58 @@ class DriverCreateRideScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInputBlock(String label, String value, IconData icon) {
+  Widget _buildPickerBlock({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    required bool isEmpty,
+    required VoidCallback onTap,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1A1A))),
-        const SizedBox(height: 8),
-        Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF9F9F9),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE0E0E0)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: context.colors.textPrimary,
           ),
-          child: Row(
-            children: [
-              Icon(icon, color: _primaryColor, size: 20),
-              const SizedBox(width: 12),
-              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF1A1A1A))),
-            ],
+        ),
+        const SizedBox(height: 8),
+        GestureDetector(
+          onTap: onTap,
+          child: Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: context.colors.inputFillColor,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isEmpty ? context.colors.borderColor : AppStyles.primaryColor,
+                width: isEmpty ? 1 : 1.5,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: AppStyles.primaryColor, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    value,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: isEmpty
+                          ? context.colors.inputHintColor
+                          : context.colors.textPrimary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],

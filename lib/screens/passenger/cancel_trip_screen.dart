@@ -1,3 +1,4 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
@@ -14,7 +15,7 @@ class CancelTripScreen extends StatefulWidget {
 }
 
 class _CancelTripScreenState extends State<CancelTripScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
+  
   int _selectedReasonIndex = 0;
 
   final List<String> _reasons = [
@@ -27,18 +28,16 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.close, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Cancel Trip',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -59,34 +58,34 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     Container(
                       width: 80,
                       height: 80,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF2F4),
+                      decoration: BoxDecoration(
+                        color: context.colors.highlightBackgroundColor,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
-                        child: Icon(Icons.cancel, color: _primaryColor, size: 40),
+                      child: Center(
+                        child: Icon(Icons.cancel, color: AppStyles.primaryColor, size: 40),
                       ),
                     ),
                     const SizedBox(height: 24),
                     
                     // Title
-                    const Text(
+                    Text(
                       'Cancel Trip?',
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1A1A),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 12),
                     
                     // Subtitle
-                    const Text(
+                    Text(
                       'Are you sure you want to cancel this trip?\nPlease select a reason:',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Color(0xFF757575),
+                        color: context.colors.textSecondary,
                         height: 1.5,
                       ),
                     ),
@@ -95,9 +94,9 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     // Reasons List
                     Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: context.colors.surfaceColor,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFEEEEEE), width: 1.5),
+                        border: Border.all(color: context.colors.dividerColor, width: 1.5),
                       ),
                       child: Column(
                         children: List.generate(
@@ -107,13 +106,13 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                               RadioListTile<int>(
                                 value: index,
                                 groupValue: _selectedReasonIndex,
-                                activeColor: _primaryColor,
+                                activeColor: AppStyles.primaryColor,
                                 title: Text(
                                   _reasons[index],
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: _selectedReasonIndex == index ? FontWeight.w700 : FontWeight.w500,
-                                    color: _selectedReasonIndex == index ? const Color(0xFF1A1A1A) : const Color(0xFF757575),
+                                    color: _selectedReasonIndex == index ? context.colors.textPrimary : context.colors.textSecondary,
                                   ),
                                 ),
                                 onChanged: (value) {
@@ -124,7 +123,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                               ),
                               if (index < _reasons.length - 1)
-                                const Divider(height: 1, indent: 16, endIndent: 16),
+                                Divider(height: 1, indent: 16, endIndent: 16),
                             ],
                           ),
                         ),
@@ -138,11 +137,11 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
             // Bottom Actions
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
+              decoration: BoxDecoration(
+                color: context.colors.surfaceColor,
                 boxShadow: [
                   BoxShadow(
-                    color: Color(0x0A000000),
+                    color: Colors.black.withValues(alpha: 0.04),
                     blurRadius: 10,
                     offset: Offset(0, -5),
                   ),
@@ -162,14 +161,14 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                         Navigator.of(context).popUntil((route) => route.isFirst);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _primaryColor,
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppStyles.primaryColor,
+                        foregroundColor: AppStyles.onPrimary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
-                      child: const Text(
+                      child: Text(
                         'Confirm Cancellation',
                         style: TextStyle(
                           fontSize: 16,
@@ -182,9 +181,9 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF1A1A1A),
+                      foregroundColor: context.colors.textPrimary,
                     ),
-                    child: const Text(
+                    child: Text(
                       'Keep Ride',
                       style: TextStyle(
                         fontSize: 15,

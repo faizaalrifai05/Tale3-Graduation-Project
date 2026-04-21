@@ -1,3 +1,4 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,8 +25,8 @@ class DriverIdVerificationScreen extends StatefulWidget {
 
 class _DriverIdVerificationScreenState
     extends State<DriverIdVerificationScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   File? _frontImage;
   File? _backImage;
@@ -60,20 +61,20 @@ class _DriverIdVerificationScreenState
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                  color: const Color(0xFFE0E0E0),
+                  color: context.colors.borderColor,
                   borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: const Icon(Icons.camera_alt_outlined,
-                  color: _primaryColor),
-              title: const Text('Take a photo'),
+              leading: Icon(Icons.camera_alt_outlined,
+                  color: AppStyles.primaryColor),
+              title: Text('Take a photo'),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
               leading:
-                  const Icon(Icons.photo_library_outlined, color: _primaryColor),
-              title: const Text('Choose from gallery'),
+                  Icon(Icons.photo_library_outlined, color: AppStyles.primaryColor),
+              title: Text('Choose from gallery'),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             const SizedBox(height: 8),
@@ -87,9 +88,9 @@ class _DriverIdVerificationScreenState
     if (_frontImage == null || _backImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text(
+          content: Text(
               'Please upload both front and back of your ID to continue'),
-          backgroundColor: _primaryColor,
+          backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -114,18 +115,16 @@ class _DriverIdVerificationScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Tale3',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -141,50 +140,50 @@ class _DriverIdVerificationScreenState
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   Text('Step 2 of 4',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A))),
+                          color: context.colors.textPrimary)),
                   Text('50%',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: _primaryColor)),
+                          color: AppStyles.primaryColor)),
                 ],
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: 0.5,
-                backgroundColor: const Color(0xFFEEEEEE),
+                backgroundColor: context.colors.neutralLight,
                 valueColor:
-                    const AlwaysStoppedAnimation<Color>(_primaryColor),
+                    const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
                 borderRadius: BorderRadius.circular(2),
                 minHeight: 4,
               ),
               const SizedBox(height: 32),
 
-              const Text(
+              Text(
                 'Identity Verification',
                 style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A)),
+                    color: context.colors.textPrimary),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Please upload a clear photo of your National\nID or Passport to verify your identity.',
                 style: TextStyle(
-                    fontSize: 14, color: Color(0xFF757575), height: 1.5),
+                    fontSize: 14, color: context.colors.textSecondary, height: 1.5),
               ),
               const SizedBox(height: 32),
 
-              const Text('FRONT OF ID',
+              Text('FRONT OF ID',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                       letterSpacing: 1)),
               const SizedBox(height: 12),
               _buildUploadCard(
@@ -195,11 +194,11 @@ class _DriverIdVerificationScreenState
               ),
               const SizedBox(height: 24),
 
-              const Text('BACK OF ID',
+              Text('BACK OF ID',
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                       letterSpacing: 1)),
               const SizedBox(height: 12),
               _buildUploadCard(
@@ -213,17 +212,17 @@ class _DriverIdVerificationScreenState
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFDF2F4),
+                  color: context.colors.highlightBackgroundColor,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Requirements for photo:',
+                    Text('Requirements for photo:',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: _primaryColor)),
+                            color: AppStyles.primaryColor)),
                     const SizedBox(height: 12),
                     _buildRequirementItem(
                         'All four corners of the document are visible'),
@@ -241,13 +240,13 @@ class _DriverIdVerificationScreenState
                 child: ElevatedButton(
                   onPressed: _handleSubmit,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _darkMaroon,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppStyles.darkMaroon,
+                    foregroundColor: AppStyles.onPrimary,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                     elevation: 0,
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text('Submit for Verification',
@@ -260,13 +259,13 @@ class _DriverIdVerificationScreenState
                 ),
               ),
               const SizedBox(height: 16),
-              const Center(
+              Center(
                 child: Text(
                   'SECURE 256-BIT SSL ENCRYPTED VERIFICATION',
                   style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFFBDBDBD),
+                      color: context.colors.inputHintColor,
                       letterSpacing: 1),
                 ),
               ),
@@ -290,9 +289,9 @@ class _DriverIdVerificationScreenState
         width: double.infinity,
         height: 140,
         decoration: BoxDecoration(
-          color: const Color(0xFFF9F9F9),
+          color: context.colors.inputFillColor,
           border: Border.all(
-            color: image != null ? _primaryColor : const Color(0xFFE0E0E0),
+            color: image != null ? AppStyles.primaryColor : context.colors.borderColor,
             width: image != null ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -309,12 +308,12 @@ class _DriverIdVerificationScreenState
                       right: 8,
                       child: Container(
                         padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: _primaryColor,
+                        decoration: BoxDecoration(
+                          color: AppStyles.primaryColor,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check,
-                            color: Colors.white, size: 14),
+                        child: Icon(Icons.check,
+                            color: AppStyles.onPrimary, size: 14),
                       ),
                     ),
                     Positioned(
@@ -330,10 +329,10 @@ class _DriverIdVerificationScreenState
                             bottomRight: Radius.circular(11),
                           ),
                         ),
-                        child: const Center(
+                        child: Center(
                           child: Text('Tap to change',
                               style: TextStyle(
-                                  color: Colors.white,
+                                  color: AppStyles.onPrimary,
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600)),
                         ),
@@ -347,23 +346,23 @@ class _DriverIdVerificationScreenState
                 children: [
                   Container(
                     padding: const EdgeInsets.all(12),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFDF2F4),
+                    decoration: BoxDecoration(
+                      color: context.colors.highlightBackgroundColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.camera_alt_outlined,
-                        color: _primaryColor, size: 24),
+                    child: Icon(Icons.camera_alt_outlined,
+                        color: AppStyles.primaryColor, size: 24),
                   ),
                   const SizedBox(height: 12),
                   Text(title,
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A1A1A))),
+                          color: context.colors.textPrimary)),
                   const SizedBox(height: 4),
                   Text(subtitle,
-                      style: const TextStyle(
-                          fontSize: 11, color: Color(0xFF9E9E9E))),
+                      style: TextStyle(
+                          fontSize: 11, color: context.colors.textTertiary)),
                 ],
               ),
       ),
@@ -376,16 +375,16 @@ class _DriverIdVerificationScreenState
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 4),
             child:
-                Icon(Icons.check_circle, color: _primaryColor, size: 14),
+                Icon(Icons.check_circle, color: AppStyles.primaryColor, size: 14),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text,
-                style: const TextStyle(
-                    fontSize: 13, color: Color(0xFF1A1A1A))),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.textPrimary)),
           ),
         ],
       ),

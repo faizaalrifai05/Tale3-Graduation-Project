@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -31,8 +32,8 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
 
 class _DriverVehicleDetailsScreenState
     extends State<DriverVehicleDetailsScreen> {
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
+  
+  
 
   final _formKey = GlobalKey<FormState>();
   final _makeController = TextEditingController();
@@ -73,7 +74,7 @@ class _DriverVehicleDetailsScreenState
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error),
-            backgroundColor: const Color(0xFF8B1A2B),
+            backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
@@ -110,18 +111,16 @@ class _DriverVehicleDetailsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
+        title: Text(
           'Vehicle Details',
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -140,13 +139,13 @@ class _DriverVehicleDetailsScreenState
                 // Step indicator
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children: [
                     Text(
                       'Onboarding Progress',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                       ),
                     ),
                     Text(
@@ -154,7 +153,7 @@ class _DriverVehicleDetailsScreenState
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: _primaryColor,
+                        color: AppStyles.primaryColor,
                       ),
                     ),
                   ],
@@ -162,28 +161,28 @@ class _DriverVehicleDetailsScreenState
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
                   value: 0.75,
-                  backgroundColor: const Color(0xFFEEEEEE),
+                  backgroundColor: context.colors.neutralLight,
                   valueColor:
-                      const AlwaysStoppedAnimation<Color>(_primaryColor),
+                      const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
                   borderRadius: BorderRadius.circular(2),
                   minHeight: 4,
                 ),
                 const SizedBox(height: 32),
 
-                const Text(
+                Text(
                   'Tell us about your vehicle',
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Provide the details of the vehicle you\'ll be driving.',
                   style: TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF757575),
+                    color: context.colors.textSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -300,9 +299,9 @@ class _DriverVehicleDetailsScreenState
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _handleNext,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _darkMaroon,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFE0E0E0),
+                      backgroundColor: AppStyles.darkMaroon,
+                      foregroundColor: AppStyles.onPrimary,
+                      disabledBackgroundColor: context.colors.borderColor,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
@@ -312,9 +311,9 @@ class _DriverVehicleDetailsScreenState
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
+                                color: AppStyles.onPrimary, strokeWidth: 2),
                           )
-                        : const Row(
+                        : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text('Next Step',
@@ -338,36 +337,36 @@ class _DriverVehicleDetailsScreenState
 
   Widget _buildLabel(String text) => Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF1A1A1A)),
+            color: context.colors.textPrimary),
       );
 
   InputDecoration _inputDecoration({required String hint, IconData? icon}) =>
       InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14),
+        hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
         prefixIcon: icon != null
-            ? Icon(icon, color: const Color(0xFF9E9E9E), size: 20)
+            ? Icon(icon, color: context.colors.textTertiary, size: 20)
             : null,
         filled: true,
-        fillColor: const Color(0xFFF5F5F5),
+        fillColor: context.colors.cardBackgroundColor,
         border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+            borderSide: BorderSide(color: context.colors.borderColor)),
         enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
+            borderSide: BorderSide(color: context.colors.borderColor)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: _primaryColor, width: 2)),
+            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2)),
         errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red)),
+            borderSide: BorderSide(color: Colors.red)),
         focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+            borderSide: BorderSide(color: Colors.red, width: 1.5)),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       );

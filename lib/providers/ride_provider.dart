@@ -1,5 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import '../models/ride_model.dart';
 import 'auth_provider.dart';
 
@@ -14,12 +14,11 @@ class RideProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Form state ────────────────────────────────────────────────────────────
-
+  // ── Form state ─────────────────────────────────────────────────────────────
   String _origin = '';
   String _destination = '';
-  String _date = '';
-  String _time = '';
+  DateTime? _selectedDate;
+  TimeOfDay? _selectedTime;
   int _seats = 3;
   int _price = 15;
   bool _acChecked = true;
@@ -29,10 +28,11 @@ class RideProvider extends ChangeNotifier {
   String _additionalNotes = '';
   bool _isPublishing = false;
 
+  // ── Getters ───────────────────────────────────────────────────────────────
   String get origin => _origin;
   String get destination => _destination;
-  String get date => _date;
-  String get time => _time;
+  DateTime? get selectedDate => _selectedDate;
+  TimeOfDay? get selectedTime => _selectedTime;
   int get seats => _seats;
   int get price => _price;
   bool get acChecked => _acChecked;
@@ -42,10 +42,35 @@ class RideProvider extends ChangeNotifier {
   String get additionalNotes => _additionalNotes;
   bool get isPublishing => _isPublishing;
 
+  String get dateLabel {
+    if (_selectedDate == null) return 'Select date';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${_selectedDate!.day} ${months[_selectedDate!.month - 1]} ${_selectedDate!.year}';
+  }
+
+  String get dateIso {
+    if (_selectedDate == null) return '';
+    final y = _selectedDate!.year;
+    final m = _selectedDate!.month.toString().padLeft(2, '0');
+    final d = _selectedDate!.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  String get timeLabel {
+    if (_selectedTime == null) return 'Select time';
+    final h = _selectedTime!.hour.toString().padLeft(2, '0');
+    final m = _selectedTime!.minute.toString().padLeft(2, '0');
+    return '$h:$m';
+  }
+
+  // ── Setters ───────────────────────────────────────────────────────────────
   void setOrigin(String v) { _origin = v; notifyListeners(); }
   void setDestination(String v) { _destination = v; notifyListeners(); }
-  void setDate(String v) { _date = v; notifyListeners(); }
-  void setTime(String v) { _time = v; notifyListeners(); }
+  void setDate(DateTime d) { _selectedDate = d; notifyListeners(); }
+  void setTime(TimeOfDay t) { _selectedTime = t; notifyListeners(); }
   void incrementSeats() { _seats++; notifyListeners(); }
   void decrementSeats() { if (_seats > 1) { _seats--; notifyListeners(); } }
   void incrementPrice() { _price++; notifyListeners(); }
@@ -56,11 +81,21 @@ class RideProvider extends ChangeNotifier {
   void toggleNoSmoking(bool v) { _noSmokingChecked = v; notifyListeners(); }
   void setAdditionalNotes(String v) { _additionalNotes = v; notifyListeners(); }
 
+  // ── Validation ────────────────────────────────────────────────────────────
+  String? validate() {
+    if (_origin.trim().isEmpty) return 'Please enter the origin city.';
+    if (_destination.trim().isEmpty) return 'Please enter the destination city.';
+    if (_selectedDate == null) return 'Please select a departure date.';
+    if (_selectedTime == null) return 'Please select a departure time.';
+    return null;
+  }
+
+  // ── Reset ─────────────────────────────────────────────────────────────────
   void resetForm() {
     _origin = '';
     _destination = '';
-    _date = '';
-    _time = '';
+    _selectedDate = null;
+    _selectedTime = null;
     _seats = 3;
     _price = 15;
     _acChecked = true;
@@ -71,35 +106,26 @@ class RideProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Firestore ─────────────────────────────────────────────────────────────
-
-  /// Publishes the current ride to Firestore. Returns null on success,
-  /// or an error message string on failure.
-  Future<String?> publishRide() async {
-    final user = _auth.currentUser;
-    if (user == null) return 'Not logged in.';
-    if (_origin.isEmpty || _destination.isEmpty) {
-      return 'Please fill in origin and destination.';
-    }
-    if (_date.isEmpty || _time.isEmpty) {
-      return 'Please select a date and time.';
-    }
-
+  // ── Publish ───────────────────────────────────────────────────────────────
+  Future<String?> publishRide({
+    required String driverId,
+    required String driverName,
+  }) async {
     _isPublishing = true;
     notifyListeners();
-
     try {
+      final user = _auth.currentUser;
       await _db.collection('rides').add({
-        'driverId': user.uid,
-        'driverName': user.name,
-        'carMake': user.carMake,
-        'carModel': user.carModel,
-        'carColor': user.carColor,
-        'plateNumber': user.plateNumber,
-        'origin': _origin,
-        'destination': _destination,
-        'date': _date,
-        'time': _time,
+        'driverId': driverId,
+        'driverName': driverName,
+        'carMake': user?.carMake ?? '',
+        'carModel': user?.carModel ?? '',
+        'carColor': user?.carColor ?? '',
+        'plateNumber': user?.plateNumber ?? '',
+        'origin': _origin.trim(),
+        'destination': _destination.trim(),
+        'date': dateIso,
+        'time': timeLabel,
         'totalSeats': _seats,
         'bookedSeats': 0,
         'pricePerSeat': _price,
@@ -107,13 +133,13 @@ class RideProvider extends ChangeNotifier {
         'luggageEnabled': _luggageChecked,
         'petsAllowed': _petsChecked,
         'noSmoking': _noSmokingChecked,
-        'notes': _additionalNotes,
+        'notes': _additionalNotes.trim(),
         'status': 'active',
         'createdAt': FieldValue.serverTimestamp(),
       });
-      resetForm();
       return null;
     } catch (e) {
+      debugPrint('publishRide error: $e');
       return 'Failed to publish ride. Please try again.';
     } finally {
       _isPublishing = false;
@@ -121,7 +147,8 @@ class RideProvider extends ChangeNotifier {
     }
   }
 
-  /// Streams rides available for passengers (active, not by current user).
+  // ── Firestore streams ─────────────────────────────────────────────────────
+
   Stream<List<RideModel>> get availableRidesStream {
     final uid = _auth.currentUser?.uid;
     return _db
@@ -135,7 +162,6 @@ class RideProvider extends ChangeNotifier {
             .toList());
   }
 
-  /// Streams rides posted by the current driver.
   Stream<List<RideModel>> get myRidesStream {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return const Stream.empty();

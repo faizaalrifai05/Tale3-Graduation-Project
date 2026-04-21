@@ -1,17 +1,17 @@
+import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 
 class CommunityGuidelinesScreen extends StatelessWidget {
   const CommunityGuidelinesScreen({super.key});
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
-  static const Color _primaryLight = Color(0x1A8B1A2B);
+  
+  
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -22,12 +22,12 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                 children: [
                   
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'Before you start',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ],
@@ -57,43 +57,43 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     const SizedBox(height: 24),
 
                     // ── Community Guidelines ──────────────────────────
-                    _buildSectionHeader(
+                    _buildSectionHeader(context,
                       icon: Icons.people_outline,
                       title: 'Community Guidelines',
                     ),
                     const SizedBox(height: 6),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         'Please review how Tale3 works to ensure a great experience for everyone.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF757575),
+                          color: context.colors.textSecondary,
                           height: 1.5,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
 
-                    _buildGuidelineItem(
+                    _buildGuidelineItem(context,
                       icon: Icons.people_outline,
                       title: 'Shared Community',
                       description:
                           'Tale3 is a shared carpool community — not a private cab. Ride together, not alone.',
                     ),
-                    _buildGuidelineItem(
+                    _buildGuidelineItem(context,
                       icon: Icons.lightbulb_outline,
                       title: 'Travel Smarter',
                       description:
                           'Share rides, split costs, and travel smarter together.',
                     ),
-                    _buildGuidelineItem(
+                    _buildGuidelineItem(context,
                       icon: Icons.access_time,
                       title: 'Be Punctual',
                       description:
                           'Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.',
                     ),
-                    _buildGuidelineItem(
+                    _buildGuidelineItem(context,
                       icon: Icons.handshake_outlined,
                       title: 'Trust & Community',
                       description:
@@ -101,14 +101,14 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 28),
-                    const Padding(
+                    Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Divider(color: Color(0xFFF0F0F0)),
+                      child: Divider(color: context.colors.borderColor),
                     ),
                     const SizedBox(height: 20),
 
                     // ── Seats Order ───────────────────────────────────
-                    _buildSectionHeader(
+                    _buildSectionHeader(context,
                       icon: Icons.event_seat,
                       title: 'Seats Order',
                     ),
@@ -121,7 +121,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                         width: double.infinity,
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFDF2F4),
+                          color: context.colors.highlightBackgroundColor,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -131,9 +131,9 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildSeatIcon(Icons.directions_car,
-                                    color: const Color(0xFFE0E0E0)),
+                                    color: context.colors.borderColor),
                                 _buildSeatIcon(Icons.person,
-                                    color: _primaryColor, isHighlighted: true),
+                                    color: AppStyles.primaryColor, isHighlighted: true),
                               ],
                             ),
                             const SizedBox(height: 24),
@@ -142,11 +142,11 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                               children: [
                                 _buildSeatIcon(Icons.person,
-                                    color: _primaryColor, isHighlighted: true),
+                                    color: AppStyles.primaryColor, isHighlighted: true),
                                 _buildSeatIcon(Icons.person,
-                                    color: _primaryColor, isHighlighted: true),
+                                    color: AppStyles.primaryColor, isHighlighted: true),
                                 _buildSeatIcon(Icons.person,
-                                    color: _primaryColor, isHighlighted: true),
+                                    color: AppStyles.primaryColor, isHighlighted: true),
                               ],
                             ),
                           ],
@@ -160,14 +160,14 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Column(
                         children: [
-                          _buildSeatRule(
+                          _buildSeatRule(context,
                             icon: Icons.looks_one,
                             title: 'Back Row Selection',
                             desc:
                                 'Choose "Back Row" to reserve all three back seats for maximum comfort or luggage space.',
                           ),
                           const SizedBox(height: 16),
-                          _buildSeatRule(
+                          _buildSeatRule(context,
                             icon: Icons.group,
                             title: 'Full Car Selection',
                             desc:
@@ -197,14 +197,14 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _darkMaroon,
-                    foregroundColor: Colors.white,
+                    backgroundColor: AppStyles.darkMaroon,
+                    foregroundColor: AppStyles.onPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
+                  child: Text(
                     'I Understand & Get Started',
                     style: TextStyle(
                       fontSize: 16,
@@ -220,7 +220,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader({
+  Widget _buildSectionHeader(BuildContext context, {
     required IconData icon,
     required String title,
   }) {
@@ -232,18 +232,18 @@ class CommunityGuidelinesScreen extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _primaryLight,
+              color: AppStyles.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: _primaryColor),
+            child: Icon(icon, size: 18, color: AppStyles.primaryColor),
           ),
           const SizedBox(width: 12),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+              color: context.colors.textPrimary,
             ),
           ),
         ],
@@ -251,7 +251,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGuidelineItem({
+  Widget _buildGuidelineItem(BuildContext context, {
     required IconData icon,
     required String title,
     required String description,
@@ -265,10 +265,10 @@ class CommunityGuidelinesScreen extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: _primaryLight,
+              color: AppStyles.primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 18, color: _primaryColor),
+            child: Icon(icon, size: 18, color: AppStyles.primaryColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -277,18 +277,18 @@ class CommunityGuidelinesScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A1A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF757575),
+                    color: context.colors.textSecondary,
                     height: 1.4,
                   ),
                 ),
@@ -306,20 +306,20 @@ class CommunityGuidelinesScreen extends StatelessWidget {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: isHighlighted ? color : Colors.transparent,
+        color: isHighlighted ? color : Colors.transparent, // intentional
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
         child: Icon(
           icon,
-          color: isHighlighted ? Colors.white : color,
+          color: isHighlighted ? AppStyles.onPrimary : color,
           size: 24,
         ),
       ),
     );
   }
 
-  Widget _buildSeatRule({
+  Widget _buildSeatRule(BuildContext context, {
     required IconData icon,
     required String title,
     required String desc,
@@ -327,7 +327,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, color: _primaryColor, size: 20),
+        Icon(icon, color: AppStyles.primaryColor, size: 20),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -335,18 +335,18 @@ class CommunityGuidelinesScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 desc,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.4,
                 ),
               ),
