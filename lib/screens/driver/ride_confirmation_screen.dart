@@ -24,12 +24,58 @@ class RideConfirmationScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     if (error != null) {
+      // Show dialog for verification/block errors, snackbar for others
+      if (error.contains('not verified') || error.contains('blocked')) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(
+                  error.contains('blocked')
+                      ? Icons.block_rounded
+                      : Icons.verified_user_outlined,
+                  color: AppStyles.errorColor,
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  error.contains('blocked')
+                      ? 'Account Blocked'
+                      : 'Not Verified Yet',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              error,
+              style: const TextStyle(fontSize: 14, height: 1.5),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Regular errors show as snackbar
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error),
           backgroundColor: AppStyles.errorColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -41,7 +87,8 @@ class RideConfirmationScreen extends StatelessWidget {
     ride.resetForm();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
-        builder: (_) => RidePostedScreen(origin: origin, destination: destination),
+        builder: (_) =>
+            RidePostedScreen(origin: origin, destination: destination),
       ),
     );
   }
@@ -98,7 +145,6 @@ class RideConfirmationScreen extends StatelessWidget {
                           _SectionHeader(
                               icon: Icons.route_rounded, title: 'Route'),
                           const SizedBox(height: 16),
-                          // Route timeline
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -219,8 +265,7 @@ class RideConfirmationScreen extends StatelessWidget {
                           Row(
                             children: [
                               _DetailItem(
-                                icon:
-                                    Icons.airline_seat_recline_normal_rounded,
+                                icon: Icons.airline_seat_recline_normal_rounded,
                                 label: 'Seats',
                                 value: '${ride.seats}',
                               ),
@@ -252,16 +297,17 @@ class RideConfirmationScreen extends StatelessWidget {
                             runSpacing: 8,
                             children: [
                               if (ride.acChecked)
-                                _featureChip(context,
-                                    Icons.ac_unit_rounded, 'Air Conditioning'),
+                                _featureChip(context, Icons.ac_unit_rounded,
+                                    'Air Conditioning'),
                               if (ride.luggageChecked)
-                                _featureChip(context,
-                                    Icons.luggage_rounded, 'Luggage'),
+                                _featureChip(context, Icons.luggage_rounded,
+                                    'Luggage'),
                               if (ride.petsChecked)
-                                _featureChip(context, Icons.pets_rounded, 'Pets Allowed'),
+                                _featureChip(
+                                    context, Icons.pets_rounded, 'Pets Allowed'),
                               if (ride.noSmokingChecked)
-                                _featureChip(context,
-                                    Icons.smoke_free_rounded, 'No Smoking'),
+                                _featureChip(context, Icons.smoke_free_rounded,
+                                    'No Smoking'),
                               if (!ride.acChecked &&
                                   !ride.luggageChecked &&
                                   !ride.petsChecked &&
@@ -372,13 +418,12 @@ class RideConfirmationScreen extends StatelessWidget {
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: context.colors.textPrimary,
-                          side:
-                              BorderSide(color: context.colors.borderColor),
+                          side: BorderSide(color: context.colors.borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Edit',
                           style: TextStyle(
                             fontSize: 15,
@@ -409,8 +454,10 @@ class RideConfirmationScreen extends StatelessWidget {
                               )
                             : const Icon(Icons.check_circle_outline, size: 20),
                         label: Text(
-                          ride.isPublishing ? 'Publishing...' : 'Confirm & Publish',
-                          style: TextStyle(
+                          ride.isPublishing
+                              ? 'Publishing...'
+                              : 'Confirm & Publish',
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
@@ -435,7 +482,8 @@ class RideConfirmationScreen extends StatelessWidget {
     );
   }
 
-  static Widget _featureChip(BuildContext context, IconData icon, String label) {
+  static Widget _featureChip(
+      BuildContext context, IconData icon, String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
@@ -476,7 +524,8 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: context.colors.borderColor.withValues(alpha: 0.5)),
       ),
       child: child,
     );

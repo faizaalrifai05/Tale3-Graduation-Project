@@ -8,13 +8,88 @@ import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
+import 'package:testtale3/screens/community_guidelines_screen.dart';
 
-class PassengerHomeScreen extends StatelessWidget {
+class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
 
   @override
+  State<PassengerHomeScreen> createState() => _PassengerHomeScreenState();
+}
+
+class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<app_auth.AuthProvider>().removeListener(_checkIfBlocked);
+    super.dispose();
+  }
+
+  void _checkIfBlocked() {
+    final auth = context.read<app_auth.AuthProvider>();
+    if (!auth.isLoggedIn && auth.wasBlocked) {
+      auth.clearBlockedFlag();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              SizedBox(width: 10),
+              Text(
+                'Account Blocked',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your account has been blocked by the admin. '
+            'If you believe this is a mistake, please contact '
+            'support at support@tale3.app.',
+            style: TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const CommunityGuidelinesScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Watch the navigation provider to rebuild when the tab index changes.
     final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
@@ -112,7 +187,7 @@ class _HomeTab extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.5),
                                 width: 2),
                           ),
-                          child: CircleAvatar(
+                          child: const CircleAvatar(
                             radius: 22,
                             backgroundColor: Color(0x33FFFFFF),
                             child: Icon(Icons.person,
@@ -136,7 +211,7 @@ class _HomeTab extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Hello, ${context.watch<app_auth.AuthProvider>().userName}!',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppStyles.onPrimary,
@@ -156,7 +231,7 @@ class _HomeTab extends StatelessWidget {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Icon(Icons.notifications_none_rounded,
+                              const Icon(Icons.notifications_none_rounded,
                                   color: AppStyles.onPrimary, size: 22),
                               Positioned(
                                 top: 9,
@@ -257,15 +332,15 @@ class _HomeTab extends StatelessWidget {
                                 ),
                                 border: InputBorder.none,
                                 contentPadding:
-                                    EdgeInsets.symmetric(vertical: 16),
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                             Divider(height: 1, indent: 48),
                             TextField(
                               decoration: InputDecoration(
                                 hintText: 'Destination (Amman)',
-                                hintStyle:
-                                    TextStyle(color: context.colors.textTertiary),
+                                hintStyle: TextStyle(
+                                    color: context.colors.textTertiary),
                                 prefixIcon: Icon(
                                   Icons.location_on,
                                   color: AppStyles.primaryColor,
@@ -273,7 +348,7 @@ class _HomeTab extends StatelessWidget {
                                 ),
                                 border: InputBorder.none,
                                 contentPadding:
-                                    EdgeInsets.symmetric(vertical: 16),
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                           ],
@@ -293,10 +368,11 @@ class _HomeTab extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Icon(Icons.calendar_today,
-                                      color: context.colors.textTertiary, size: 18),
-                                  SizedBox(width: 8),
+                                      color: context.colors.textTertiary,
+                                      size: 18),
+                                  const SizedBox(width: 8),
                                   Text(
                                     'Today',
                                     style: TextStyle(
@@ -318,10 +394,11 @@ class _HomeTab extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Icon(Icons.person_outline,
-                                      color: context.colors.textTertiary, size: 18),
-                                  SizedBox(width: 8),
+                                      color: context.colors.textTertiary,
+                                      size: 18),
+                                  const SizedBox(width: 8),
                                   Text(
                                     '1 passenger',
                                     style: TextStyle(
@@ -345,12 +422,13 @@ class _HomeTab extends StatelessWidget {
                           onPressed: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (context) => const RideResultsScreen(),
+                                builder: (context) =>
+                                    const RideResultsScreen(),
                               ),
                             );
                           },
-                          icon: Icon(Icons.search, size: 20),
-                          label: Text(
+                          icon: const Icon(Icons.search, size: 20),
+                          label: const Text(
                             'Search Rides',
                             style: TextStyle(
                               fontSize: 16,
@@ -393,7 +471,8 @@ class _HomeTab extends StatelessWidget {
                 GestureDetector(
                   onTap: () {
                     Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RideResultsScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const RideResultsScreen()),
                     );
                   },
                   child: Text(
@@ -440,7 +519,7 @@ class _HomeTab extends StatelessWidget {
 
           // Quick Destinations
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
               'Quick Destinations',
               style: TextStyle(
@@ -491,7 +570,7 @@ class _HomeTab extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppStyles.onPrimary,
@@ -544,7 +623,8 @@ class _HomeTab extends StatelessWidget {
                 color: context.colors.cardBackgroundColor,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.directions_car, color: AppStyles.primaryColor),
+              child:
+                  const Icon(Icons.directions_car, color: AppStyles.primaryColor),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -563,14 +643,15 @@ class _HomeTab extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: context.colors.highlightBackgroundColor,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           route,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: AppStyles.primaryColor,
@@ -590,7 +671,8 @@ class _HomeTab extends StatelessWidget {
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.star, color: AppStyles.starRatingColor, size: 14),
+                      const Icon(Icons.star,
+                          color: AppStyles.starRatingColor, size: 14),
                       const SizedBox(width: 4),
                       Text(
                         rating,
@@ -607,7 +689,7 @@ class _HomeTab extends StatelessWidget {
             ),
             Text(
               price,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppStyles.primaryColor,
@@ -662,7 +744,7 @@ class _HomeTab extends StatelessWidget {
               child: Text(
                 city,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppStyles.onPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 14,

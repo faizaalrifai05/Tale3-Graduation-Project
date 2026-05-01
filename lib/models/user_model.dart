@@ -19,6 +19,7 @@ class UserModel {
   final VerificationStatus verificationStatus;
   final String idFrontUrl;
   final String idBackUrl;
+  final bool isBlocked;
 
   const UserModel({
     required this.uid,
@@ -35,6 +36,7 @@ class UserModel {
     this.verificationStatus = VerificationStatus.unsubmitted,
     this.idFrontUrl = '',
     this.idBackUrl = '',
+    this.isBlocked = false,
   });
 
   bool get isVerified => verificationStatus == VerificationStatus.verified;
@@ -54,6 +56,7 @@ class UserModel {
     VerificationStatus? verificationStatus,
     String? idFrontUrl,
     String? idBackUrl,
+    bool? isBlocked,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -70,6 +73,7 @@ class UserModel {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       idFrontUrl: idFrontUrl ?? this.idFrontUrl,
       idBackUrl: idBackUrl ?? this.idBackUrl,
+      isBlocked: isBlocked ?? this.isBlocked,
     );
   }
 }

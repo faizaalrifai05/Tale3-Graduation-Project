@@ -9,13 +9,88 @@ import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
 import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 import 'package:testtale3/screens/driver/driver_chat_screen.dart';
+import 'package:testtale3/screens/community_guidelines_screen.dart';
 
-class DriverHomeScreen extends StatelessWidget {
+class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
 
   @override
+  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
+}
+
+class _DriverHomeScreenState extends State<DriverHomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<app_auth.AuthProvider>().removeListener(_checkIfBlocked);
+    super.dispose();
+  }
+
+  void _checkIfBlocked() {
+    final auth = context.read<app_auth.AuthProvider>();
+    if (!auth.isLoggedIn && auth.wasBlocked) {
+      auth.clearBlockedFlag();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              SizedBox(width: 10),
+              Text(
+                'Account Blocked',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your account has been blocked by the admin. '
+            'If you believe this is a mistake, please contact '
+            'support at support@tale3.app.',
+            style: TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const CommunityGuidelinesScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Watch the navigation provider to rebuild when the tab index changes.
     final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
@@ -32,7 +107,6 @@ class DriverHomeScreen extends StatelessWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: navProvider.driverTabIndex,
         onTap: (index) {
-          // Use listen: false via context.read – we're inside a callback.
           context.read<NavigationProvider>().setDriverTab(index);
         },
         items: const [
@@ -107,7 +181,7 @@ class _DriverHomeTab extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.5),
                                 width: 2),
                           ),
-                          child: CircleAvatar(
+                          child: const CircleAvatar(
                             radius: 22,
                             backgroundColor: Color(0x33FFFFFF),
                             child: Icon(Icons.person,
@@ -131,7 +205,7 @@ class _DriverHomeTab extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Capt. ${context.watch<app_auth.AuthProvider>().userName}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppStyles.onPrimary,
@@ -151,7 +225,7 @@ class _DriverHomeTab extends StatelessWidget {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Icon(Icons.notifications_none_rounded,
+                              const Icon(Icons.notifications_none_rounded,
                                   color: AppStyles.onPrimary, size: 22),
                               Positioned(
                                 top: 9,
@@ -229,7 +303,7 @@ class _DriverHomeTab extends StatelessWidget {
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.add_circle_outline_rounded,
@@ -251,8 +325,6 @@ class _DriverHomeTab extends StatelessWidget {
             ),
           ),
 
-
-
           // ═══════════════════════════════════════════════════════
           //  CURRENT ACTIVE RIDE
           // ═══════════════════════════════════════════════════════
@@ -270,8 +342,8 @@ class _DriverHomeTab extends StatelessWidget {
                           fontWeight: FontWeight.w800,
                           color: context.colors.textPrimary),
                     ),
-                    SizedBox(width: 8),
-                    _LiveDot(),
+                    const SizedBox(width: 8),
+                    const _LiveDot(),
                   ],
                 ),
                 GestureDetector(
@@ -280,8 +352,8 @@ class _DriverHomeTab extends StatelessWidget {
                         builder: (_) => const DriverRideDetailsScreen()),
                   ),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: context.colors.highlightBackgroundColor,
                       borderRadius: BorderRadius.circular(20),
@@ -300,7 +372,6 @@ class _DriverHomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _buildActiveRideCard(context),
-
           const SizedBox(height: 32),
         ],
       ),
@@ -339,7 +410,7 @@ class _DriverHomeTab extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppStyles.onPrimary,
@@ -379,11 +450,11 @@ class _DriverHomeTab extends StatelessWidget {
         height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
           color: context.colors.surfaceColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 40,
@@ -393,7 +464,6 @@ class _DriverHomeTab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
               child: Row(
@@ -408,14 +478,16 @@ class _DriverHomeTab extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: context.colors.highlightBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        Icon(Icons.star_rounded, color: AppStyles.goldStar, size: 16),
+                        Icon(Icons.star_rounded,
+                            color: AppStyles.goldStar, size: 16),
                         SizedBox(width: 4),
                         Text(
                           '4.9',
@@ -435,18 +507,20 @@ class _DriverHomeTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 '${reviews.length} reviews from passengers',
-                style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.textSecondary),
               ),
             ),
             const SizedBox(height: 12),
-            Divider(height: 1),
-            // Review list
+            const Divider(height: 1),
             Expanded(
               child: ListView.separated(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 16),
                 itemCount: reviews.length,
-                separatorBuilder: (context, index) => Divider(height: 28),
+                separatorBuilder: (context, index) =>
+                    const Divider(height: 28),
                 itemBuilder: (_, i) {
                   final r = reviews[i];
                   return Column(
@@ -456,10 +530,11 @@ class _DriverHomeTab extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: context.colors.highlightBackgroundColor,
+                            backgroundColor:
+                                context.colors.highlightBackgroundColor,
                             child: Text(
                               r.name[0],
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: AppStyles.primaryColor,
                               ),
@@ -488,7 +563,6 @@ class _DriverHomeTab extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Stars
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(5, (si) {
@@ -523,7 +597,6 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-
   Widget _buildActiveRideCard(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -531,7 +604,8 @@ class _DriverHomeTab extends StatelessWidget {
       decoration: BoxDecoration(
         color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: context.colors.borderColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -541,11 +615,9 @@ class _DriverHomeTab extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Route timeline
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Timeline dots
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Column(
@@ -562,7 +634,9 @@ class _DriverHomeTab extends StatelessWidget {
                       ),
                     ),
                     Container(
-                        width: 2, height: 28, color: context.colors.borderColor),
+                        width: 2,
+                        height: 28,
+                        color: context.colors.borderColor),
                     Container(
                       width: 10,
                       height: 10,
@@ -575,7 +649,6 @@ class _DriverHomeTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Route text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -598,7 +671,6 @@ class _DriverHomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-              // Price tag
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -606,7 +678,7 @@ class _DriverHomeTab extends StatelessWidget {
                   color: context.colors.highlightBackgroundColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
+                child: const Text(
                   '12 JOD',
                   style: TextStyle(
                     fontSize: 16,
@@ -620,23 +692,21 @@ class _DriverHomeTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Info chips
           Row(
             children: [
               _infoChip(context, Icons.access_time_rounded, 'Today, 2:30 PM'),
               const SizedBox(width: 8),
-              _infoChip(context, Icons.airline_seat_recline_normal_rounded, '3 / 4 seats'),
+              _infoChip(context,
+                  Icons.airline_seat_recline_normal_rounded, '3 / 4 seats'),
             ],
           ),
 
           const SizedBox(height: 16),
-          Divider(height: 1),
+          const Divider(height: 1),
           const SizedBox(height: 14),
 
-          // Passenger row
           Row(
             children: [
-              // Stacked avatars
               SizedBox(
                 width: 60,
                 height: 32,
@@ -671,7 +741,7 @@ class _DriverHomeTab extends StatelessWidget {
                   children: [
                     Icon(Icons.check_circle,
                         color: AppStyles.successColor, size: 14),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
                       'On Track',
                       style: TextStyle(
@@ -719,7 +789,8 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-  static Positioned _stackedAvatar(BuildContext context, double left, String letter) {
+  static Positioned _stackedAvatar(
+      BuildContext context, double left, String letter) {
     return Positioned(
       left: left,
       child: Container(
@@ -732,7 +803,7 @@ class _DriverHomeTab extends StatelessWidget {
           backgroundColor: context.colors.highlightBackgroundColor,
           child: Text(
             letter,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AppStyles.primaryColor,
@@ -742,9 +813,7 @@ class _DriverHomeTab extends StatelessWidget {
       ),
     );
   }
-
 }
-
 
 // ── Animated live dot ───────────────────────────────────────────────────────
 class _LiveDot extends StatefulWidget {
