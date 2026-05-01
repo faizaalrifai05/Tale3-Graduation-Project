@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/screens/driver/ride_confirmation_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 /// Screen for drivers to create a new ride.
 ///
@@ -25,7 +26,7 @@ class DriverCreateRideScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Create Ride',
+          context.l10n.createRide,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -46,7 +47,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                 children: [
                   // Route Settings
                   Text(
-                    'Route settings',
+                    context.l10n.routeSettings,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -67,7 +68,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         TextField(
                           onChanged: rideProvider.setOrigin,
                           decoration: InputDecoration(
-                            hintText: 'Origin (e.g. Downtown Dubai)',
+                            hintText: context.l10n.originHint,
                             hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
                             prefixIcon: Icon(Icons.radio_button_unchecked, color: AppStyles.primaryColor, size: 20),
                             border: InputBorder.none,
@@ -79,7 +80,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         TextField(
                           onChanged: rideProvider.setDestination,
                           decoration: InputDecoration(
-                            hintText: 'Destination (e.g. Dubai Marina)',
+                            hintText: context.l10n.destinationHint,
                             hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
                             prefixIcon: Icon(Icons.location_on, color: AppStyles.primaryColor, size: 20),
                             border: InputBorder.none,
@@ -98,7 +99,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                       Expanded(
                         child: _buildPickerBlock(
                           context: context,
-                          label: 'Date',
+                          label: context.l10n.date,
                           value: rideProvider.dateLabel,
                           icon: Icons.calendar_today,
                           isEmpty: rideProvider.selectedDate == null,
@@ -117,7 +118,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                       Expanded(
                         child: _buildPickerBlock(
                           context: context,
-                          label: 'Time',
+                          label: context.l10n.time,
                           value: rideProvider.timeLabel,
                           icon: Icons.access_time,
                           isEmpty: rideProvider.selectedTime == null,
@@ -141,7 +142,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Available Seats', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                            Text(context.l10n.availableSeats, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
                             const SizedBox(height: 8),
                             Container(
                               height: 52,
@@ -173,7 +174,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Price per seat', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
+                            Text(context.l10n.pricePerSeat, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textPrimary)),
                             const SizedBox(height: 8),
                             Container(
                               height: 52,
@@ -206,7 +207,7 @@ class DriverCreateRideScreen extends StatelessWidget {
 
                   // Features – driven by RideProvider
                   Text(
-                    'Features & Preferences',
+                    context.l10n.featuresPreferences,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -220,7 +221,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.acChecked,
                           onChanged: (v) => rideProvider.toggleAc(v ?? false),
-                          title: Text('Air Conditioning', style: TextStyle(fontSize: 13)),
+                          title: Text(context.l10n.airConditioning, style: const TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
                           activeColor: AppStyles.primaryColor,
@@ -230,7 +231,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.luggageChecked,
                           onChanged: (v) => rideProvider.toggleLuggage(v ?? false),
-                          title: Text('Luggage', style: TextStyle(fontSize: 13)),
+                          title: Text(context.l10n.luggage, style: const TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
                           activeColor: AppStyles.primaryColor,
@@ -244,7 +245,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.petsChecked,
                           onChanged: (v) => rideProvider.togglePets(v ?? false),
-                          title: Text('Pets Allowed', style: TextStyle(fontSize: 13)),
+                          title: Text(context.l10n.petsAllowed, style: const TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
                           activeColor: AppStyles.primaryColor,
@@ -254,7 +255,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         child: CheckboxListTile(
                           value: rideProvider.noSmokingChecked,
                           onChanged: (v) => rideProvider.toggleNoSmoking(v ?? false),
-                          title: Text('No Smoking', style: TextStyle(fontSize: 13)),
+                          title: Text(context.l10n.noSmoking, style: const TextStyle(fontSize: 13)),
                           controlAffinity: ListTileControlAffinity.leading,
                           contentPadding: EdgeInsets.zero,
                           activeColor: AppStyles.primaryColor,
@@ -266,7 +267,7 @@ class DriverCreateRideScreen extends StatelessWidget {
 
                   // Additional Notes
                   Text(
-                    'Additional Notes',
+                    context.l10n.additionalNotes,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -278,7 +279,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                     maxLines: 4,
                     onChanged: rideProvider.setAdditionalNotes,
                     decoration: InputDecoration(
-                      hintText: 'Add any specific details here...',
+                      hintText: context.l10n.additionalNotesHint,
                       hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
                       filled: true,
                       fillColor: context.colors.inputFillColor,
@@ -319,8 +320,8 @@ class DriverCreateRideScreen extends StatelessWidget {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Publish Ride',
-                        style: TextStyle(
+                        context.l10n.publishRide,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),

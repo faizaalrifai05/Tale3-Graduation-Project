@@ -1,6 +1,7 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PasswordResetScreen extends StatefulWidget {
   const PasswordResetScreen({super.key});
@@ -94,7 +95,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Password Reset',
+          context.l10n.passwordReset,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -148,7 +149,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
                     // Heading
                     Text(
-                      _emailSent ? 'Check your inbox' : 'Forgot Password?',
+                      _emailSent ? context.l10n.checkYourInbox : context.l10n.forgotPasswordTitle,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -159,7 +160,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                     Text(
                       _emailSent
                           ? 'A password reset link has been sent to\n${_emailController.text.trim()}'
-                          : 'Enter the email address associated\nwith your Tale3 account.',
+                          : context.l10n.passwordResetDesc,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -174,7 +175,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                        Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'EMAIL ADDRESS',
+                          context.l10n.emailAddress.toUpperCase(),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -235,7 +236,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                                       color: AppStyles.onPrimary, strokeWidth: 2),
                                 )
                               : Text(
-                                  'Send Link',
+                                  context.l10n.sendLink,
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -259,7 +260,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                             elevation: 0,
                           ),
                           child: Text(
-                            'Back to Login',
+                            context.l10n.backToLogin,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -276,7 +277,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          'Remember your password? ',
+                          '${context.l10n.rememberPassword} ',
                           style: TextStyle(
                             fontSize: 14,
                             color: context.colors.textSecondary,
@@ -285,7 +286,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                         GestureDetector(
                           onTap: () => Navigator.of(context).pop(),
                           child: Text(
-                            'Log in',
+                            context.l10n.logIn,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

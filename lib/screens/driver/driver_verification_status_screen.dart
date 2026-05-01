@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVerificationStatusScreen extends StatelessWidget {
   const DriverVerificationStatusScreen({super.key});
@@ -21,22 +22,22 @@ class DriverVerificationStatusScreen extends StatelessWidget {
     Color idStatusColor;
     switch (verificationStatus) {
       case VerificationStatus.verified:
-        idStatusLabel = 'Verified';
+        idStatusLabel = context.l10n.statusVerified;
         idStatusIcon = Icons.check_circle;
         idStatusColor = const Color(0xFF4CAF50);
         break;
       case VerificationStatus.rejected:
-        idStatusLabel = 'Rejected';
+        idStatusLabel = context.l10n.statusRejected;
         idStatusIcon = Icons.cancel;
         idStatusColor = const Color(0xFFE53935);
         break;
       case VerificationStatus.pending:
-        idStatusLabel = 'Pending Review';
+        idStatusLabel = context.l10n.pendingReview;
         idStatusIcon = Icons.access_time_filled;
         idStatusColor = const Color(0xFFFF9800);
         break;
       default:
-        idStatusLabel = 'Not Submitted';
+        idStatusLabel = context.l10n.notSubmitted;
         idStatusIcon = Icons.radio_button_unchecked;
         idStatusColor = const Color(0xFF9E9E9E);
     }
@@ -50,8 +51,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Verification Status',
+        title: Text(
+          context.l10n.verificationStatus,
           style: TextStyle(
             color: Color(0xFF1A1A1A),
             fontSize: 16,
@@ -86,9 +87,9 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               const SizedBox(height: 24),
               
               // Title
-              const Text(
-                'Identity Verification',
-                style: TextStyle(
+              Text(
+                context.l10n.identityVerification,
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF1A1A1A),
@@ -96,10 +97,10 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               
-              const Text(
-                'Your documents are being reviewed.\nNotifications will be sent to your app\nand email.',
+              Text(
+                context.l10n.verificationDocsBeingReviewed,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF757575),
                   height: 1.5,
@@ -110,15 +111,15 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               // Status Cards
               _buildStatusCard(
                 icon: Icons.security,
-                title: 'Background Check',
-                status: 'Active',
+                title: context.l10n.backgroundCheck,
+                status: context.l10n.statusActive,
                 statusIcon: Icons.check_circle,
                 statusColor: const Color(0xFF4CAF50),
               ),
               const SizedBox(height: 16),
               _buildStatusCard(
                 icon: Icons.badge_outlined,
-                title: 'ID Verification',
+                title: context.l10n.idVerification,
                 status: idStatusLabel,
                 statusIcon: idStatusIcon,
                 statusColor: idStatusColor,
@@ -126,8 +127,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               const SizedBox(height: 16),
               _buildStatusCard(
                 icon: Icons.directions_car_outlined,
-                title: 'Vehicle Inspection',
-                status: 'Pending Review',
+                title: context.l10n.vehicleInspection,
+                status: context.l10n.pendingReview,
                 statusIcon: Icons.access_time_filled,
                 statusColor: const Color(0xFFFF9800),
               ),
@@ -154,9 +155,9 @@ class DriverVerificationStatusScreen extends StatelessWidget {
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    'Go to Dashboard',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.goToDashboard,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -179,9 +180,9 @@ class DriverVerificationStatusScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Contact Support',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.contactSupport,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

@@ -1,10 +1,14 @@
 import 'package:testtale3/theme/app_styles.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
+import '../../providers/ride_provider.dart';
+import '../../models/ride_model.dart';
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
+import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
@@ -33,26 +37,26 @@ class PassengerHomeScreen extends StatelessWidget {
         onTap: (index) {
           context.read<NavigationProvider>().setPassengerTab(index);
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
-            label: 'HOME',
+            label: context.l10n.home.toUpperCase(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history_outlined),
             activeIcon: Icon(Icons.history),
-            label: 'MY TRIPS',
+            label: context.l10n.myTrips.toUpperCase(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat_bubble_outline),
             activeIcon: Icon(Icons.chat_bubble),
-            label: 'CHAT',
+            label: context.l10n.chat.toUpperCase(),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
-            label: 'PROFILE',
+            label: context.l10n.profile.toUpperCase(),
           ),
         ],
       ),
@@ -62,14 +66,71 @@ class PassengerHomeScreen extends StatelessWidget {
 
 // ── Home Tab ────────────────────────────────────────────────────────────────
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
   const _HomeTab();
 
-  static String _getGreeting() {
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  final _originController = TextEditingController();
+  final _destinationController = TextEditingController();
+  DateTime? _selectedDate;
+  int _seats = 1;
+
+  @override
+  void dispose() {
+    _originController.dispose();
+    _destinationController.dispose();
+    super.dispose();
+  }
+
+  String _getGreeting(BuildContext context) {
+    final l10n = context.l10n;
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
+    if (hour < 12) return l10n.goodMorning;
+    if (hour < 17) return l10n.goodAfternoon;
+    return l10n.goodEvening;
+  }
+
+  String _dateIso(DateTime d) {
+    final m = d.month.toString().padLeft(2, '0');
+    final day = d.day.toString().padLeft(2, '0');
+    return '${d.year}-$m-$day';
+  }
+
+  String _dateLabel(BuildContext context, DateTime? d) {
+    if (d == null) return context.l10n.today;
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day} ${months[d.month - 1]}';
+  }
+
+  void _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 90)),
+      builder: (ctx, child) => Theme(
+        data: Theme.of(ctx).copyWith(
+          colorScheme: ColorScheme.light(primary: AppStyles.primaryColor),
+        ),
+        child: child!,
+      ),
+    );
+    if (picked != null) setState(() => _selectedDate = picked);
+  }
+
+  void _search() {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => RideResultsScreen(
+        origin: _originController.text.trim(),
+        destination: _destinationController.text.trim(),
+        date: _selectedDate != null ? _dateIso(_selectedDate!) : null,
+        seats: _seats,
+      ),
+    ));
   }
 
   @override
@@ -114,7 +175,7 @@ class _HomeTab extends StatelessWidget {
                           ),
                           child: CircleAvatar(
                             radius: 22,
-                            backgroundColor: Color(0x33FFFFFF),
+                            backgroundColor: const Color(0x33FFFFFF),
                             child: Icon(Icons.person,
                                 color: AppStyles.onPrimary, size: 22),
                           ),
@@ -125,7 +186,7 @@ class _HomeTab extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'GOOD ${_getGreeting().toUpperCase()}',
+                                'GOOD ${_getGreeting(context).toUpperCase()}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -145,7 +206,6 @@ class _HomeTab extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Notification bell
                         Container(
                           width: 40,
                           height: 40,
@@ -168,8 +228,7 @@ class _HomeTab extends StatelessWidget {
                                     color: AppStyles.notificationDot,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: AppStyles.darkMaroon,
-                                        width: 1.5),
+                                        color: AppStyles.darkMaroon, width: 1.5),
                                   ),
                                 ),
                               ),
@@ -186,14 +245,14 @@ class _HomeTab extends StatelessWidget {
                       children: [
                         _buildStatCard(
                           icon: Icons.directions_car_rounded,
-                          label: 'Trips Taken',
+                          label: context.l10n.tripsTaken,
                           value: '24',
                           iconColor: AppStyles.successColor,
                         ),
                         const SizedBox(width: 10),
                         _buildStatCard(
                           icon: Icons.star_rounded,
-                          label: 'My Rating',
+                          label: context.l10n.myRating,
                           value: '4.8',
                           iconColor: AppStyles.goldStar,
                         ),
@@ -206,7 +265,7 @@ class _HomeTab extends StatelessWidget {
           ),
 
           // ═══════════════════════════════════════════════════════
-          //  SEARCH RIDES BUTTON (overlapping card)
+          //  SEARCH CARD (overlapping)
           // ═══════════════════════════════════════════════════════
           Transform.translate(
             offset: const Offset(0, -16),
@@ -226,7 +285,7 @@ class _HomeTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Plan your trip',
+                        context.l10n.planYourTrip,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
@@ -235,7 +294,7 @@ class _HomeTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Location inputs
+                      // Origin + Destination
                       Container(
                         decoration: BoxDecoration(
                           color: context.colors.cardBackgroundColor,
@@ -244,36 +303,34 @@ class _HomeTab extends StatelessWidget {
                         child: Column(
                           children: [
                             TextField(
+                              controller: _originController,
                               decoration: InputDecoration(
-                                hintText: 'Choose from map',
+                                hintText: context.l10n.chooseFromMap,
                                 hintStyle: TextStyle(
-                                  color: context.colors.textPrimary,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.map_outlined,
-                                  color: AppStyles.primaryColor,
-                                  size: 20,
-                                ),
+                                    color: context.colors.textSecondary,
+                                    fontWeight: FontWeight.w500),
+                                prefixIcon: Icon(Icons.radio_button_checked,
+                                    color: AppStyles.primaryColor, size: 20),
                                 border: InputBorder.none,
                                 contentPadding:
-                                    EdgeInsets.symmetric(vertical: 16),
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
-                            Divider(height: 1, indent: 48),
+                            Divider(
+                                height: 1,
+                                indent: 48,
+                                color: context.colors.borderColor),
                             TextField(
+                              controller: _destinationController,
                               decoration: InputDecoration(
-                                hintText: 'Destination (Amman)',
-                                hintStyle:
-                                    TextStyle(color: context.colors.textTertiary),
-                                prefixIcon: Icon(
-                                  Icons.location_on,
-                                  color: AppStyles.primaryColor,
-                                  size: 20,
-                                ),
+                                hintText: context.l10n.selectDestination,
+                                hintStyle: TextStyle(
+                                    color: context.colors.textTertiary),
+                                prefixIcon: Icon(Icons.location_on,
+                                    color: AppStyles.primaryColor, size: 20),
                                 border: InputBorder.none,
                                 contentPadding:
-                                    EdgeInsets.symmetric(vertical: 16),
+                                    const EdgeInsets.symmetric(vertical: 16),
                               ),
                             ),
                           ],
@@ -281,30 +338,36 @@ class _HomeTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Date and passenger inputs
+                      // Date + Seats row
                       Row(
                         children: [
                           Expanded(
-                            child: Container(
-                              height: 52,
-                              decoration: BoxDecoration(
-                                color: context.colors.cardBackgroundColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                children: [
-                                  SizedBox(width: 12),
-                                  Icon(Icons.calendar_today,
-                                      color: context.colors.textTertiary, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Today',
-                                    style: TextStyle(
-                                      color: context.colors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                            child: GestureDetector(
+                              onTap: _pickDate,
+                              child: Container(
+                                height: 52,
+                                decoration: BoxDecoration(
+                                  color: context.colors.cardBackgroundColor,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const SizedBox(width: 12),
+                                    Icon(Icons.calendar_today,
+                                        color: context.colors.textTertiary,
+                                        size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      _dateLabel(context, _selectedDate),
+                                      style: TextStyle(
+                                        color: _selectedDate != null
+                                            ? context.colors.textPrimary
+                                            : context.colors.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
                             ),
                           ),
@@ -318,16 +381,37 @@ class _HomeTab extends StatelessWidget {
                               ),
                               child: Row(
                                 children: [
-                                  SizedBox(width: 12),
+                                  const SizedBox(width: 12),
                                   Icon(Icons.person_outline,
-                                      color: context.colors.textTertiary, size: 18),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    '1 passenger',
-                                    style: TextStyle(
-                                      color: context.colors.textSecondary,
-                                      fontWeight: FontWeight.w500,
+                                      color: context.colors.textTertiary,
+                                      size: 18),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_seats > 1) setState(() => _seats--);
+                                    },
+                                    child: Icon(Icons.remove,
+                                        size: 16,
+                                        color: context.colors.textTertiary),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
+                                    child: Text(
+                                      '$_seats',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w700,
+                                        color: context.colors.textPrimary,
+                                      ),
                                     ),
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      if (_seats < 4) setState(() => _seats++);
+                                    },
+                                    child: Icon(Icons.add,
+                                        size: 16,
+                                        color: context.colors.textTertiary),
                                   ),
                                 ],
                               ),
@@ -342,27 +426,18 @@ class _HomeTab extends StatelessWidget {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (context) => const RideResultsScreen(),
-                              ),
-                            );
-                          },
-                          icon: Icon(Icons.search, size: 20),
+                          onPressed: _search,
+                          icon: const Icon(Icons.search, size: 20),
                           label: Text(
-                            'Search Rides',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            context.l10n.searchRides,
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.w600),
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppStyles.darkMaroon,
                             foregroundColor: AppStyles.onPrimary,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                                borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
                         ),
@@ -376,14 +451,14 @@ class _HomeTab extends StatelessWidget {
 
           const SizedBox(height: 4),
 
-          // Recommended for you
+          // ── Recommended for you (live) ───────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Recommended for you',
+                  context.l10n.recommendedForYou,
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -391,13 +466,11 @@ class _HomeTab extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RideResultsScreen()),
-                    );
-                  },
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RideResultsScreen()),
+                  ),
                   child: Text(
-                    'See all',
+                    context.l10n.seeAll,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -410,39 +483,42 @@ class _HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Ride Cards
-          _buildRideCard(
-            context: context,
-            driverName: 'Ahmad M.',
-            route: 'Amman → Irbid',
-            departure: 'Departure: 04:00 PM',
-            rating: '4.9 (124 reviews)',
-            price: '12.00 JOD',
-          ),
-          _buildRideCard(
-            context: context,
-            driverName: 'Khaled S.',
-            route: 'Amman → Aqaba',
-            departure: 'Departure: 05:15 PM',
-            rating: '4.8 (89 reviews)',
-            price: '15.50 JOD',
-          ),
-          _buildRideCard(
-            context: context,
-            driverName: 'Tariq A.',
-            route: 'Irbid → Zarqa',
-            departure: 'Departure: 06:00 PM',
-            rating: '4.7 (218 reviews)',
-            price: '9.00 JOD',
+          StreamBuilder<List<RideModel>>(
+            stream: context.read<RideProvider>().availableRidesStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                    child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ));
+              }
+              final rides = (snapshot.data ?? []).take(3).toList();
+              if (rides.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Text(
+                    context.l10n.noRidesAvailable,
+                    style: TextStyle(
+                        color: context.colors.textSecondary, fontSize: 14),
+                  ),
+                );
+              }
+              return Column(
+                children: rides
+                    .map((ride) => _LiveRideCard(ride: ride))
+                    .toList(),
+              );
+            },
           ),
 
           const SizedBox(height: 24),
 
           // Quick Destinations
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Text(
-              'Quick Destinations',
+              context.l10n.quickDestinations,
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -491,7 +567,7 @@ class _HomeTab extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppStyles.onPrimary,
@@ -513,119 +589,13 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildRideCard({
-    required BuildContext context,
-    required String driverName,
-    required String route,
-    required String departure,
-    required String rating,
-    required String price,
-  }) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RideResultsScreen()),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: context.colors.surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: context.colors.borderColor),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: context.colors.cardBackgroundColor,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(Icons.directions_car, color: AppStyles.primaryColor),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        driverName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: context.colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: context.colors.highlightBackgroundColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          route,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppStyles.primaryColor,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    departure,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.colors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: AppStyles.starRatingColor, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: context.colors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Text(
-              price,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppStyles.primaryColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildDestinationCard(BuildContext context, String city) {
     return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const RideResultsScreen()),
-        );
-      },
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RideResultsScreen(destination: city),
+        ),
+      ),
       child: Container(
         width: 100,
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -641,8 +611,9 @@ class _HomeTab extends StatelessWidget {
               child: Image.asset(
                 'assets/images/${city.toLowerCase()}_city.png',
                 fit: BoxFit.cover,
-                width: double.infinity,
-                height: double.infinity,
+                errorBuilder: (_, __, ___) => Container(
+                  color: context.colors.cardBackgroundColor,
+                ),
               ),
             ),
             Container(
@@ -662,11 +633,117 @@ class _HomeTab extends StatelessWidget {
               child: Text(
                 city,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   color: AppStyles.onPrimary,
                   fontWeight: FontWeight.w700,
                   fontSize: 14,
                 ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Live ride card (home feed) ───────────────────────────────────────────────
+class _LiveRideCard extends StatelessWidget {
+  final RideModel ride;
+  const _LiveRideCard({required this.ride});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+      ),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: context.colors.borderColor),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: context.colors.highlightBackgroundColor,
+              child: Text(
+                ride.driverName.isNotEmpty ? ride.driverName[0].toUpperCase() : 'D',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppStyles.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        ride.driverName,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: context.colors.highlightBackgroundColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '${ride.origin} → ${ride.destination}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: AppStyles.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${ride.date}  ·  ${ride.time}',
+                    style: TextStyle(
+                        fontSize: 12, color: context.colors.textSecondary),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.event_seat_rounded,
+                          size: 13, color: context.colors.textTertiary),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${ride.availableSeats} ${context.l10n.seatsLeft}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${ride.pricePerSeat} JOD',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppStyles.primaryColor,
               ),
             ),
           ],

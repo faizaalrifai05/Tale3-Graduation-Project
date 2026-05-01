@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/screens/passenger/cancel_trip_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -21,9 +22,9 @@ class BookingStatusScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Booking Status',
-          style: TextStyle(
+        title: Text(
+          context.l10n.bookingStatus,
+          style: const TextStyle(
             color: Color(0xFF1A1A1A),
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -60,19 +61,19 @@ class BookingStatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
 
-              const Text(
-                'Booking Confirmed!',
-                style: TextStyle(
+              Text(
+                context.l10n.bookingConfirmed,
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF1A1A1A),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Your ride has been confirmed. You can\ntrack its status at My Trips.',
+              Text(
+                context.l10n.bookingConfirmedDesc,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF757575),
                   height: 1.5,
@@ -91,9 +92,9 @@ class BookingStatusScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'TRIP DETAILS',
-                      style: TextStyle(
+                    Text(
+                      context.l10n.tripDetails,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF9E9E9E),
@@ -171,10 +172,9 @@ class BookingStatusScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Cancel Ride',
-                    style:
-                        TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  child: Text(
+                    context.l10n.cancelRide,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
