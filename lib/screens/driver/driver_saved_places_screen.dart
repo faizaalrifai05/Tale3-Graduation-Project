@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
 import '../../providers/saved_places_provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverSavedPlacesScreen extends StatelessWidget {
   const DriverSavedPlacesScreen({super.key});
@@ -44,7 +45,7 @@ class DriverSavedPlacesScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 20),
                         Text(
-                          'No saved places yet',
+                          context.l10n.noSavedPlaces,
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
@@ -53,7 +54,7 @@ class DriverSavedPlacesScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Save your home, work, or\nfrequent destinations here.',
+                          context.l10n.savedPlacesEmptyDesc,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -79,7 +80,7 @@ class DriverSavedPlacesScreen extends StatelessWidget {
                     onPressed: () => _showAddDialog(context),
                     icon: Icon(Icons.add, color: AppStyles.onPrimary),
                     label: Text(
-                      'Add New Place',
+                      context.l10n.addNewPlace,
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -208,12 +209,6 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
   String _selectedIcon = 'place';
   bool _saving = false;
 
-  static const _icons = [
-    ('home', Icons.home_rounded, 'Home'),
-    ('work', Icons.work_rounded, 'Work'),
-    ('star', Icons.star_rounded, 'Favourite'),
-    ('place', Icons.place_rounded, 'Other'),
-  ];
 
   @override
   void dispose() {
@@ -233,10 +228,16 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final icons = [
+      ('home', Icons.home_rounded, context.l10n.placeTypeHome),
+      ('work', Icons.work_rounded, context.l10n.placeTypeWork),
+      ('star', Icons.star_rounded, context.l10n.placeTypeFavourite),
+      ('place', Icons.place_rounded, context.l10n.placeTypeOther),
+    ];
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        'Add Place',
+        context.l10n.addPlace,
         style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
       ),
       content: Column(
@@ -244,11 +245,11 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Icon picker
-          Text('Type', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textSecondary)),
+          Text(context.l10n.placeType, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: context.colors.textSecondary)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: _icons.map((entry) {
+            children: icons.map((entry) {
               final (id, icon, label) = entry;
               final selected = _selectedIcon == id;
               return GestureDetector(
@@ -284,7 +285,7 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
             controller: _titleController,
             textCapitalization: TextCapitalization.words,
             decoration: InputDecoration(
-              labelText: 'Name (e.g. Home)',
+              labelText: context.l10n.placeNameLabel,
               labelStyle: TextStyle(fontSize: 13, color: context.colors.textSecondary),
               filled: true,
               fillColor: context.colors.inputFillColor,
@@ -308,7 +309,7 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
           TextField(
             controller: _subtitleController,
             decoration: InputDecoration(
-              labelText: 'Address',
+              labelText: context.l10n.addressLabel,
               labelStyle: TextStyle(fontSize: 13, color: context.colors.textSecondary),
               filled: true,
               fillColor: context.colors.inputFillColor,
@@ -332,7 +333,7 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: Text('Cancel',
+          child: Text(context.l10n.cancel,
               style: TextStyle(color: context.colors.textSecondary, fontWeight: FontWeight.w600)),
         ),
         ElevatedButton(
@@ -349,7 +350,7 @@ class _AddPlaceDialogState extends State<_AddPlaceDialog> {
                   height: 16,
                   child: CircularProgressIndicator(color: AppStyles.onPrimary, strokeWidth: 2),
                 )
-              : Text('Save', style: TextStyle(fontWeight: FontWeight.w600)),
+              : Text(context.l10n.save, style: TextStyle(fontWeight: FontWeight.w600)),
         ),
       ],
     );

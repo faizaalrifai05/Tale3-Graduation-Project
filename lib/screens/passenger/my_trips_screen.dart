@@ -4,6 +4,7 @@ import '../../theme/app_styles.dart';
 import '../../models/booking_model.dart';
 import '../../providers/booking_provider.dart';
 import 'booking_status_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class MyTripsScreen extends StatelessWidget {
   const MyTripsScreen({super.key});
@@ -20,9 +21,9 @@ class MyTripsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'My Trips',
-                  style: TextStyle(
+                Text(
+                  context.l10n.myTrips,
+                  style: const TextStyle(
                     color: AppStyles.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w800,
@@ -36,10 +37,10 @@ class MyTripsScreen extends StatelessWidget {
                   indicatorWeight: 3,
                   labelStyle: const TextStyle(
                       fontSize: 12, fontWeight: FontWeight.w700),
-                  tabs: const [
-                    Tab(text: 'UPCOMING'),
-                    Tab(text: 'PAST'),
-                    Tab(text: 'CANCELED'),
+                  tabs: [
+                    Tab(text: context.l10n.upcoming.toUpperCase()),
+                    Tab(text: context.l10n.past.toUpperCase()),
+                    Tab(text: context.l10n.canceled),
                   ],
                 ),
               ],
@@ -63,15 +64,15 @@ class MyTripsScreen extends StatelessWidget {
                   children: [
                     _BookingList(
                       bookings: upcoming,
-                      emptyMessage: 'No upcoming trips.',
+                      emptyMessage: context.l10n.noUpcomingTrips,
                     ),
-                    const Center(
-                      child: Text('No past trips yet.',
-                          style: TextStyle(color: AppStyles.textSecondary)),
+                    Center(
+                      child: Text(context.l10n.noPastTrips,
+                          style: const TextStyle(color: AppStyles.textSecondary)),
                     ),
                     _BookingList(
                       bookings: cancelled,
-                      emptyMessage: 'No cancelled trips.',
+                      emptyMessage: context.l10n.noCancelledTrips,
                     ),
                   ],
                 );
@@ -155,7 +156,7 @@ class _BookingCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    isCancelled ? 'CANCELLED' : 'CONFIRMED',
+                    isCancelled ? context.l10n.cancelled : context.l10n.confirmed,
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,

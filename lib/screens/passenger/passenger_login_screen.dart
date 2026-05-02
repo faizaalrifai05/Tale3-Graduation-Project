@@ -7,6 +7,7 @@ import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_registration_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerLoginScreen extends StatefulWidget {
   final String? preFilledEmail;
@@ -97,6 +98,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -105,7 +107,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Passenger Login',
+          l10n.passengerLogin,
           style: TextStyle(
               color: context.colors.textPrimary,
               fontSize: 16,
@@ -124,7 +126,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
               children: [
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Back',
+                  l10n.welcomeBack,
                   style: TextStyle(
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
@@ -132,7 +134,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ready for your next trip? Log in to continue.',
+                  l10n.passengerLoginSubtitle,
                   style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
                 ),
                 const SizedBox(height: 48),
@@ -140,7 +142,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                 // ── Email ──────────────────────────────────────────────────
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Email Address',
+                  child: Text(l10n.emailAddress,
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -159,7 +161,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                 // ── Password ───────────────────────────────────────────────
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text('Password',
+                  child: Text(l10n.password,
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -172,7 +174,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                   validator: Validators.password,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                    hintText: 'Enter your password',
+                    hintText: l10n.enterYourPassword,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -199,7 +201,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text('Forgot Password?',
+                    child: Text(l10n.forgotPassword,
                         style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -229,7 +231,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                             child: CircularProgressIndicator(
                                 color: AppStyles.onPrimary, strokeWidth: 2),
                           )
-                        : Text('Login as Passenger',
+                        : Text(l10n.loginAsPassenger,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
@@ -243,7 +245,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                             height: 1, color: context.colors.dividerColor)),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text('Or continue with',
+                      child: Text(l10n.orContinueWith,
                           style: TextStyle(
                               fontSize: 12, color: context.colors.textTertiary)),
                     ),
@@ -282,7 +284,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                               _GoogleLogo(),
                               const SizedBox(width: 12),
                               Text(
-                                'Sign in with Google',
+                                l10n.signInWithGoogle,
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -298,13 +300,13 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('New to Tale3? ',
+                    Text('${l10n.newToTale3} ',
                         style: TextStyle(
                             fontSize: 14, color: context.colors.textSecondary)),
                     GestureDetector(
                       onTap: () => Navigator.of(context).push(MaterialPageRoute(
                           builder: (_) => const PassengerRegistrationScreen())),
-                      child: Text('Register Now!',
+                      child: Text(l10n.registerNow,
                           style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/ride_provider.dart';
 import '../../providers/auth_provider.dart';
 import 'ride_posted_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -105,7 +106,7 @@ class RideConfirmationScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Review Ride',
+          context.l10n.reviewRide,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -127,7 +128,7 @@ class RideConfirmationScreen extends StatelessWidget {
                   children: [
                     // ── Header text ──
                     Text(
-                      'Please review your ride details\nbefore publishing.',
+                      context.l10n.reviewRideDesc,
                       style: TextStyle(
                         fontSize: 15,
                         color: context.colors.textSecondary,
@@ -143,7 +144,8 @@ class RideConfirmationScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           _SectionHeader(
-                              icon: Icons.route_rounded, title: 'Route'),
+                              icon: Icons.route_rounded,
+                              title: context.l10n.route),
                           const SizedBox(height: 16),
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +189,7 @@ class RideConfirmationScreen extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'FROM',
+                                      context.l10n.from.toUpperCase(),
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
@@ -198,7 +200,7 @@ class RideConfirmationScreen extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       ride.origin.isEmpty
-                                          ? 'Not specified'
+                                          ? context.l10n.notSpecified
                                           : ride.origin,
                                       style: TextStyle(
                                         fontSize: 15,
@@ -208,7 +210,7 @@ class RideConfirmationScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 16),
                                     Text(
-                                      'TO',
+                                      context.l10n.to.toUpperCase(),
                                       style: TextStyle(
                                         fontSize: 9,
                                         fontWeight: FontWeight.w700,
@@ -219,7 +221,7 @@ class RideConfirmationScreen extends StatelessWidget {
                                     const SizedBox(height: 2),
                                     Text(
                                       ride.destination.isEmpty
-                                          ? 'Not specified'
+                                          ? context.l10n.notSpecified
                                           : ride.destination,
                                       style: TextStyle(
                                         fontSize: 15,
@@ -245,18 +247,18 @@ class RideConfirmationScreen extends StatelessWidget {
                         children: [
                           _SectionHeader(
                               icon: Icons.info_outline_rounded,
-                              title: 'Trip Details'),
+                              title: context.l10n.tripDetails),
                           const SizedBox(height: 16),
                           Row(
                             children: [
                               _DetailItem(
                                 icon: Icons.calendar_today_rounded,
-                                label: 'Date',
+                                label: context.l10n.date,
                                 value: ride.dateLabel,
                               ),
                               _DetailItem(
                                 icon: Icons.access_time_rounded,
-                                label: 'Time',
+                                label: context.l10n.time,
                                 value: ride.timeLabel,
                               ),
                             ],
@@ -265,14 +267,15 @@ class RideConfirmationScreen extends StatelessWidget {
                           Row(
                             children: [
                               _DetailItem(
-                                icon: Icons.airline_seat_recline_normal_rounded,
-                                label: 'Seats',
+                                icon:
+                                    Icons.airline_seat_recline_normal_rounded,
+                                label: context.l10n.seats,
                                 value: '${ride.seats}',
                               ),
                               _DetailItem(
                                 icon: Icons.attach_money_rounded,
-                                label: 'Price / Seat',
-                                value: '\$${ride.price}',
+                                label: context.l10n.pricePerSeat,
+                                value: '${ride.price} JOD',
                               ),
                             ],
                           ),
@@ -290,7 +293,7 @@ class RideConfirmationScreen extends StatelessWidget {
                         children: [
                           _SectionHeader(
                               icon: Icons.tune_rounded,
-                              title: 'Features & Preferences'),
+                              title: context.l10n.featuresPreferences),
                           const SizedBox(height: 16),
                           Wrap(
                             spacing: 8,
@@ -298,22 +301,23 @@ class RideConfirmationScreen extends StatelessWidget {
                             children: [
                               if (ride.acChecked)
                                 _featureChip(context, Icons.ac_unit_rounded,
-                                    'Air Conditioning'),
+                                    context.l10n.airConditioning),
                               if (ride.luggageChecked)
                                 _featureChip(context, Icons.luggage_rounded,
-                                    'Luggage'),
+                                    context.l10n.luggage),
                               if (ride.petsChecked)
-                                _featureChip(
-                                    context, Icons.pets_rounded, 'Pets Allowed'),
+                                _featureChip(context, Icons.pets_rounded,
+                                    context.l10n.petsAllowed),
                               if (ride.noSmokingChecked)
-                                _featureChip(context, Icons.smoke_free_rounded,
-                                    'No Smoking'),
+                                _featureChip(context,
+                                    Icons.smoke_free_rounded,
+                                    context.l10n.noSmoking),
                               if (!ride.acChecked &&
                                   !ride.luggageChecked &&
                                   !ride.petsChecked &&
                                   !ride.noSmokingChecked)
                                 Text(
-                                  'No features selected',
+                                  context.l10n.noFeaturesSelected,
                                   style: TextStyle(
                                     color: context.colors.textTertiary,
                                     fontSize: 13,
@@ -334,7 +338,7 @@ class RideConfirmationScreen extends StatelessWidget {
                           children: [
                             _SectionHeader(
                                 icon: Icons.note_alt_outlined,
-                                title: 'Additional Notes'),
+                                title: context.l10n.additionalNotes),
                             const SizedBox(height: 12),
                             Text(
                               ride.additionalNotes,
@@ -359,14 +363,15 @@ class RideConfirmationScreen extends StatelessWidget {
                         color: context.colors.highlightBackgroundColor,
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(
-                          color: AppStyles.primaryColor.withValues(alpha: 0.15),
+                          color:
+                              AppStyles.primaryColor.withValues(alpha: 0.15),
                         ),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Total if fully booked',
+                            context.l10n.totalIfFullyBooked,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
@@ -374,8 +379,8 @@ class RideConfirmationScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '\$${ride.price * ride.seats}',
-                            style: TextStyle(
+                            '${ride.price * ride.seats} JOD',
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w800,
                               color: AppStyles.primaryColor,
@@ -418,14 +423,15 @@ class RideConfirmationScreen extends StatelessWidget {
                         onPressed: () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: context.colors.textPrimary,
-                          side: BorderSide(color: context.colors.borderColor),
+                          side:
+                              BorderSide(color: context.colors.borderColor),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Edit',
-                          style: TextStyle(
+                        child: Text(
+                          context.l10n.edit,
+                          style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                           ),
@@ -452,11 +458,12 @@ class RideConfirmationScreen extends StatelessWidget {
                                   color: AppStyles.onPrimary,
                                 ),
                               )
-                            : const Icon(Icons.check_circle_outline, size: 20),
+                            : const Icon(Icons.check_circle_outline,
+                                size: 20),
                         label: Text(
                           ride.isPublishing
-                              ? 'Publishing...'
-                              : 'Confirm & Publish',
+                              ? context.l10n.publishing
+                              : context.l10n.confirmAndPublish,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,

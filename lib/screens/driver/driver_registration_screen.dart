@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../utils/validators.dart';
 import 'package:testtale3/screens/driver/driver_id_verification_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverRegistrationScreen extends StatefulWidget {
   const DriverRegistrationScreen({super.key});
@@ -38,8 +39,8 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
   @override
   void initState() {
     super.initState();
-    _termsTap = TapGestureRecognizer()..onTap = () => _showDialog('Terms of Service', _termsContent);
-    _privacyTap = TapGestureRecognizer()..onTap = () => _showDialog('Privacy Policy', _privacyContent);
+    _termsTap = TapGestureRecognizer()..onTap = () => _showDialog(context.l10n.termsOfService, _termsContent);
+    _privacyTap = TapGestureRecognizer()..onTap = () => _showDialog(context.l10n.privacyPolicy, _privacyContent);
   }
 
   @override
@@ -75,7 +76,7 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('Close',
+            child: Text(context.l10n.close,
                 style: TextStyle(
                     color: AppStyles.primaryColor, fontWeight: FontWeight.w600)),
           ),
@@ -136,7 +137,7 @@ If you have any questions about this Privacy Policy, please contact us through t
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please accept the Terms of Service to continue'),
+          content: Text(context.l10n.acceptTerms),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -148,7 +149,7 @@ If you have any questions about this Privacy Policy, please contact us through t
     if (_selectedGender == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please select your gender'),
+          content: Text(context.l10n.selectGenderMsg),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -179,7 +180,7 @@ If you have any questions about this Privacy Policy, please contact us through t
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Driver Registration',
+          context.l10n.driverRegistration,
           style: TextStyle(
               color: context.colors.textPrimary,
               fontSize: 16,
@@ -200,12 +201,12 @@ If you have any questions about this Privacy Policy, please contact us through t
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Account Details',
+                    Text(context.l10n.accountDetails,
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: context.colors.textTertiary)),
-                    Text('Step 1 of 4',
+                    Text('${context.l10n.step} 1 / 4',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -223,14 +224,14 @@ If you have any questions about this Privacy Policy, please contact us through t
                 ),
                 const SizedBox(height: 32),
 
-                Text('Join Tale3 as a Driver',
+                Text(context.l10n.joinTale3AsDriver,
                     style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         color: context.colors.textPrimary)),
                 const SizedBox(height: 8),
                 Text(
-                  'Start your journey with us and maximize your\nearnings today.',
+                  context.l10n.driverJoinDesc,
                   style: TextStyle(
                       fontSize: 14,
                       color: context.colors.textSecondary,
@@ -239,7 +240,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                 const SizedBox(height: 32),
 
                 // ── Full Name ────────────────────────────────────────────
-                _buildLabel('Full Name'),
+                _buildLabel(context.l10n.fullName),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nameController,
@@ -247,22 +248,22 @@ If you have any questions about this Privacy Policy, please contact us through t
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   textCapitalization: TextCapitalization.words,
                   decoration: _inputDecoration(
-                      hint: 'John Doe', icon: Icons.person_outline),
+                      hint: context.l10n.fullNameHint, icon: Icons.person_outline),
                 ),
                 const SizedBox(height: 16),
 
                 // ── Gender ──────────────────────────────────────────────
-                _buildLabel('Gender'),
+                _buildLabel(context.l10n.gender),
                 const SizedBox(height: 8),
                 Row(
-                  children: ['Male', 'Female'].map((gender) {
+                  children: [context.l10n.genderMale, context.l10n.genderFemale].map((gender) {
                     final selected = _selectedGender == gender;
                     return Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _selectedGender = gender),
                         child: Container(
                           margin: EdgeInsets.only(
-                              right: gender == 'Male' ? 8 : 0),
+                              right: gender == context.l10n.genderMale ? 8 : 0),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
                             color: selected
@@ -280,7 +281,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                gender == 'Male'
+                                gender == context.l10n.genderMale
                                     ? Icons.male
                                     : Icons.female,
                                 color: selected
@@ -309,7 +310,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                 const SizedBox(height: 16),
 
                 // ── Birthday ─────────────────────────────────────────────
-                _buildLabel('Date of Birth'),
+                _buildLabel(context.l10n.dateOfBirth),
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () async {
@@ -353,7 +354,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                         const SizedBox(width: 12),
                         Text(
                           _selectedBirthday == null
-                              ? 'Select your date of birth'
+                              ? context.l10n.selectDateOfBirth
                               : '${_selectedBirthday!.day.toString().padLeft(2, '0')}/${_selectedBirthday!.month.toString().padLeft(2, '0')}/${_selectedBirthday!.year}',
                           style: TextStyle(
                             fontSize: 14,
@@ -372,7 +373,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                 const SizedBox(height: 16),
 
                 // ── Email ────────────────────────────────────────────────
-                _buildLabel('Email Address'),
+                _buildLabel(context.l10n.emailAddress),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _emailController,
@@ -380,12 +381,12 @@ If you have any questions about this Privacy Policy, please contact us through t
                   validator: Validators.email,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: 'name@example.com', icon: Icons.email_outlined),
+                      hint: context.l10n.emailHint, icon: Icons.email_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // ── National ID ──────────────────────────────────────────
-                _buildLabel('National ID Number'),
+                _buildLabel(context.l10n.nationalId),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _nationalIdController,
@@ -394,12 +395,12 @@ If you have any questions about this Privacy Policy, please contact us through t
                   validator: Validators.nationalId,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: 'Enter ID number', icon: Icons.badge_outlined),
+                      hint: context.l10n.nationalIdHint, icon: Icons.badge_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // ── Phone Number ─────────────────────────────────────────
-                _buildLabel('Phone Number'),
+                _buildLabel(context.l10n.phoneNumber),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _phoneController,
@@ -407,8 +408,8 @@ If you have any questions about this Privacy Policy, please contact us through t
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Phone number is required';
-                    if (v.length < 10) return 'Enter a valid phone number';
+                    if (v == null || v.isEmpty) return context.l10n.phoneRequired;
+                    if (v.length < 10) return context.l10n.enterValidPhone;
                     return null;
                   },
                   decoration: _inputDecoration(
@@ -418,7 +419,7 @@ If you have any questions about this Privacy Policy, please contact us through t
 
 
                 // ── Password ─────────────────────────────────────────────
-                _buildLabel('Password'),
+                _buildLabel(context.l10n.passwordLabel),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _passwordController,
@@ -475,22 +476,22 @@ If you have any questions about this Privacy Policy, please contact us through t
                 Padding(
                   padding: EdgeInsets.only(top: 6, left: 4),
                   child: Text(
-                    'Min. 8 characters, one uppercase letter and one number',
+                    context.l10n.passwordMinHint,
                     style: TextStyle(fontSize: 11, color: context.colors.textTertiary),
                   ),
                 ),
                 const SizedBox(height: 16),
 
                 // ── Confirm Password ──────────────────────────────────────
-                _buildLabel('Confirm Password'),
+                _buildLabel(context.l10n.confirmPassword),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirmPassword,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Please confirm your password';
-                    if (v != _passwordController.text) return 'Passwords do not match';
+                    if (v == null || v.isEmpty) return context.l10n.pleaseConfirmPassword;
+                    if (v != _passwordController.text) return context.l10n.passwordsDoNotMatch;
                     return null;
                   },
                   decoration: InputDecoration(
@@ -565,23 +566,23 @@ If you have any questions about this Privacy Policy, please contact us through t
                               color: context.colors.textSecondary,
                               height: 1.5),
                           children: [
-                            TextSpan(text: 'By joining, I agree to Tale3\'s '),
+                            TextSpan(text: context.l10n.termsAgreement),
                             TextSpan(
-                              text: 'Terms of Service',
+                              text: context.l10n.termsOfService,
                               recognizer: _termsTap,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   color: AppStyles.primaryColor,
                                   fontWeight: FontWeight.w600),
                             ),
-                            TextSpan(text: ' and '),
+                            TextSpan(text: context.l10n.and),
                             TextSpan(
-                              text: 'Privacy Policy',
+                              text: context.l10n.privacyPolicy,
                               recognizer: _privacyTap,
-                              style: TextStyle(
+                              style: const TextStyle(
                                   color: AppStyles.primaryColor,
                                   fontWeight: FontWeight.w600),
                             ),
-                            TextSpan(text: '.'),
+                            const TextSpan(text: '.'),
                           ],
                         ),
                       ),
@@ -604,7 +605,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: Text('Join as Driver',
+                    child: Text(context.l10n.joinAsDriver,
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),

@@ -119,6 +119,17 @@ class BookingProvider extends ChangeNotifier {
     }
   }
 
+  /// Stream of confirmed bookings for a specific ride (driver view).
+  Stream<List<BookingModel>> rideBookingsStream(String rideId) {
+    return _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('status', isEqualTo: 'confirmed')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map((snap) => snap.docs.map(BookingModel.fromDoc).toList());
+  }
+
   /// Stream of bookings belonging to the currently logged-in passenger.
   Stream<List<BookingModel>> get myBookingsStream {
     final uid = _auth.currentUser?.uid;

@@ -7,6 +7,7 @@ import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverLoginScreen extends StatefulWidget {
   final String? preFilledEmail;
@@ -97,6 +98,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -105,7 +107,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Driver Login',
+          l10n.driverLogin,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -125,7 +127,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
               children: [
                 const SizedBox(height: 32),
                 Text(
-                  'Welcome Captain',
+                  l10n.welcomeCaptain,
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -134,16 +136,15 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Ready to hit the road? Log in to continue.',
+                  l10n.driverLoginSubtitle,
                   style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
                 ),
                 const SizedBox(height: 48),
 
-                // ── Email ──────────────────────────────────────────────────
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Email Address',
+                    l10n.emailAddress,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -161,11 +162,10 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // ── Password ───────────────────────────────────────────────
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Password',
+                    l10n.password,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -180,7 +180,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                   validator: Validators.password,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                    hintText: 'Enter your password',
+                    hintText: l10n.enterYourPassword,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword
@@ -209,7 +209,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: Text(
-                      'Forgot Password?',
+                      l10n.forgotPassword,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -220,7 +220,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // ── Login Button ───────────────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -244,7 +243,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                             ),
                           )
                         : Text(
-                            'Login as Driver',
+                            l10n.loginAsDriver,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600),
                           ),
@@ -252,7 +251,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // ── Divider ────────────────────────────────────────────────
                 Row(
                   children: [
                     Expanded(
@@ -261,9 +259,8 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'Or continue with',
-                        style:
-                            TextStyle(fontSize: 12, color: context.colors.textTertiary),
+                        l10n.orContinueWith,
+                        style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
                       ),
                     ),
                     Expanded(
@@ -273,7 +270,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // ── Google Sign-In Button ──────────────────────────────────
                 SizedBox(
                   width: double.infinity,
                   height: 52,
@@ -301,7 +297,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                               _GoogleLogo(),
                               const SizedBox(width: 12),
                               Text(
-                                'Sign in with Google',
+                                l10n.signInWithGoogle,
                                 style: TextStyle(
                                   fontSize: 15,
                                   fontWeight: FontWeight.w600,
@@ -314,20 +310,18 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                 ),
                 const SizedBox(height: 48),
 
-                // ── Register link ──────────────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('New to Tale3? ',
-                        style:
-                            TextStyle(fontSize: 14, color: context.colors.textSecondary)),
+                    Text('${l10n.newToTale3} ',
+                        style: TextStyle(fontSize: 14, color: context.colors.textSecondary)),
                     GestureDetector(
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute(
                             builder: (_) => const DriverRegistrationScreen()),
                       ),
                       child: Text(
-                        'Register Now!',
+                        l10n.registerNow,
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,

@@ -2,6 +2,7 @@ import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:testtale3/screens/passenger/passenger_verification_success_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerVerificationScreen extends StatefulWidget {
   final String email;
@@ -42,7 +43,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
     if (code.length < 4) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enter the fully 4-digit code.'),
+          content: Text(context.l10n.enterFullCode),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -90,7 +91,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
               const SizedBox(height: 16),
               // Heading
               Text(
-                'Verify your Email',
+                context.l10n.verifyYourEmail,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -106,19 +107,15 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
                     height: 1.5,
                   ),
                   children: [
-                    TextSpan(
-                      text: 'We\'ve sent a 4-digit code to\n',
-                    ),
+                    TextSpan(text: context.l10n.sentCodeTo),
                     TextSpan(
                       text: widget.email,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontWeight: FontWeight.w700,
                         color: AppStyles.primaryColor,
                       ),
                     ),
-                    TextSpan(
-                      text: '. Please enter it below to continue.',
-                    ),
+                    TextSpan(text: context.l10n.enterCodeBelow),
                   ],
                 ),
               ),
@@ -187,7 +184,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
               // Resend Section
               Center(
                 child: Text(
-                  'Didn\'t receive the code?',
+                  context.l10n.didntReceiveCode,
                   style: TextStyle(
                     fontSize: 13,
                     color: context.colors.textTertiary,
@@ -200,7 +197,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Code resent to your email.'),
+                        content: Text(context.l10n.codeResent),
                         backgroundColor: AppStyles.primaryColor,
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -214,7 +211,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Text(
-                    'Resend Code',
+                    context.l10n.resendCode,
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -253,7 +250,7 @@ class _PassengerVerificationScreenState extends State<PassengerVerificationScree
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Verify',
+                              context.l10n.verify,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

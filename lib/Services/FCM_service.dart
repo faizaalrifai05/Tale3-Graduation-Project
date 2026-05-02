@@ -1,6 +1,6 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 /// Top-level handler — must be a plain function (not a method) so FCM can
 /// invoke it when the app is in the background or terminated.
@@ -17,38 +17,71 @@ class FCMService {
 
   /// Call once from main() — before runApp.
   /// Requests permission and wires up message handlers.
-  /// Does NOT need a userId.
-  static Future<void> setup() async {
-    // Register the background handler
+  static Future<void> setup({required GlobalKey<NavigatorState> navigatorKey}) async {
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-     FirebaseMessaging messaging = FirebaseMessaging.instance;
 
-    String? token = await messaging.getToken();
-    print("FCM Token: $token");
-    // Request notification permission (iOS + Android 13+)
     await _messaging.requestPermission(
       alert: true,
       badge: true,
       sound: true,
     );
 
-    // Foreground messages — show an in-app banner or update chat UI
+    debugPrint('FCM Token: ${await _messaging.getToken()}');
+
+    // Foreground: show an in-app SnackBar banner
     FirebaseMessaging.onMessage.listen((message) {
-      debugPrint('FCM foreground: ${message.notification?.title}');
-      // TODO: show a local notification or update chat badge here
+      final title = message.notification?.title;
+      final body = message.notification?.body;
+      if (title == null && body == null) return;
+
+      final context = navigatorKey.currentContext;
+      if (context == null) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.message, color: Colors.white, size: 18),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (title != null)
+                      Text(title,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, color: Colors.white)),
+                    if (body != null)
+                      Text(body,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: const Color(0xFF8B1A2B),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     });
 
-    // Tapped notification when app was in background (not terminated)
+    // Background tap: go back to home screen
     FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      debugPrint('FCM opened from background: ${message.notification?.title}');
-      // TODO: navigate to the relevant chat screen
+      navigatorKey.currentState?.popUntil((route) => route.isFirst);
     });
 
-    // Notification that launched the app from terminated state
+    // Terminated tap: go back to home screen after app is built
     final initial = await _messaging.getInitialMessage();
     if (initial != null) {
-      debugPrint('FCM launched app: ${initial.notification?.title}');
-      // TODO: navigate after the app is fully initialised
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        navigatorKey.currentState?.popUntil((route) => route.isFirst);
+      });
     }
   }
 

@@ -7,6 +7,7 @@ import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/driver/driver_saved_places_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverProfileScreen extends StatefulWidget {
   const DriverProfileScreen({super.key});
@@ -65,7 +66,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
             children: [
               ListTile(
                 leading: Icon(Icons.camera_alt, color: AppStyles.primaryColor),
-                title: Text('Take a photo'),
+                title: Text(context.l10n.takeAPhoto),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera, setSheetState);
@@ -73,7 +74,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library, color: AppStyles.primaryColor),
-                title: Text('Choose from gallery'),
+                title: Text(context.l10n.chooseFromGallery),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery, setSheetState);
@@ -120,7 +121,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Edit Profile',
+                  context.l10n.editProfile,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -177,22 +178,22 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Tap to change photo',
+                  context.l10n.tapToChangePhoto,
                   style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
                 ),
                 const SizedBox(height: 24),
 
                 _buildSheetField(
                   controller: _nameController,
-                  label: 'FULL NAME',
-                  hint: 'Your full name',
+                  label: context.l10n.fullName.toUpperCase(),
+                  hint: context.l10n.yourFullName,
                   icon: Icons.person_outline,
                 ),
                 const SizedBox(height: 16),
                 _buildSheetField(
                   controller: _phoneController,
-                  label: 'PHONE NUMBER',
-                  hint: '+966 5X XXX XXXX',
+                  label: context.l10n.phoneNumber.toUpperCase(),
+                  hint: context.l10n.phoneHint,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                 ),
@@ -219,7 +220,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               Icon(Icons.check_circle_outline,
                                   color: AppStyles.onPrimary, size: 20),
                               SizedBox(width: 12),
-                              Text('Profile updated',
+                              Text(context.l10n.profileUpdated,
                                   style: TextStyle(
                                       fontWeight: FontWeight.w500)),
                             ],
@@ -239,7 +240,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: Text('Save Changes',
+                    child: Text(context.l10n.saveChanges,
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
@@ -302,10 +303,10 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     final authUser = context.watch<AuthProvider>().currentUser;
     final shownName = _displayName.isNotEmpty
         ? _displayName
-        : (authUser?.name.isNotEmpty == true ? authUser!.name : 'Your Name');
+        : (authUser?.name.isNotEmpty == true ? authUser!.name : context.l10n.yourName);
     final displayPhone = _phoneNumber.isNotEmpty
         ? _phoneNumber
-        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : 'Add phone number');
+        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : context.l10n.addPhoneNumber);
 
     return Stack(
       children: [
@@ -341,7 +342,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'Driver Profile',
+                            context.l10n.driverProfile,
                             style: TextStyle(
                               color: AppStyles.onPrimary,
                               fontSize: 22,
@@ -355,7 +356,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                 icon: Icon(Icons.edit_outlined,
                                     size: 16, color: AppStyles.onPrimary),
                                 label: Text(
-                                  'Edit',
+                                  context.l10n.edit,
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -439,7 +440,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  shownName.isEmpty ? 'Driver Name' : shownName,
+                                  shownName.isEmpty ? context.l10n.driverName : shownName,
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
@@ -480,7 +481,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                           color: AppStyles.goldStar, size: 12),
                                       SizedBox(width: 4),
                                       Text(
-                                        'Gold Driver',
+                                        context.l10n.goldDriver,
                                         style: TextStyle(
                                           fontSize: 10,
                                           fontWeight: FontWeight.w700,
@@ -513,7 +514,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                     children: [
                       // ── Vehicle Information ──────────────────────────
                       _buildSection(
-                        title: 'Vehicle',
+                        title: context.l10n.vehicle,
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -548,7 +549,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          makeModel.isNotEmpty ? makeModel : 'No vehicle added',
+                                          makeModel.isNotEmpty ? makeModel : context.l10n.noVehicleAdded,
                                           style: TextStyle(
                                             fontSize: 15,
                                             fontWeight: FontWeight.w700,
@@ -578,7 +579,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
-                                  'ACTIVE',
+                                  context.l10n.active,
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
@@ -594,12 +595,12 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
                       // ── Verification Status ──────────────────────────
                       _buildSection(
-                        title: 'Verification',
+                        title: context.l10n.verification,
                         child: Column(
                           children: [
-                            _buildVerificationItem('Identity Verified', true),
+                            _buildVerificationItem(context.l10n.identityVerified, true),
                             const SizedBox(height: 10),
-                            _buildVerificationItem('Background Check', true),
+                            _buildVerificationItem(context.l10n.backgroundCheck, true),
                           ],
                         ),
                       ),
@@ -607,9 +608,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
                       // ── Quick Links ──────────────────────────────────
                       _buildSection(
-                        title: 'Quick Links',
+                        title: context.l10n.quickLinks,
                         child: _buildLinkTile(
-                            Icons.favorite_border_rounded, 'Saved Places'),
+                            Icons.favorite_border_rounded, context.l10n.savedPlaces),
                       ),
                       const SizedBox(height: 24),
 
@@ -626,18 +627,18 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                 builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16)),
-                                  title: Text('Log Out',
+                                  title: Text(context.l10n.logOut,
                                       style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w700)),
                                   content: Text(
-                                      'Are you sure you want to log out?',
+                                      context.l10n.logOutConfirm,
                                       style: TextStyle(fontSize: 14)),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
-                                      child: Text('Cancel'),
+                                      child: Text(context.l10n.cancel),
                                     ),
                                     ElevatedButton(
                                       onPressed: () =>
@@ -651,7 +652,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                                 BorderRadius.circular(8)),
                                         elevation: 0,
                                       ),
-                                      child: Text('Log Out'),
+                                      child: Text(context.l10n.logOut),
                                     ),
                                   ],
                                 ),
@@ -668,7 +669,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                             icon: Icon(Icons.logout,
                                 color: AppStyles.primaryColor),
                             label: Text(
-                              'Log Out',
+                              context.l10n.logOut,
                               style: TextStyle(
                                 color: AppStyles.primaryColor,
                                 fontSize: 16,
@@ -714,19 +715,19 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       icon: Icons.star_rounded,
                       iconColor: AppStyles.goldStar,
                       value: '4.9',
-                      label: 'Rating'),
+                      label: context.l10n.rating),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.directions_car_rounded,
                       iconColor: AppStyles.primaryColor,
                       value: '1,418',
-                      label: 'Rides'),
+                      label: context.l10n.rides),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.calendar_today_rounded,
                       iconColor: AppStyles.successColor,
                       value: '4.2',
-                      label: 'Years'),
+                      label: context.l10n.years),
                 ],
               ),
             ),
@@ -843,7 +844,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
-              isVerified ? 'VERIFIED' : 'PENDING',
+              isVerified ? context.l10n.verified : context.l10n.pending,
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
@@ -878,11 +879,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       trailing:
           Icon(Icons.chevron_right, color: context.colors.textTertiary),
       onTap: () {
-        if (title == 'Saved Places') {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const DriverSavedPlacesScreen()),
-          );
-        }
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const DriverSavedPlacesScreen()),
+        );
       },
     );
   }
