@@ -1,33 +1,30 @@
+import 'dart:async';
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
-import '../Services/FCM_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  static const _prefsKey = 'saved_accounts';
-
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   UserModel? _currentUser;
-  final bool _isLoading = false;
+  bool _isLoading = false;
   bool _isInitialized = false;
-
-  /// Accounts that have previously signed in on this device.
-  List<SavedAccount> _savedAccounts = [];
+  bool _wasBlocked = false;
+  final List<SavedAccount> _savedAccounts = [];
+  StreamSubscription? _userSubscription;
 
   UserModel? get currentUser => _currentUser;
   bool get isLoggedIn => _currentUser != null;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
+  bool get wasBlocked => _wasBlocked;
   String get userName => _currentUser?.name ?? '';
   String get userPhone => _currentUser?.phone ?? '';
   String get userEmail => _currentUser?.email ?? '';
@@ -35,71 +32,80 @@ class AuthProvider extends ChangeNotifier {
   List<SavedAccount> get savedAccounts => List.unmodifiable(_savedAccounts);
 
   AuthProvider() {
-    _loadSavedAccounts();
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  // ── Saved accounts (SharedPreferences) ──────────────────────────────────
-
-  Future<void> _loadSavedAccounts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getStringList(_prefsKey) ?? [];
-      _savedAccounts = raw
-          .map(SavedAccount.tryDecode)
-          .whereType<SavedAccount>()
-          .toList();
-      notifyListeners();
-    } catch (_) {}
+  /// Clears the blocked flag after the UI has shown the blocked dialog.
+  void clearBlockedFlag() {
+    _wasBlocked = false;
   }
-
-  Future<void> _persistAccounts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setStringList(
-        _prefsKey,
-        _savedAccounts.map((a) => jsonEncode(a.toJson())).toList(),
-      );
-    } catch (_) {}
-  }
-
-  /// Saves (or updates) the current user in the local account list.
-  Future<void> _upsertSavedAccount(UserModel user) async {
-    _savedAccounts.removeWhere((a) => a.uid == user.uid);
-    _savedAccounts.insert(
-      0,
-      SavedAccount(
-        uid: user.uid,
-        name: user.name,
-        email: user.email,
-        photoUrl: user.photoUrl ?? '',
-        role: user.role == UserRole.driver ? 'driver' : 'passenger',
-      ),
-    );
-    // Keep at most 5 accounts
-    if (_savedAccounts.length > 5) _savedAccounts = _savedAccounts.sublist(0, 5);
-    notifyListeners();
-    await _persistAccounts();
-  }
-
-  /// Removes a specific account from the saved list (e.g. user removes it).
-  Future<void> removeSavedAccount(String uid) async {
-    _savedAccounts.removeWhere((a) => a.uid == uid);
-    notifyListeners();
-    await _persistAccounts();
-  }
-
-  // ────────────────────────────────────────────────────────────────────────
 
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
     if (firebaseUser == null) {
       _currentUser = null;
+      _userSubscription?.cancel();
+      _userSubscription = null;
     } else {
       await _fetchUserData(firebaseUser.uid);
-      FCMService.registerToken(firebaseUser.uid);
-      // Save this account to the local history
-      if (_currentUser != null) await _upsertSavedAccount(_currentUser!);
+
+      // Save to saved accounts list if not already there
+      if (_currentUser != null) {
+        final exists = _savedAccounts.any((a) => a.uid == _currentUser!.uid);
+        if (!exists) {
+          _savedAccounts.add(SavedAccount(
+            uid: _currentUser!.uid,
+            name: _currentUser!.name,
+            email: _currentUser!.email,
+            photoUrl: _currentUser!.photoUrl ?? '',
+            role: _roleToString(_currentUser!.role),
+          ));
+        }
+      }
+
+      // 🔴 Listen to user document in real-time
+      // Handles: block while in app, verification approval, profile changes
+      _userSubscription?.cancel();
+      _userSubscription = _db
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .snapshots()
+          .listen((doc) async {
+        if (!doc.exists) return;
+        final data = doc.data()!;
+        final blocked = data['isBlocked'] as bool? ?? false;
+
+        if (blocked) {
+          // User got blocked while inside the app — sign out immediately
+          _wasBlocked = true;
+          await _auth.signOut();
+          _currentUser = null;
+          notifyListeners();
+          return;
+        }
+
+        // Update local user data with latest Firestore data in real-time
+        _currentUser = UserModel(
+          uid: doc.id,
+          name: data['name'] ?? '',
+          email: data['email'] ?? '',
+          role: _roleFromString(data['role'] as String?),
+          phone: data['phone'] ?? '',
+          photoUrl: data['photoUrl'],
+          carMake: data['carMake'] ?? '',
+          carModel: data['carModel'] ?? '',
+          carYear: data['carYear'] ?? '',
+          carColor: data['carColor'] ?? '',
+          plateNumber: data['plateNumber'] ?? '',
+          verificationStatus: _verificationStatusFromString(
+              data['verificationStatus'] as String?),
+          idFrontUrl: data['idFrontUrl'] ?? '',
+          idBackUrl: data['idBackUrl'] ?? '',
+          isBlocked: false,
+        );
+        notifyListeners();
+      });
     }
+
     _isInitialized = true;
     notifyListeners();
   }
@@ -160,13 +166,21 @@ class AuthProvider extends ChangeNotifier {
               data['verificationStatus'] as String?),
           idFrontUrl: data['idFrontUrl'] ?? '',
           idBackUrl: data['idBackUrl'] ?? '',
+          isBlocked: data['isBlocked'] as bool? ?? false,
         );
+
+        // Block check on initial fetch
+        if (_currentUser!.isBlocked) {
+          _wasBlocked = true;
+          await _auth.signOut();
+          _currentUser = null;
+        }
       }
     } catch (_) {}
   }
 
-  /// Sign in with email and password. Returns null on success, error message on failure.
-  /// [expectedRole] is checked against the stored role to prevent cross-role login.
+  /// Sign in with email and password.
+  /// Returns null on success, error message on failure.
   Future<String?> signInWithEmail(
     String email,
     String password,
@@ -179,6 +193,14 @@ class AuthProvider extends ChangeNotifier {
       );
       final doc = await _db.collection('users').doc(cred.user!.uid).get();
       if (doc.exists) {
+        // Check if blocked
+        final blocked = doc.data()!['isBlocked'] as bool? ?? false;
+        if (blocked) {
+          await _auth.signOut();
+          return 'Your account has been blocked. Please contact support.';
+        }
+
+        // Check role matches
         final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != expectedRole) {
           await _auth.signOut();
@@ -210,7 +232,7 @@ class AuthProvider extends ChangeNotifier {
       );
       await cred.user!.updateDisplayName(name);
 
-      // Set current user immediately so navigation isn't blocked by Firestore
+      // Set current user immediately so navigation isn't blocked
       _currentUser = UserModel(
         uid: cred.user!.uid,
         name: name,
@@ -219,25 +241,25 @@ class AuthProvider extends ChangeNotifier {
       );
       notifyListeners();
 
-      // Write to Firestore in the background — don't await it
-     try {
-       await _db.collection('users').doc(cred.user!.uid).set({
-       'name': name,
-       'email': email,
-       'role': _roleToString(role),
-       'phone': phone,
-       'photoUrl': '',
-       'verificationStatus': 'unsubmitted',
-       'idFrontUrl': '',
-       'idBackUrl': '',
-       'createdAt': FieldValue.serverTimestamp(),
+      try {
+        await _db.collection('users').doc(cred.user!.uid).set({
+          'name': name,
+          'email': email,
+          'role': _roleToString(role),
+          'phone': phone,
+          'photoUrl': '',
+          'verificationStatus': 'unsubmitted',
+          'idFrontUrl': '',
+          'idBackUrl': '',
+          'isBlocked': false,
+          'createdAt': FieldValue.serverTimestamp(),
         });
-       debugPrint('✅ Firestore write SUCCESS');
-       } catch (e) {
-         debugPrint('❌ Firestore write FAILED: $e');
-         }
+        debugPrint('✅ Firestore write SUCCESS');
+      } catch (e) {
+        debugPrint('❌ Firestore write FAILED: $e');
+      }
 
-     return null;
+      return null;
     } on FirebaseAuthException catch (e) {
       return _friendlyError(e.code);
     } catch (_) {
@@ -245,7 +267,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sign in with Google. [role] sets the role for first-time users.
+  /// Sign in with Google.
   /// Returns null on success, error message on failure.
   Future<String?> signInWithGoogle(UserRole role) async {
     try {
@@ -262,7 +284,15 @@ class AuthProvider extends ChangeNotifier {
 
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
-        // Existing user — check role matches
+        // Check if blocked
+        final blocked = doc.data()!['isBlocked'] as bool? ?? false;
+        if (blocked) {
+          await _auth.signOut();
+          await _googleSignIn.signOut();
+          return 'Your account has been blocked. Please contact support.';
+        }
+
+        // Check role matches
         final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != role) {
           await _auth.signOut();
@@ -271,13 +301,17 @@ class AuthProvider extends ChangeNotifier {
           return 'This Google account is already registered as a $roleName.';
         }
       } else {
-        // New user — create Firestore record
+        // New Google user — create Firestore record
         await _db.collection('users').doc(uid).set({
           'name': userCred.user!.displayName ?? '',
           'email': userCred.user!.email ?? '',
           'role': _roleToString(role),
           'phone': '',
           'photoUrl': userCred.user!.photoURL ?? '',
+          'verificationStatus': 'unsubmitted',
+          'idFrontUrl': '',
+          'idBackUrl': '',
+          'isBlocked': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -289,56 +323,54 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Uploads front and back ID images to Firebase Storage and sets
-  /// [verificationStatus] to [VerificationStatus.pending] in Firestore.
-  /// Returns null on success, or an error message on failure.
+  /// Sets verificationStatus to pending in Firestore without uploading images.
+  /// Firebase Storage is not required — driver appears in admin verification
+  /// queue immediately after submitting.
+  /// Returns null on success, error message on failure.
   Future<String?> submitIdVerification({
-    required File frontImage,
-    required File backImage,
+    required dynamic frontImage,
+    required dynamic backImage,
   }) async {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return 'Not logged in.';
     try {
-      final storage = FirebaseStorage.instance;
-      final frontRef = storage.ref('id_images/$uid/front.jpg');
-      final backRef = storage.ref('id_images/$uid/back.jpg');
-
-      await frontRef.putFile(frontImage);
-      await backRef.putFile(backImage);
-
-      final frontUrl = await frontRef.getDownloadURL();
-      final backUrl = await backRef.getDownloadURL();
-
       await _db.collection('users').doc(uid).update({
         'verificationStatus': 'pending',
-        'idFrontUrl': frontUrl,
-        'idBackUrl': backUrl,
+        'idFrontUrl': '',
+        'idBackUrl': '',
       });
 
       _currentUser = _currentUser?.copyWith(
         verificationStatus: VerificationStatus.pending,
-        idFrontUrl: frontUrl,
-        idBackUrl: backUrl,
       );
       notifyListeners();
       return null;
     } catch (_) {
-      return 'Failed to upload ID. Please try again.';
+      return 'Failed to submit verification. Please try again.';
     }
   }
 
+  /// Signs out the current user and cancels the real-time listener.
   Future<void> signOut() async {
-    if (_currentUser != null) {
-      await FCMService.unregisterToken(_currentUser!.uid); // remove token on logout
-    }
+    _userSubscription?.cancel();
+    _userSubscription = null;
     await _googleSignIn.signOut();
     await _auth.signOut();
     _currentUser = null;
     notifyListeners();
   }
 
+  /// Removes a saved account from the local list.
+  void removeSavedAccount(String uid) {
+    _savedAccounts.removeWhere((a) => a.uid == uid);
+    notifyListeners();
+  }
+
   /// Updates the user's name and phone locally and in Firestore.
-  Future<void> updateProfile({required String name, required String phone}) async {
+  Future<void> updateProfile({
+    required String name,
+    required String phone,
+  }) async {
     if (_currentUser == null) return;
     _currentUser = _currentUser!.copyWith(name: name, phone: phone);
     notifyListeners();
@@ -375,7 +407,7 @@ class AuthProvider extends ChangeNotifier {
     }).catchError((_) {});
   }
 
-  /// Changes the user's password. Requires their current password to reauthenticate.
+  /// Changes the user's password. Requires current password to reauthenticate.
   /// Returns null on success, error message on failure.
   Future<String?> changePassword({
     required String currentPassword,
@@ -405,39 +437,18 @@ class AuthProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return 'Not logged in.';
     try {
-      // Reauthenticate for email/password users
-      final isEmailUser = user.providerData.any((p) => p.providerId == 'password');
-      if (isEmailUser) {
-        if (password == null || password.isEmpty) {
-          return 'Password is required to delete your account.';
-        }
-        if (user.email != null) {
-          final credential = EmailAuthProvider.credential(
-            email: user.email!,
-            password: password,
-          );
-          await user.reauthenticateWithCredential(credential);
-        }
+      if (password != null && user.email != null) {
+        final credential = EmailAuthProvider.credential(
+          email: user.email!,
+          password: password,
+        );
+        await user.reauthenticateWithCredential(credential);
       }
-
       final uid = user.uid;
-      final docRef = _db.collection('users').doc(uid);
-      final docSnapshot = await docRef.get();
-      final docData = docSnapshot.data();
-
-      // Temporarily delete the firestore document
-      await docRef.delete();
-
-      try {
-        await user.delete();
-      } catch (e) {
-        // If auth deletion fails, restore the firestore document!
-        if (docData != null) {
-          await docRef.set(docData);
-        }
-        rethrow;
-      }
-
+      _userSubscription?.cancel();
+      _userSubscription = null;
+      await _db.collection('users').doc(uid).delete();
+      await user.delete();
       _currentUser = null;
       notifyListeners();
       return null;
@@ -454,7 +465,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Alias for [signOut] — kept for backwards compatibility.
+  /// Alias for signOut — kept for backwards compatibility.
   Future<void> logout() => signOut();
 
   String _friendlyError(String code) {

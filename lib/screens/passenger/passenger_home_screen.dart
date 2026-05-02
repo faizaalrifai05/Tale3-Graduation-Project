@@ -12,13 +12,88 @@ import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
+import 'package:testtale3/screens/community_guidelines_screen.dart';
 
-class PassengerHomeScreen extends StatelessWidget {
+class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
 
   @override
+  State<PassengerHomeScreen> createState() => _PassengerHomeScreenState();
+}
+
+class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<app_auth.AuthProvider>().removeListener(_checkIfBlocked);
+    super.dispose();
+  }
+
+  void _checkIfBlocked() {
+    final auth = context.read<app_auth.AuthProvider>();
+    if (!auth.isLoggedIn && auth.wasBlocked) {
+      auth.clearBlockedFlag();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              SizedBox(width: 10),
+              Text(
+                'Account Blocked',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your account has been blocked by the admin. '
+            'If you believe this is a mistake, please contact '
+            'support at support@tale3.app.',
+            style: TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const CommunityGuidelinesScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Watch the navigation provider to rebuild when the tab index changes.
     final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
@@ -39,23 +114,23 @@ class PassengerHomeScreen extends StatelessWidget {
         },
         items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
             label: context.l10n.home.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history_outlined),
-            activeIcon: Icon(Icons.history),
+            icon: const Icon(Icons.history_outlined),
+            activeIcon: const Icon(Icons.history),
             label: context.l10n.myTrips.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
+            icon: const Icon(Icons.chat_bubble_outline),
+            activeIcon: const Icon(Icons.chat_bubble),
             label: context.l10n.chat.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
             label: context.l10n.profile.toUpperCase(),
           ),
         ],
@@ -102,7 +177,10 @@ class _HomeTabState extends State<_HomeTab> {
 
   String _dateLabel(BuildContext context, DateTime? d) {
     if (d == null) return context.l10n.today;
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
     return '${d.day} ${months[d.month - 1]}';
   }
 
@@ -114,7 +192,8 @@ class _HomeTabState extends State<_HomeTab> {
       lastDate: DateTime.now().add(const Duration(days: 90)),
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: ColorScheme.light(primary: AppStyles.primaryColor),
+          colorScheme:
+              const ColorScheme.light(primary: AppStyles.primaryColor),
         ),
         child: child!,
       ),
@@ -173,9 +252,9 @@ class _HomeTabState extends State<_HomeTab> {
                                 color: Colors.white.withValues(alpha: 0.5),
                                 width: 2),
                           ),
-                          child: CircleAvatar(
+                          child: const CircleAvatar(
                             radius: 22,
-                            backgroundColor: const Color(0x33FFFFFF),
+                            backgroundColor: Color(0x33FFFFFF),
                             child: Icon(Icons.person,
                                 color: AppStyles.onPrimary, size: 22),
                           ),
@@ -197,7 +276,7 @@ class _HomeTabState extends State<_HomeTab> {
                               const SizedBox(height: 2),
                               Text(
                                 'Hello, ${context.watch<app_auth.AuthProvider>().userName}!',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppStyles.onPrimary,
@@ -216,7 +295,7 @@ class _HomeTabState extends State<_HomeTab> {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Icon(Icons.notifications_none_rounded,
+                              const Icon(Icons.notifications_none_rounded,
                                   color: AppStyles.onPrimary, size: 22),
                               Positioned(
                                 top: 9,
@@ -228,7 +307,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     color: AppStyles.notificationDot,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: AppStyles.darkMaroon, width: 1.5),
+                                        color: AppStyles.darkMaroon,
+                                        width: 1.5),
                                   ),
                                 ),
                               ),
@@ -312,8 +392,8 @@ class _HomeTabState extends State<_HomeTab> {
                                 prefixIcon: Icon(Icons.radio_button_checked,
                                     color: AppStyles.primaryColor, size: 20),
                                 border: InputBorder.none,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16),
                               ),
                             ),
                             Divider(
@@ -329,8 +409,8 @@ class _HomeTabState extends State<_HomeTab> {
                                 prefixIcon: Icon(Icons.location_on,
                                     color: AppStyles.primaryColor, size: 20),
                                 border: InputBorder.none,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 16),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 16),
                               ),
                             ),
                           ],
@@ -341,6 +421,7 @@ class _HomeTabState extends State<_HomeTab> {
                       // Date + Seats row
                       Row(
                         children: [
+                          // Date picker
                           Expanded(
                             child: GestureDetector(
                               onTap: _pickDate,
@@ -372,6 +453,8 @@ class _HomeTabState extends State<_HomeTab> {
                             ),
                           ),
                           const SizedBox(width: 12),
+
+                          // Seats counter
                           Expanded(
                             child: Container(
                               height: 52,
@@ -380,15 +463,12 @@ class _HomeTabState extends State<_HomeTab> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const SizedBox(width: 12),
-                                  Icon(Icons.person_outline,
-                                      color: context.colors.textTertiary,
-                                      size: 18),
-                                  const SizedBox(width: 8),
                                   GestureDetector(
                                     onTap: () {
-                                      if (_seats > 1) setState(() => _seats--);
+                                      if (_seats > 1)
+                                        setState(() => _seats--);
                                     },
                                     child: Icon(Icons.remove,
                                         size: 16,
@@ -396,18 +476,20 @@ class _HomeTabState extends State<_HomeTab> {
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8),
+                                        horizontal: 12),
                                     child: Text(
                                       '$_seats',
                                       style: TextStyle(
                                         fontWeight: FontWeight.w700,
+                                        fontSize: 16,
                                         color: context.colors.textPrimary,
                                       ),
                                     ),
                                   ),
                                   GestureDetector(
                                     onTap: () {
-                                      if (_seats < 4) setState(() => _seats++);
+                                      if (_seats < 4)
+                                        setState(() => _seats++);
                                     },
                                     child: Icon(Icons.add,
                                         size: 16,
@@ -451,7 +533,7 @@ class _HomeTabState extends State<_HomeTab> {
 
           const SizedBox(height: 4),
 
-          // ── Recommended for you (live) ───────────────────────────────────
+          // ── Recommended for you (live) ─────────────────────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -467,7 +549,8 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
                 GestureDetector(
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RideResultsScreen()),
+                    MaterialPageRoute(
+                        builder: (_) => const RideResultsScreen()),
                   ),
                   child: Text(
                     context.l10n.seeAll,
@@ -488,15 +571,17 @@ class _HomeTabState extends State<_HomeTab> {
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
-                    child: Padding(
-                  padding: EdgeInsets.all(24),
-                  child: CircularProgressIndicator(),
-                ));
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: CircularProgressIndicator(),
+                  ),
+                );
               }
               final rides = (snapshot.data ?? []).take(3).toList();
               if (rides.isEmpty) {
                 return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 8),
                   child: Text(
                     context.l10n.noRidesAvailable,
                     style: TextStyle(
@@ -505,9 +590,8 @@ class _HomeTabState extends State<_HomeTab> {
                 );
               }
               return Column(
-                children: rides
-                    .map((ride) => _LiveRideCard(ride: ride))
-                    .toList(),
+                children:
+                    rides.map((ride) => _LiveRideCard(ride: ride)).toList(),
               );
             },
           ),
@@ -672,8 +756,10 @@ class _LiveRideCard extends StatelessWidget {
               radius: 24,
               backgroundColor: context.colors.highlightBackgroundColor,
               child: Text(
-                ride.driverName.isNotEmpty ? ride.driverName[0].toUpperCase() : 'D',
-                style: TextStyle(
+                ride.driverName.isNotEmpty
+                    ? ride.driverName[0].toUpperCase()
+                    : 'D',
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppStyles.primaryColor,
@@ -705,7 +791,7 @@ class _LiveRideCard extends StatelessWidget {
                         ),
                         child: Text(
                           '${ride.origin} → ${ride.destination}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                             color: AppStyles.primaryColor,
@@ -740,7 +826,7 @@ class _LiveRideCard extends StatelessWidget {
             ),
             Text(
               '${ride.pricePerSeat} JOD',
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppStyles.primaryColor,
