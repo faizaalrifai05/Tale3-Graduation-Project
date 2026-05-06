@@ -7,6 +7,7 @@ import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_saved_places_screen.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerProfileScreen extends StatefulWidget {
   const PassengerProfileScreen({super.key});
@@ -65,7 +66,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             children: [
               ListTile(
                 leading: Icon(Icons.camera_alt, color: AppStyles.primaryColor),
-                title: Text('Take a photo'),
+                title: Text(context.l10n.takeAPhoto),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.camera, setSheetState);
@@ -73,7 +74,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.photo_library, color: AppStyles.primaryColor),
-                title: Text('Choose from gallery'),
+                title: Text(context.l10n.chooseFromGallery),
                 onTap: () {
                   Navigator.pop(ctx);
                   _pickImage(ImageSource.gallery, setSheetState);
@@ -120,7 +121,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Edit Profile',
+                  context.l10n.editProfile,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
@@ -177,22 +178,22 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Tap to change photo',
+                  context.l10n.tapToChangePhoto,
                   style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
                 ),
                 const SizedBox(height: 24),
 
                 _buildSheetField(
                   controller: _nameController,
-                  label: 'FULL NAME',
-                  hint: 'Your full name',
+                  label: context.l10n.fullName.toUpperCase(),
+                  hint: context.l10n.yourFullName,
                   icon: Icons.person_outline,
                 ),
                 const SizedBox(height: 16),
                 _buildSheetField(
                   controller: _phoneController,
-                  label: 'PHONE NUMBER',
-                  hint: '+966 5X XXX XXXX',
+                  label: context.l10n.phoneNumber.toUpperCase(),
+                  hint: context.l10n.phoneHint,
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
                 ),
@@ -219,7 +220,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                               Icon(Icons.check_circle_outline,
                                   color: AppStyles.onPrimary, size: 20),
                               SizedBox(width: 12),
-                              Text('Profile updated',
+                              Text(context.l10n.profileUpdated,
                                   style: TextStyle(
                                       fontWeight: FontWeight.w500)),
                             ],
@@ -239,7 +240,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                           borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: Text('Save Changes',
+                    child: Text(context.l10n.saveChanges,
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
@@ -301,10 +302,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     final authUser = context.watch<AuthProvider>().currentUser;
     final shownName = _displayName.isNotEmpty
         ? _displayName
-        : (authUser?.name.isNotEmpty == true ? authUser!.name : 'Your Name');
+        : (authUser?.name.isNotEmpty == true ? authUser!.name : context.l10n.yourName);
     final displayPhone = _phoneNumber.isNotEmpty
         ? _phoneNumber
-        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : 'Add phone number');
+        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : context.l10n.addPhoneNumber);
 
     return Stack(
       children: [
@@ -340,7 +341,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'My Profile',
+                            context.l10n.myProfile,
                             style: TextStyle(
                               color: AppStyles.onPrimary,
                               fontSize: 22,
@@ -354,7 +355,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 icon: Icon(Icons.edit_outlined,
                                     size: 16, color: AppStyles.onPrimary),
                                 label: Text(
-                                  'Edit',
+                                  context.l10n.edit,
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
@@ -438,7 +439,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  shownName.isEmpty ? 'Passenger Name' : shownName,
+                                  shownName.isEmpty ? context.l10n.passengerName : shownName,
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w800,
@@ -484,9 +485,9 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                     children: [
                       // ── Quick Links ──────────────────────────────────
                       _buildSection(
-                        title: 'Quick Links',
+                        title: context.l10n.quickLinks,
                         child: _buildLinkTile(
-                            Icons.favorite_border_rounded, 'Saved Places'),
+                            Icons.favorite_border_rounded, context.l10n.savedPlaces),
                       ),
                       const SizedBox(height: 24),
 
@@ -503,18 +504,18 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(16)),
-                                  title: Text('Log Out',
+                                  title: Text(context.l10n.logOut,
                                       style: TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w700)),
                                   content: Text(
-                                      'Are you sure you want to log out?',
+                                      context.l10n.logOutConfirm,
                                       style: TextStyle(fontSize: 14)),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
                                           Navigator.pop(ctx, false),
-                                      child: Text('Cancel'),
+                                      child: Text(context.l10n.cancel),
                                     ),
                                     ElevatedButton(
                                       onPressed: () =>
@@ -528,7 +529,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                                 BorderRadius.circular(8)),
                                         elevation: 0,
                                       ),
-                                      child: Text('Log Out'),
+                                      child: Text(context.l10n.logOut),
                                     ),
                                   ],
                                 ),
@@ -545,7 +546,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                             icon: Icon(Icons.logout,
                                 color: AppStyles.primaryColor),
                             label: Text(
-                              'Log Out',
+                              context.l10n.logOut,
                               style: TextStyle(
                                 color: AppStyles.primaryColor,
                                 fontSize: 16,
@@ -591,19 +592,19 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                       icon: Icons.star_rounded,
                       iconColor: AppStyles.goldStar,
                       value: '4.8',
-                      label: 'Rating'),
+                      label: context.l10n.rating),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.directions_car_rounded,
                       iconColor: AppStyles.primaryColor,
                       value: '42',
-                      label: 'Trips'),
+                      label: context.l10n.trips),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
                   _buildStatCard(
                       icon: Icons.calendar_today_rounded,
                       iconColor: AppStyles.successColor,
                       value: '2',
-                      label: 'Years'),
+                      label: context.l10n.years),
                 ],
               ),
             ),
@@ -698,11 +699,9 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       trailing:
           Icon(Icons.chevron_right, color: context.colors.textTertiary),
       onTap: () {
-        if (title == 'Saved Places') {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const PassengerSavedPlacesScreen()),
-          );
-        }
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PassengerSavedPlacesScreen()),
+        );
       },
     );
   }

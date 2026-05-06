@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVerificationScreen extends StatefulWidget {
   const DriverVerificationScreen({super.key});
@@ -43,7 +44,7 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
     if (_resendCooldown > 0) return;
     _startResendCooldown();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: const Text('Verification code resent'),
+      content: Text(context.l10n.verificationCodeResent),
       backgroundColor: AppStyles.successColor,
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -79,7 +80,7 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
                     const SizedBox(height: 16),
                     // Heading
                     Text(
-                      'Verify your Email',
+                      context.l10n.verifyYourEmail,
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
@@ -88,7 +89,7 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'We\'ve sent a 4-digit code to your email\naddress. Please enter it below to continue.',
+                      context.l10n.sentCodeToEmail,
                       style: TextStyle(
                         fontSize: 14,
                         color: context.colors.textSecondary,
@@ -160,7 +161,7 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
                     // Resend Section
                     Center(
                       child: Text(
-                        'Didn\'t receive the code?',
+                        context.l10n.didntReceiveCode,
                         style: TextStyle(
                           fontSize: 13,
                           color: context.colors.textTertiary,
@@ -178,8 +179,8 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
                         ),
                         child: Text(
                           _resendCooldown > 0
-                              ? 'Resend in ${_resendCooldown}s'
-                              : 'Resend Code',
+                              ? '${context.l10n.resendIn} ${_resendCooldown}s'
+                              : context.l10n.resendCode,
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -212,7 +213,7 @@ class _DriverVerificationScreenState extends State<DriverVerificationScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Verify',
+                              context.l10n.verify,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,

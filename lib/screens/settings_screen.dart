@@ -52,7 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
         title: Text(
-          'Settings',
+          context.l10n.settings,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -70,35 +70,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── ACCOUNT ──
-          _buildSectionHeader('ACCOUNT'),
+          _buildSectionHeader(context.l10n.account),
           _buildSettingsTile(
             Icons.person_outline,
-            'Personal Information',
+            context.l10n.personalInfo,
             onTap: () => _showPersonalInfoSheet(auth),
           ),
           _buildSettingsTile(
             Icons.security,
-            'Password & Security',
+            context.l10n.passwordSecurity,
             onTap: () => _showPasswordSecuritySheet(),
           ),
           _buildSettingsTile(
             Icons.swap_horiz_rounded,
-            'Switch Account',
+            context.l10n.switchAccount,
             onTap: () => _showSwitchAccountSheet(),
           ),
           const SizedBox(height: 24),
 
           // ── PREFERENCES ──
-          _buildSectionHeader('PREFERENCES'),
+          _buildSectionHeader(context.l10n.preferences),
           _buildToggleTile(
             Icons.notifications_none,
-            'Push Notifications',
+            context.l10n.pushNotifications,
             value: settings.notificationsEnabled,
             onChanged: (v) => settings.toggleNotifications(v),
           ),
           _buildToggleTile(
             Icons.location_on_outlined,
-            'Location',
+            context.l10n.location,
             value: settings.locationEnabled,
             onChanged: (v) => settings.toggleLocation(v),
           ),
@@ -117,26 +117,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
 
           // ── SUPPORT ──
-          _buildSectionHeader('SUPPORT'),
+          _buildSectionHeader(context.l10n.support),
           _buildSettingsTile(
             Icons.help_outline,
-            'Help Center',
+            context.l10n.helpCenter,
             onTap: () => _showHelpCenter(),
           ),
           _buildSettingsTile(
             Icons.message_outlined,
-            'Contact Us',
+            context.l10n.contactUs,
             onTap: () => _showContactUs(),
           ),
           _buildSettingsTile(
             Icons.article_outlined,
-            'Terms & Privacy Policy',
+            context.l10n.termsPrivacy,
             onTap: () => _showTermsAndPrivacy(),
           ),
           const SizedBox(height: 24),
 
           // ── DANGER ZONE ──
-          _buildSectionHeader('DANGER ZONE'),
+          _buildSectionHeader(context.l10n.dangerZone),
           _buildDeleteAccountTile(),
           const SizedBox(height: 32),
 
@@ -282,7 +282,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Icon(Icons.delete_outline, color: AppStyles.errorColor, size: 20),
         ),
         title: Text(
-          'Delete Account',
+          context.l10n.deleteAccount,
           style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w600,
@@ -453,7 +453,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _sheetHeader('Switch Account'),
+                  _sheetHeader(context.l10n.switchAccount),
                   const SizedBox(height: 4),
 
                   // ── Account list ───────────────────────────────────
@@ -461,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: Text(
-                        'No saved accounts.',
+                        context.l10n.noSavedAccounts,
                         style: TextStyle(
                           fontSize: 14,
                           color: context.colors.textSecondary,
@@ -499,7 +499,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: () => _addNewAccount(ctx),
                       icon: const Icon(Icons.add),
                       label: Text(
-                        'Add New Account',
+                        context.l10n.addNewAccount,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -523,7 +523,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(ctx),
                       child: Text(
-                        'Cancel',
+                        context.l10n.cancel,
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
@@ -726,7 +726,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _sheetHeader('Personal Information'),
+                _sheetHeader(context.l10n.personalInfo),
                 const SizedBox(height: 20),
 
                 // Avatar
@@ -789,7 +789,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                _sheetButton('Save Changes', () {
+                _sheetButton(context.l10n.saveChanges, () {
                   Navigator.pop(ctx);
                   _showSnackBar('Personal information updated');
                 }),
@@ -830,7 +830,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _sheetHeader('Password & Security'),
+                    _sheetHeader(context.l10n.passwordSecurity),
                     const SizedBox(height: 20),
 
                     // Security icon
@@ -904,7 +904,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    _sheetButton('Update Password', () async {
+                    _sheetButton(context.l10n.updatePassword, () async {
                       if (_newPasswordController.text.isEmpty ||
                           _currentPasswordController.text.isEmpty) {
                         _showSnackBar('Please fill in all fields',
@@ -1212,7 +1212,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  _sheetHeader('Help Center'),
+                  _sheetHeader(context.l10n.helpCenter),
                   const SizedBox(height: 8),
                   Expanded(
                     child: ListView.separated(
@@ -1260,7 +1260,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _sheetHeader('Contact Us'),
+                _sheetHeader(context.l10n.contactUs),
                 const SizedBox(height: 16),
 
                 // Illustration
@@ -1291,7 +1291,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _contactRow(Icons.access_time, 'Hours', 'Sun \u2013 Thu, 9 AM \u2013 6 PM'),
                 const SizedBox(height: 24),
 
-                _sheetButton('Send us a Message', () {
+                _sheetButton(context.l10n.sendUsMessage, () {
                   Navigator.pop(ctx);
                   _showSnackBar('Opening message composer\u2026');
                 }),
@@ -1361,7 +1361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
-                  _sheetHeader('Terms & Privacy Policy'),
+                  _sheetHeader(context.l10n.termsPrivacy),
                   Expanded(
                     child: ListView(
                       controller: scrollController,
@@ -1450,7 +1450,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Delete Account',
+                context.l10n.deleteAccount,
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -1489,7 +1489,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
-                'Cancel',
+                context.l10n.cancel,
                 style: TextStyle(
                     color: context.colors.textSecondary,
                     fontWeight: FontWeight.w600),
@@ -1520,7 +1520,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              child: Text('Delete',
+              child: Text(context.l10n.delete,
                   style: TextStyle(fontWeight: FontWeight.w600)),
             ),
           ],

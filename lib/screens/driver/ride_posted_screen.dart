@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 
 class RidePostedScreen extends StatefulWidget {
@@ -51,9 +52,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
           icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
-        title: const Text(
-          'Ride Posted',
-          style: TextStyle(
+        title: Text(
+          context.l10n.ridePosted,
+          style: const TextStyle(
             color: Color(0xFF1A1A1A),
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -114,19 +115,19 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
               const SizedBox(height: 32),
 
               // Status Text
-              const Text(
-                'Your ride is live!',
-                style: TextStyle(
+              Text(
+                context.l10n.rideIsLive,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
                   color: Color(0xFF1A1A1A),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                'Subscribers are being calculated and\nmatching you with passengers...', // Original mockup text
+              Text(
+                context.l10n.matchingPassengers,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF757575),
                   height: 1.5,
@@ -156,9 +157,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Departure',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                        Text(
+                          context.l10n.departure,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -173,9 +174,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Destination',
-                          style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                        Text(
+                          context.l10n.destination,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -196,9 +197,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                 child: ElevatedButton.icon(
                   onPressed: () {},
                   icon: const Icon(Icons.share, size: 20),
-                  label: const Text(
-                    'Share Trip',
-                    style: TextStyle(
+                  label: Text(
+                    context.l10n.shareTrip,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
@@ -230,9 +231,9 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Go to Dashboard',
-                    style: TextStyle(
+                  child: Text(
+                    context.l10n.goToDashboard,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),

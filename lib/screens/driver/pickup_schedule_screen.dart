@@ -1,5 +1,6 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PickupScheduleScreen extends StatefulWidget {
   const PickupScheduleScreen({super.key});
@@ -36,7 +37,7 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
           child: Row(
             children: [
               Text(
-                'My Rides',
+                context.l10n.myRides,
                 style: TextStyle(
                   color: context.colors.textPrimary,
                   fontSize: 20,
@@ -66,9 +67,9 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
             indicatorWeight: 3,
             indicatorSize: TabBarIndicatorSize.label,
             dividerColor: context.colors.borderColor,
-            tabs: const [
-              Tab(text: 'Upcoming'),
-              Tab(text: 'Completed'),
+            tabs: [
+              Tab(text: context.l10n.upcoming),
+              Tab(text: context.l10n.completed),
             ],
           ),
         ),
@@ -187,7 +188,7 @@ class _UpcomingRidesTab extends StatelessWidget {
                     ),
                     const SizedBox(width: 5),
                     Text(
-                      isActive ? 'Active Now' : 'Scheduled',
+                      isActive ? context.l10n.activeNow : context.l10n.scheduled,
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
@@ -470,8 +471,8 @@ class _CompletedRidesTab extends StatelessWidget {
                         size: 12, color: AppStyles.successColor),
                     SizedBox(width: 4),
                     Text(
-                      'Completed',
-                      style: TextStyle(
+                      context.l10n.completed,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
                         color: AppStyles.successDarkText,

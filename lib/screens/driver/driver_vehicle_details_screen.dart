@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_verification_status_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVehicleDetailsScreen extends StatefulWidget {
   final String name;
@@ -118,7 +119,7 @@ class _DriverVehicleDetailsScreenState
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Vehicle Details',
+          context.l10n.vehicleDetails,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -141,7 +142,7 @@ class _DriverVehicleDetailsScreenState
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Onboarding Progress',
+                      context.l10n.onboardingProgress,
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -149,7 +150,7 @@ class _DriverVehicleDetailsScreenState
                       ),
                     ),
                     Text(
-                      'Step 3 of 4',
+                      '${context.l10n.step} 3 ${context.l10n.ofWord} 4',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -170,7 +171,7 @@ class _DriverVehicleDetailsScreenState
                 const SizedBox(height: 32),
 
                 Text(
-                  'Tell us about your vehicle',
+                  context.l10n.tellUsAboutVehicle,
                   style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -179,7 +180,7 @@ class _DriverVehicleDetailsScreenState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Provide the details of the vehicle you\'ll be driving.',
+                  context.l10n.provideVehicleDetails,
                   style: TextStyle(
                     fontSize: 14,
                     color: context.colors.textSecondary,
@@ -189,32 +190,32 @@ class _DriverVehicleDetailsScreenState
                 const SizedBox(height: 32),
 
                 // Car Make
-                _buildLabel('Car Make'),
+                _buildLabel(context.l10n.carMake),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _makeController,
                   textCapitalization: TextCapitalization.words,
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Car make is required'
+                      ? context.l10n.carMakeRequired
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: 'e.g. Toyota', icon: Icons.directions_car_outlined),
+                      hint: context.l10n.carMakeHint, icon: Icons.directions_car_outlined),
                 ),
                 const SizedBox(height: 16),
 
                 // Car Model
-                _buildLabel('Car Model'),
+                _buildLabel(context.l10n.carModel),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _modelController,
                   textCapitalization: TextCapitalization.words,
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Car model is required'
+                      ? context.l10n.carModelRequired
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: 'e.g. Camry', icon: Icons.car_repair),
+                      hint: context.l10n.carModelHint, icon: Icons.car_repair),
                 ),
                 const SizedBox(height: 16),
 
@@ -225,7 +226,7 @@ class _DriverVehicleDetailsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLabel('Year'),
+                          _buildLabel(context.l10n.year),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _yearController,
@@ -236,13 +237,13 @@ class _DriverVehicleDetailsScreenState
                             ],
                             validator: (v) {
                               if (v == null || v.trim().isEmpty) {
-                                return 'Required';
+                                return context.l10n.required;
                               }
                               final y = int.tryParse(v);
                               if (y == null ||
                                   y < 1990 ||
                                   y > DateTime.now().year + 1) {
-                                return 'Invalid year';
+                                return context.l10n.invalidYear;
                               }
                               return null;
                             },
@@ -258,17 +259,17 @@ class _DriverVehicleDetailsScreenState
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildLabel('Color'),
+                          _buildLabel(context.l10n.colorLabel),
                           const SizedBox(height: 8),
                           TextFormField(
                             controller: _colorController,
                             textCapitalization: TextCapitalization.words,
                             validator: (v) => (v == null || v.trim().isEmpty)
-                                ? 'Required'
+                                ? context.l10n.required
                                 : null,
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
-                            decoration: _inputDecoration(hint: 'e.g. White'),
+                            decoration: _inputDecoration(hint: context.l10n.colorHint),
                           ),
                         ],
                       ),
@@ -278,17 +279,17 @@ class _DriverVehicleDetailsScreenState
                 const SizedBox(height: 16),
 
                 // Plate Number
-                _buildLabel('Plate Number'),
+                _buildLabel(context.l10n.plateNumber),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _plateController,
                   textCapitalization: TextCapitalization.characters,
                   validator: (v) => (v == null || v.trim().isEmpty)
-                      ? 'Plate number is required'
+                      ? context.l10n.plateRequired
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: 'ABC 1234', icon: Icons.credit_card_outlined),
+                      hint: context.l10n.plateHint, icon: Icons.credit_card_outlined),
                 ),
                 const SizedBox(height: 48),
 
@@ -316,7 +317,7 @@ class _DriverVehicleDetailsScreenState
                         : Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text('Next Step',
+                              Text(context.l10n.nextStep,
                                   style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600)),

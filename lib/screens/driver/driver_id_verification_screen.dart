@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:testtale3/screens/driver/driver_vehicle_details_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverIdVerificationScreen extends StatefulWidget {
   final String name;
@@ -68,13 +69,13 @@ class _DriverIdVerificationScreenState
             ListTile(
               leading: Icon(Icons.camera_alt_outlined,
                   color: AppStyles.primaryColor),
-              title: Text('Take a photo'),
+              title: Text(context.l10n.takePhoto),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
               leading:
                   Icon(Icons.photo_library_outlined, color: AppStyles.primaryColor),
-              title: Text('Choose from gallery'),
+              title: Text(context.l10n.chooseFromGallery),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
             const SizedBox(height: 8),
@@ -88,8 +89,7 @@ class _DriverIdVerificationScreenState
     if (_frontImage == null || _backImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Please upload both front and back of your ID to continue'),
+          content: Text(context.l10n.uploadBothId),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -141,7 +141,7 @@ class _DriverIdVerificationScreenState
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Step 2 of 4',
+                  Text('${context.l10n.step} 2 ${context.l10n.ofWord} 4',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -165,7 +165,7 @@ class _DriverIdVerificationScreenState
               const SizedBox(height: 32),
 
               Text(
-                'Identity Verification',
+                context.l10n.identityVerification,
                 style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -173,13 +173,13 @@ class _DriverIdVerificationScreenState
               ),
               const SizedBox(height: 8),
               Text(
-                'Please upload a clear photo of your National\nID or Passport to verify your identity.',
+                context.l10n.uploadIdDesc,
                 style: TextStyle(
                     fontSize: 14, color: context.colors.textSecondary, height: 1.5),
               ),
               const SizedBox(height: 32),
 
-              Text('FRONT OF ID',
+              Text(context.l10n.frontOfId,
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -189,12 +189,12 @@ class _DriverIdVerificationScreenState
               _buildUploadCard(
                 isFront: true,
                 image: _frontImage,
-                title: 'Upload front side',
-                subtitle: 'JPG, PNG or PDF (max. 5MB)',
+                title: context.l10n.uploadFrontSide,
+                subtitle: context.l10n.fileTypeHint,
               ),
               const SizedBox(height: 24),
 
-              Text('BACK OF ID',
+              Text(context.l10n.backOfId,
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -204,8 +204,8 @@ class _DriverIdVerificationScreenState
               _buildUploadCard(
                 isFront: false,
                 image: _backImage,
-                title: 'Upload back side',
-                subtitle: 'JPG, PNG or PDF (max. 5MB)',
+                title: context.l10n.uploadBackSide,
+                subtitle: context.l10n.fileTypeHint,
               ),
               const SizedBox(height: 32),
 
@@ -218,17 +218,15 @@ class _DriverIdVerificationScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Requirements for photo:',
+                    Text(context.l10n.photoRequirements,
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                             color: AppStyles.primaryColor)),
                     const SizedBox(height: 12),
-                    _buildRequirementItem(
-                        'All four corners of the document are visible'),
-                    _buildRequirementItem('Text is clear and easy to read'),
-                    _buildRequirementItem(
-                        'No glare or reflections from flash'),
+                    _buildRequirementItem(context.l10n.reqFourCorners),
+                    _buildRequirementItem(context.l10n.reqClearText),
+                    _buildRequirementItem(context.l10n.reqNoGlare),
                   ],
                 ),
               ),
@@ -249,7 +247,7 @@ class _DriverIdVerificationScreenState
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text('Submit for Verification',
+                      Text(context.l10n.submitForVerification,
                           style: TextStyle(
                               fontSize: 16, fontWeight: FontWeight.w600)),
                       SizedBox(width: 8),
@@ -261,7 +259,7 @@ class _DriverIdVerificationScreenState
               const SizedBox(height: 16),
               Center(
                 child: Text(
-                  'SECURE 256-BIT SSL ENCRYPTED VERIFICATION',
+                  context.l10n.sslEncrypted,
                   style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
@@ -330,7 +328,7 @@ class _DriverIdVerificationScreenState
                           ),
                         ),
                         child: Center(
-                          child: Text('Tap to change',
+                          child: Text(context.l10n.tapToChange,
                               style: TextStyle(
                                   color: AppStyles.onPrimary,
                                   fontSize: 11,

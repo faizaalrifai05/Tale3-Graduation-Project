@@ -1,14 +1,22 @@
 import 'package:flutter/services.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:testtale3/models/ride_model.dart';
+import 'package:testtale3/models/booking_model.dart';
+import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/driver/driver_ride_live_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverRideDetailsScreen extends StatelessWidget {
-  const DriverRideDetailsScreen({super.key});
+  final RideModel? ride;
+  const DriverRideDetailsScreen({super.key, this.ride});
 
   void _showShareSheet(BuildContext context) {
-    const shareText =
-        'Check out this ride on Tale3!\n🚗 From → To • Today at 14:30\nBook now on Tale3 — the trusted carpool app.';
+    final r = ride;
+    final shareText = r != null
+        ? 'Check out this ride on Tale3!\n🚗 ${r.origin} → ${r.destination} • ${r.date} at ${r.time}\nBook now on Tale3 — the trusted carpool app.'
+        : 'Check out this ride on Tale3!\nBook now on Tale3 — the trusted carpool app.';
     showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.surfaceColor,
@@ -28,7 +36,7 @@ class DriverRideDetailsScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            Text('Share Ride', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
+            Text(ctx.l10n.shareRide, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
             const SizedBox(height: 8),
             Text(shareText, style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
             const SizedBox(height: 24),
@@ -37,12 +45,12 @@ class DriverRideDetailsScreen extends StatelessWidget {
               height: 52,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy Ride Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                label: Text(ctx.l10n.copyRideDetails, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 onPressed: () {
-                  Clipboard.setData(const ClipboardData(text: shareText));
+                  Clipboard.setData(ClipboardData(text: shareText));
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: const Text('Ride details copied to clipboard'),
+                    content: Text(context.l10n.rideCopied),
                     backgroundColor: AppStyles.successColor,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -81,7 +89,7 @@ class DriverRideDetailsScreen extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: Text(
-                        'Ride Details',
+                        context.l10n.rideDetails,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -115,11 +123,11 @@ class DriverRideDetailsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     // ── Map placeholder ──────────────────────────────────────
-                    _MapSection(),
+                    _MapSection(origin: ride?.origin, destination: ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Route timeline ───────────────────────────────────────
-                    _RouteSection(),
+                    _RouteSection(origin: ride?.origin, destination: ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Info cards (date / seats / price) ────────────────────
@@ -129,13 +137,16 @@ class DriverRideDetailsScreen extends StatelessWidget {
                       child: Row(
                         children: [
                           _buildInfoCard(context, Icons.calendar_today_rounded,
-                              'DATE & TIME', 'Today\n14:30'),
+                              context.l10n.dateAndTime.toUpperCase(),
+                              '${ride?.date ?? '-'}\n${ride?.time ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.event_seat_rounded,
-                              'SEATS LEFT', '3 / 4'),
+                              context.l10n.seatsLeft.toUpperCase(),
+                              '${ride?.availableSeats ?? '-'} / ${ride?.totalSeats ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.payments_outlined,
-                              'PRICE', '\$15.00',
+                              context.l10n.price.toUpperCase(),
+                              '${ride?.pricePerSeat ?? '-'} JOD',
                               isPrice: true),
                         ],
                       ),
@@ -143,11 +154,11 @@ class DriverRideDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // ── Passengers ───────────────────────────────────────────
-                    _PassengersSection(),
+                    _PassengersSection(rideId: ride?.id),
                     const SizedBox(height: 8),
 
                     // ── Rules & preferences ──────────────────────────────────
-                    _RulesSection(),
+                    _RulesSection(ride: ride),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -179,8 +190,8 @@ class DriverRideDetailsScreen extends StatelessWidget {
                   },
                   icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
                   label: Text(
-                    'Start Ride',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    context.l10n.startRide,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppStyles.darkMaroon,
@@ -243,6 +254,10 @@ class DriverRideDetailsScreen extends StatelessWidget {
 //  MAP SECTION — stylised route map placeholder
 // ─────────────────────────────────────────────────────────────────────────────
 class _MapSection extends StatelessWidget {
+  final String? origin;
+  final String? destination;
+  const _MapSection({this.origin, this.destination});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -269,7 +284,7 @@ class _MapSection extends StatelessWidget {
                 left: 48,
                 top: 32,
                 child: _MapPin(
-                  label: 'Pickup',
+                  label: origin ?? context.l10n.pickup,
                   color: AppStyles.primaryColor,
                   icon: Icons.radio_button_checked,
                 ),
@@ -280,7 +295,7 @@ class _MapSection extends StatelessWidget {
                 right: 48,
                 bottom: 32,
                 child: _MapPin(
-                  label: 'Drop-off',
+                  label: destination ?? context.l10n.dropOff,
                   color: AppStyles.successDarkText,
                   icon: Icons.location_on,
                 ),
@@ -414,6 +429,10 @@ class _RoutePainter extends CustomPainter {
 //  ROUTE SECTION — origin → dropoffs → destination timeline
 // ─────────────────────────────────────────────────────────────────────────────
 class _RouteSection extends StatelessWidget {
+  final String? origin;
+  final String? destination;
+  const _RouteSection({this.origin, this.destination});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -423,7 +442,7 @@ class _RouteSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'ROUTE',
+            context.l10n.route.toUpperCase(),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -436,25 +455,16 @@ class _RouteSection extends StatelessWidget {
             context,
             icon: Icons.radio_button_checked,
             iconColor: AppStyles.primaryColor,
-            label: 'Pickup',
-            address: 'Downtown Dubai, Sheikh Mohammed Blvd',
+            label: context.l10n.pickup,
+            address: origin ?? '-',
             isLast: false,
-          ),
-          _routeStop(
-            context,
-            icon: Icons.arrow_downward_rounded,
-            iconColor: context.colors.textTertiary,
-            label: 'Drop-off 1',
-            address: 'Business Bay Metro Station',
-            isLast: false,
-            isDim: true,
           ),
           _routeStop(
             context,
             icon: Icons.location_on_rounded,
             iconColor: AppStyles.successDarkText,
-            label: 'Final destination',
-            address: 'Dubai Marina Walk, JBR',
+            label: context.l10n.finalDestination,
+            address: destination ?? '-',
             isLast: true,
           ),
         ],
@@ -541,58 +551,72 @@ class _RouteSection extends StatelessWidget {
 //  PASSENGERS SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 class _PassengersSection extends StatelessWidget {
-  static const _passengers = [
-    ('Sarah J.', 'Seat 1', true),
-    ('Thomas K.', 'Seat 2', false),
-    ('Aisha M.', 'Seat 3', true),
-  ];
+  final String? rideId;
+  const _PassengersSection({this.rideId});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: context.colors.surfaceColor,
-      padding: const EdgeInsets.all(20),
-      width: double.infinity,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    if (rideId == null) return const SizedBox.shrink();
+
+    return StreamBuilder<List<BookingModel>>(
+      stream: context.read<BookingProvider>().rideBookingsStream(rideId!),
+      builder: (context, snapshot) {
+        final bookings = snapshot.data ?? [];
+        return Container(
+          color: context.colors.surfaceColor,
+          padding: const EdgeInsets.all(20),
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'PASSENGERS',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textTertiary,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppStyles.successLightBg,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${_passengers.length} booked',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppStyles.successDarkText,
+              Row(
+                children: [
+                  Text(
+                    context.l10n.passengers.toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textTertiary,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppStyles.successLightBg,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${bookings.length} ${context.l10n.booked}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppStyles.successDarkText,
+                      ),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 16),
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(child: CircularProgressIndicator())
+              else if (bookings.isEmpty)
+                Text(
+                  context.l10n.noPassengersYet,
+                  style: TextStyle(
+                      fontSize: 13, color: context.colors.textSecondary),
+                )
+              else
+                ...bookings.asMap().entries.map((e) => _PassengerRow(
+                      name: e.value.passengerName,
+                      seat: 'Seat ${e.key + 1}',
+                      seatsBooked: e.value.seatsBooked,
+                    )),
             ],
           ),
-          const SizedBox(height: 16),
-          ..._passengers.map((p) => _PassengerRow(
-                name: p.$1,
-                seat: p.$2,
-                isOnline: p.$3,
-              )),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -600,9 +624,12 @@ class _PassengersSection extends StatelessWidget {
 class _PassengerRow extends StatelessWidget {
   final String name;
   final String seat;
-  final bool isOnline;
-  const _PassengerRow(
-      {required this.name, required this.seat, required this.isOnline});
+  final int seatsBooked;
+  const _PassengerRow({
+    required this.name,
+    required this.seat,
+    this.seatsBooked = 1,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -623,21 +650,6 @@ class _PassengerRow extends StatelessWidget {
                   ),
                 ),
               ),
-              if (isOnline)
-                Positioned(
-                  bottom: 1,
-                  right: 1,
-                  child: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: AppStyles.successColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                          color: context.colors.surfaceColor, width: 2),
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(width: 12),
@@ -697,15 +709,18 @@ class _PassengerRow extends StatelessWidget {
 //  RULES SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 class _RulesSection extends StatelessWidget {
-  static const _rules = [
-    (Icons.ac_unit_rounded, 'Air conditioning', true),
-    (Icons.luggage_rounded, 'Luggage space available', true),
-    (Icons.smoke_free_rounded, 'No smoking', true),
-    (Icons.pets_rounded, 'No pets', false),
-  ];
+  final RideModel? ride;
+  const _RulesSection({this.ride});
 
   @override
   Widget build(BuildContext context) {
+    final r = ride;
+    final rules = [
+      (Icons.ac_unit_rounded, context.l10n.airConditioning, r?.acEnabled ?? false),
+      (Icons.luggage_rounded, context.l10n.luggageSpaceAvailable, r?.luggageEnabled ?? false),
+      (Icons.smoke_free_rounded, context.l10n.noSmoking, r?.noSmoking ?? false),
+      (Icons.pets_rounded, context.l10n.petsAllowed, r?.petsAllowed ?? false),
+    ];
     return Container(
       color: context.colors.surfaceColor,
       padding: const EdgeInsets.all(20),
@@ -714,7 +729,7 @@ class _RulesSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'RIDE PREFERENCES',
+            context.l10n.ridePreferences.toUpperCase(),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -726,7 +741,7 @@ class _RulesSection extends StatelessWidget {
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: _rules.map((r) {
+            children: rules.map((r) {
               final (icon, label, enabled) = r;
               return Container(
                 padding:

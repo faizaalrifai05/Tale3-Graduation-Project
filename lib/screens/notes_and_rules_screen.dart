@@ -1,6 +1,7 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class NotesAndRulesScreen extends StatelessWidget {
   const NotesAndRulesScreen({super.key});
@@ -17,7 +18,7 @@ class NotesAndRulesScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Notes & Rules',
+          context.l10n.notesAndRules,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -39,7 +40,7 @@ class NotesAndRulesScreen extends StatelessWidget {
                   Icon(Icons.people_outline, color: AppStyles.primaryColor),
                   const SizedBox(width: 8),
                   Text(
-                    'Community Guidelines',
+                    context.l10n.communityGuidelines,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -49,10 +50,10 @@ class NotesAndRulesScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildRuleItem(context, 'Tale3 is a shared carpool community — not a private car. Ride together, not alone.'),
-              _buildRuleItem(context, 'Share rides, split costs, and travel smarter together.'),
-              _buildRuleItem(context, 'Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.'),
-              _buildRuleItem(context, 'Carpooling helps keep travel affordable while building a friendly, trust-based community.'),
+              _buildRuleItem(context, context.l10n.guidelineSharedCarpool),
+              _buildRuleItem(context, context.l10n.guidelineShareRides),
+              _buildRuleItem(context, context.l10n.guidelineArriveEarly),
+              _buildRuleItem(context, context.l10n.guidelineCarpooling),
               const SizedBox(height: 32),
 
               // Seats Order Section
@@ -61,7 +62,7 @@ class NotesAndRulesScreen extends StatelessWidget {
                   Icon(Icons.event_seat, color: AppStyles.primaryColor),
                   const SizedBox(width: 8),
                   Text(
-                    'Seats Order',
+                    context.l10n.seatsOrder,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
@@ -108,14 +109,14 @@ class NotesAndRulesScreen extends StatelessWidget {
               // Seat rules explanations
               _buildSeatRule(context,
                 icon: Icons.looks_one,
-                title: 'Back Row Selection',
-                desc: 'Choose "Back Row" to reserve all three back seats for maximum comfort or luggage space.',
+                title: context.l10n.backRowSelection,
+                desc: context.l10n.backRowSelectionDesc,
               ),
               const SizedBox(height: 16),
               _buildSeatRule(context,
                 icon: Icons.group,
-                title: 'Full Car Selection',
-                desc: 'Choose "All" to reserve all four seats and have the entire vehicle to yourself.',
+                title: context.l10n.fullCarSelection,
+                desc: context.l10n.fullCarSelectionDesc,
               ),
               
               const SizedBox(height: 40),
@@ -144,7 +145,7 @@ class NotesAndRulesScreen extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Next',
+                        context.l10n.next,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

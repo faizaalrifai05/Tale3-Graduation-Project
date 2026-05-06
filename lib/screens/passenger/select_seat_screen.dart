@@ -4,6 +4,7 @@ import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -37,8 +38,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
     if (booking == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Booking failed. Seats may no longer be available.'),
+        SnackBar(
+          content: Text(context.l10n.bookingFailed),
         ),
       );
       return;
@@ -62,9 +63,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text(
-          'Select your seat',
-          style: TextStyle(
+        title: Text(
+          context.l10n.selectYourSeat,
+          style: const TextStyle(
             color: Color(0xFF1A1A1A),
             fontSize: 16,
             fontWeight: FontWeight.w800,
@@ -149,13 +150,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             _buildLegendItem(
-                                const Color(0xFFE0E0E0), 'Available'),
+                                const Color(0xFFE0E0E0), context.l10n.available),
                             const SizedBox(width: 16),
-                            _buildLegendItem(_primaryColor, 'Selected',
+                            _buildLegendItem(_primaryColor, context.l10n.selectedLabel,
                                 isSelected: true),
                             const SizedBox(width: 16),
                             _buildLegendItem(const Color(0xFFBDBDBD),
-                                'Occupied',
+                                context.l10n.occupied,
                                 iconColor: Colors.white),
                           ],
                         ),
@@ -186,9 +187,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Selected Seat(s)',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.selectedSeats,
+                                style: const TextStyle(
                                     fontSize: 12, color: Color(0xFF757575)),
                               ),
                               const SizedBox(height: 4),
@@ -205,9 +206,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              const Text(
-                                'Total Price',
-                                style: TextStyle(
+                              Text(
+                                context.l10n.totalPrice,
+                                style: const TextStyle(
                                     fontSize: 12, color: Color(0xFF757575)),
                               ),
                               const SizedBox(height: 4),
@@ -249,9 +250,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                   child: CircularProgressIndicator(
                                       color: Colors.white, strokeWidth: 2),
                                 )
-                              : const Text(
-                                  'Confirm Seat Selection',
-                                  style: TextStyle(
+                              : Text(
+                                  context.l10n.confirmSeatSelection,
+                                  style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600),
                                 ),

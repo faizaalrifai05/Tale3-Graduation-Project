@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverRideLiveScreen extends StatefulWidget {
   const DriverRideLiveScreen({super.key});
@@ -60,7 +61,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
               ),
             ),
             const SizedBox(height: 20),
-            Text('Share Ride', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
+            Text(context.l10n.shareRide, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
             const SizedBox(height: 8),
             Text(shareText, style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
             const SizedBox(height: 24),
@@ -69,13 +70,13 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
               height: 52,
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.copy, size: 18),
-                label: const Text('Copy Ride Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                label: Text(context.l10n.copyRideDetails, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 onPressed: () {
                   Clipboard.setData(const ClipboardData(text: shareText));
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Ride details copied to clipboard'),
+                      content: Text(context.l10n.rideCopied),
                       backgroundColor: AppStyles.successColor,
                       behavior: SnackBarBehavior.floating,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -106,7 +107,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'My Ride',
+          context.l10n.myRide,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -169,7 +170,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
 
               // Status Text
               Text(
-                'Your ride is live!',
+                context.l10n.rideIsLive,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -178,7 +179,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
               ),
               const SizedBox(height: 12),
               Text(
-                'Subscribers are being calculated and\nmatching you with passengers...',
+                context.l10n.matchingPassengers,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -212,7 +213,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Departure',
+                            context.l10n.departure,
                             style: TextStyle(
                               fontSize: 12,
                               color: context.colors.textSecondary,
@@ -237,7 +238,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Destination',
+                            context.l10n.destination,
                             style: TextStyle(
                               fontSize: 12,
                               color: context.colors.textSecondary,
@@ -268,7 +269,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                   onPressed: () => _showShareSheet(context),
                   icon: Icon(Icons.share, size: 20),
                   label: Text(
-                    'Share Trip',
+                    context.l10n.shareTrip,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -302,7 +303,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> with Single
                     ),
                   ),
                   child: Text(
-                    'Go to Dashboard',
+                    context.l10n.goToDashboard,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

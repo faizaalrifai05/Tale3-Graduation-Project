@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../theme/app_styles.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/auth_provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverChatScreen extends StatefulWidget {
   const DriverChatScreen({super.key});
@@ -49,7 +50,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
             children: [
               Expanded(
                 child: Text(
-                  'Messages',
+                  context.l10n.messages,
                   style: TextStyle(
                     color: context.colors.textPrimary,
                     fontSize: 20,
@@ -84,7 +85,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
               controller: _searchController,
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: 'Search conversations\u2026',
+                hintText: context.l10n.searchConversations,
                 hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
                 prefixIcon: Icon(Icons.search, color: context.colors.textTertiary, size: 20),
                 border: InputBorder.none,
@@ -116,7 +117,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
               if (conversations.isEmpty) {
                 return Center(
                   child: Text(
-                    'No conversations yet.',
+                    context.l10n.noConversations,
                     style: TextStyle(color: context.colors.textTertiary, fontSize: 15),
                   ),
                 );
@@ -411,7 +412,7 @@ class _ConversationScreenState extends State<_ConversationScreen> {
                       textCapitalization: TextCapitalization.sentences,
                       onSubmitted: (_) => _sendMessage(),
                       decoration: InputDecoration(
-                        hintText: 'Type a message\u2026',
+                        hintText: context.l10n.typeMessage,
                         hintStyle: TextStyle(color: context.colors.textTertiary, fontSize: 14),
                         border: InputBorder.none,
                         contentPadding: const EdgeInsets.symmetric(vertical: 12),

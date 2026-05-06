@@ -1,5 +1,6 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class RatingsReviewsScreen extends StatelessWidget {
   const RatingsReviewsScreen({super.key});
@@ -16,7 +17,7 @@ class RatingsReviewsScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Ratings & Reviews',
+          context.l10n.ratingsAndReviews,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -60,7 +61,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '1,418 reviews',
+                          '1,418 ${context.l10n.reviewsLabel}',
                           style: TextStyle(
                             fontSize: 12,
                             color: context.colors.textSecondary,
@@ -98,7 +99,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Passenger Feedback',
+                          context.l10n.passengerFeedback,
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
@@ -108,7 +109,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                         Row(
                           children: [
                             Text(
-                              'Sort by',
+                              context.l10n.sortBy,
                               style: TextStyle(
                                 fontSize: 13,
                                 color: context.colors.textSecondary,
@@ -116,7 +117,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 4),
                             Text(
-                              'Newest',
+                              context.l10n.newest,
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -177,26 +178,26 @@ class RatingsReviewsScreen extends StatelessWidget {
           selectedFontSize: 10,
           unselectedFontSize: 10,
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'HOME',
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: context.l10n.home.toUpperCase(),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.history_outlined),
-              activeIcon: Icon(Icons.history),
-              label: 'MY TRIPS',
+              icon: const Icon(Icons.history_outlined),
+              activeIcon: const Icon(Icons.history),
+              label: context.l10n.myTrips.toUpperCase(),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline),
-              activeIcon: Icon(Icons.chat_bubble),
-              label: 'CHAT',
+              icon: const Icon(Icons.chat_bubble_outline),
+              activeIcon: const Icon(Icons.chat_bubble),
+              label: context.l10n.chat.toUpperCase(),
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'PROFILE',
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: context.l10n.profile.toUpperCase(),
             ),
           ],
         ),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -18,15 +19,14 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
   
   int _selectedReasonIndex = 0;
 
-  final List<String> _reasons = [
-    'Changed my mind',
-    'Found another ride',
-    'Driver is running late',
-    'Other reason'
-  ];
-
   @override
   Widget build(BuildContext context) {
+    final reasons = [
+      context.l10n.reasonChangedMind,
+      context.l10n.reasonFoundRide,
+      context.l10n.reasonDriverLate,
+      context.l10n.reasonOther,
+    ];
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -35,7 +35,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Cancel Trip',
+          context.l10n.cancelTrip,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -70,7 +70,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     
                     // Title
                     Text(
-                      'Cancel Trip?',
+                      context.l10n.cancelTripQuestion,
                       style: TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -81,7 +81,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     
                     // Subtitle
                     Text(
-                      'Are you sure you want to cancel this trip?\nPlease select a reason:',
+                      context.l10n.cancelTripDesc,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -100,7 +100,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                       ),
                       child: Column(
                         children: List.generate(
-                          _reasons.length,
+                          reasons.length,
                           (index) => Column(
                             children: [
                               RadioListTile<int>(
@@ -108,7 +108,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                                 groupValue: _selectedReasonIndex,
                                 activeColor: AppStyles.primaryColor,
                                 title: Text(
-                                  _reasons[index],
+                                  reasons[index],
                                   style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: _selectedReasonIndex == index ? FontWeight.w700 : FontWeight.w500,
@@ -122,7 +122,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                                 },
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                               ),
-                              if (index < _reasons.length - 1)
+                              if (index < reasons.length - 1)
                                 Divider(height: 1, indent: 16, endIndent: 16),
                             ],
                           ),
@@ -169,7 +169,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                         elevation: 0,
                       ),
                       child: Text(
-                        'Confirm Cancellation',
+                        context.l10n.confirmCancellation,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -184,7 +184,7 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                       foregroundColor: context.colors.textPrimary,
                     ),
                     child: Text(
-                      'Keep Ride',
+                      context.l10n.keepRide,
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

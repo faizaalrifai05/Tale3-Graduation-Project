@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverProfilePhotoScreen extends StatefulWidget {
   const DriverProfilePhotoScreen({super.key});
@@ -48,7 +49,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    'Profile Photo',
+                    context.l10n.profilePhoto,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -65,12 +66,12 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
               child: Row(
                 children: [
                   Text(
-                    'Step 2 of 2',
+                    '${context.l10n.step} 2 ${context.l10n.ofWord} 2',
                     style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
                   ),
                   const Spacer(),
                   Text(
-                    'SETTING UP YOUR PROFILE',
+                    context.l10n.settingUpYourProfile,
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -140,7 +141,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                     const SizedBox(height: 28),
 
                     Text(
-                      'Add a Profile Photo',
+                      context.l10n.addProfilePhoto,
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -149,7 +150,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Add a clear photo of yourself to help\ndrivers identify you. This builds trust in\nthe community.',
+                      context.l10n.addProfilePhotoDesc,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           fontSize: 14,
@@ -166,7 +167,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                       child: ElevatedButton.icon(
                         onPressed: () => _pickImage(ImageSource.camera),
                         icon: Icon(Icons.camera_alt_outlined, size: 20),
-                        label: Text('Take Photo',
+                        label: Text(context.l10n.takePhoto,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
@@ -187,7 +188,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                       child: OutlinedButton.icon(
                         onPressed: () => _pickImage(ImageSource.gallery),
                         icon: Icon(Icons.image_outlined, size: 20),
-                        label: Text('Upload from Gallery',
+                        label: Text(context.l10n.uploadFromGallery,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                         style: OutlinedButton.styleFrom(
@@ -205,7 +206,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                     TextButton(
                       onPressed: _goToHome,
                       child: Text(
-                        'Skip for now',
+                        context.l10n.skipForNow,
                         style: TextStyle(
                             fontSize: 14, color: context.colors.textTertiary),
                       ),
@@ -226,7 +227,7 @@ class _DriverProfilePhotoScreenState extends State<DriverProfilePhotoScreen> {
                               borderRadius: BorderRadius.circular(12)),
                           elevation: 0,
                         ),
-                        child: Text('Continue',
+                        child: Text(context.l10n.continueBtn,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                       ),

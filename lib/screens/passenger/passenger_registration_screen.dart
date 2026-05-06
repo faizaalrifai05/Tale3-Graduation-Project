@@ -8,6 +8,7 @@ import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/passenger/passenger_verification_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerRegistrationScreen extends StatefulWidget {
   const PassengerRegistrationScreen({super.key});
@@ -57,12 +58,12 @@ class _PassengerRegistrationScreenState
     super.dispose();
   }
 
-  String get _stepTitle {
+  String _stepTitle(BuildContext context) {
     switch (_currentStep) {
       case 1:
-        return 'Account Details';
+        return context.l10n.accountDetails;
       case 2:
-        return 'Profile Details';
+        return context.l10n.profileDetails;
       default:
         return '';
     }
@@ -78,7 +79,7 @@ class _PassengerRegistrationScreenState
       if (name.isEmpty || email.isEmpty || password.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please fill in all fields to continue'),
+            content: Text(context.l10n.fillAllFields),
             backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -90,7 +91,7 @@ class _PassengerRegistrationScreenState
       if (!email.contains('@')) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Please enter a valid email address'),
+            content: Text(context.l10n.enterValidEmail),
             backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -102,7 +103,7 @@ class _PassengerRegistrationScreenState
       if (password.length < 8) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Password must be at least 8 characters'),
+            content: Text(context.l10n.passwordMinLength),
             backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -119,7 +120,7 @@ class _PassengerRegistrationScreenState
     if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please accept the Terms of Service to continue'),
+          content: Text(context.l10n.acceptTerms),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -182,7 +183,7 @@ class _PassengerRegistrationScreenState
           onPressed: _goBack,
         ),
         title: Text(
-          'Passenger Registration',
+          context.l10n.passengerRegistration,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -203,7 +204,7 @@ class _PassengerRegistrationScreenState
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    _stepTitle,
+                    _stepTitle(context),
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -211,7 +212,7 @@ class _PassengerRegistrationScreenState
                     ),
                   ),
                   Text(
-                    'Step $_currentStep of $_totalSteps',
+                    '${context.l10n.step} $_currentStep / $_totalSteps',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -234,8 +235,8 @@ class _PassengerRegistrationScreenState
               // Title
               Text(
                 _currentStep == 1
-                    ? 'Create your account'
-                    : 'Tell us about yourself',
+                    ? context.l10n.createYourAccount
+                    : context.l10n.tellUsAboutYourself,
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
@@ -245,8 +246,8 @@ class _PassengerRegistrationScreenState
               const SizedBox(height: 8),
               Text(
                 _currentStep == 1
-                    ? 'Fill in your details to join the Tale3 community.'
-                    : 'Just a couple more details to personalise your experience.',
+                    ? context.l10n.fillInDetails
+                    : context.l10n.fewMoreDetails,
                 style: TextStyle(
                   fontSize: 14,
                   color: context.colors.textSecondary,
@@ -267,16 +268,16 @@ class _PassengerRegistrationScreenState
   List<Widget> _buildStep1() {
     return [
       _buildLabeledTextField(
-        label: 'Full Name',
+        label: context.l10n.fullName,
         controller: _nameController,
-        hintText: 'John Doe',
+        hintText: context.l10n.fullNameHint,
         icon: Icons.person_outline,
       ),
       const SizedBox(height: 16),
       _buildLabeledTextField(
-        label: 'Email Address',
+        label: context.l10n.emailAddress,
         controller: _emailController,
-        hintText: 'name@example.com',
+        hintText: context.l10n.emailHint,
         icon: Icons.email_outlined,
         keyboardType: TextInputType.emailAddress,
       ),
@@ -284,7 +285,7 @@ class _PassengerRegistrationScreenState
 
       // Password field
       Text(
-        'Password',
+        context.l10n.passwordLabel,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
@@ -338,7 +339,7 @@ class _PassengerRegistrationScreenState
       ),
       const SizedBox(height: 32),
 
-      _buildNextButton(label: 'Continue', onPressed: _goNext),
+      _buildNextButton(label: context.l10n.continueBtn, onPressed: _goNext),
       const SizedBox(height: 20),
       _buildLoginLink(),
       const SizedBox(height: 24),
@@ -401,19 +402,19 @@ class _PassengerRegistrationScreenState
       ),
       const SizedBox(height: 24),
       _buildLabeledTextField(
-        label: 'Phone Number',
+        label: context.l10n.phoneNumber,
         controller: _phoneController,
-        hintText: '+966 5X XXX XXXX',
+        hintText: context.l10n.phoneHint,
         icon: Icons.phone_outlined,
         keyboardType: TextInputType.phone,
         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
       ),
       const SizedBox(height: 16),
       _buildDropdownField(
-        label: 'Gender',
-        hintText: 'Select gender',
+        label: context.l10n.gender,
+        hintText: context.l10n.selectGender,
         icon: Icons.people_outline,
-        items: const ['Male', 'Female', 'Prefer not to say'],
+        items: [context.l10n.genderMale, context.l10n.genderFemale, context.l10n.genderPreferNotToSay],
         value: _selectedGender,
         onChanged: (val) => setState(() => _selectedGender = val),
       ),
@@ -423,7 +424,7 @@ class _PassengerRegistrationScreenState
       Row(
         children: [
           Text(
-            'University / Workplace',
+            context.l10n.universityWorkplace,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
@@ -432,7 +433,7 @@ class _PassengerRegistrationScreenState
           ),
           const SizedBox(width: 8),
           Text(
-            'OPTIONAL',
+            context.l10n.optional.toUpperCase(),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
@@ -446,7 +447,7 @@ class _PassengerRegistrationScreenState
       TextField(
         controller: _universityController,
         decoration: InputDecoration(
-          hintText: 'Where do you commute to?',
+          hintText: context.l10n.universityHint,
           hintStyle:
               TextStyle(color: context.colors.inputHintColor, fontSize: 14),
           prefixIcon: Icon(Icons.school_outlined,
@@ -496,21 +497,21 @@ class _PassengerRegistrationScreenState
                     color: context.colors.textSecondary,
                     height: 1.5),
                 children: [
-                  TextSpan(text: 'By joining, I agree to Tale3\'s '),
+                  TextSpan(text: context.l10n.termsAgreement),
                   TextSpan(
-                    text: 'Terms of Service',
-                    style: TextStyle(
+                    text: context.l10n.termsOfService,
+                    style: const TextStyle(
                         color: AppStyles.primaryColor,
                         fontWeight: FontWeight.w600),
                   ),
-                  TextSpan(text: ' and '),
+                  TextSpan(text: context.l10n.and),
                   TextSpan(
-                    text: 'Privacy Policy',
-                    style: TextStyle(
+                    text: context.l10n.privacyPolicy,
+                    style: const TextStyle(
                         color: AppStyles.primaryColor,
                         fontWeight: FontWeight.w600),
                   ),
-                  TextSpan(text: '.'),
+                  const TextSpan(text: '.'),
                 ],
               ),
             ),
@@ -520,7 +521,7 @@ class _PassengerRegistrationScreenState
       const SizedBox(height: 32),
 
       _buildNextButton(
-        label: 'Join as Passenger',
+        label: context.l10n.joinAsPassenger,
         onPressed: (_agreeToTerms && !_isLoading) ? _goNext : null,
         isLoading: _isLoading,
       ),
@@ -576,7 +577,7 @@ class _PassengerRegistrationScreenState
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
-            'Already have an account? ',
+            '${context.l10n.alreadyHaveAccountQ} ',
             style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
           ),
           GestureDetector(
@@ -585,7 +586,7 @@ class _PassengerRegistrationScreenState
                   builder: (context) => const PassengerLoginScreen()),
             ),
             child: Text(
-              'Log In',
+              context.l10n.logIn,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,

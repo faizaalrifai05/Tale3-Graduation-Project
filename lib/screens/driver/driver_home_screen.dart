@@ -1,21 +1,99 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
+import '../../providers/ride_provider.dart';
+import '../../models/ride_model.dart';
 import 'package:testtale3/screens/driver/driver_create_ride_screen.dart';
 import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
 import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 import 'package:testtale3/screens/driver/driver_chat_screen.dart';
+import 'package:testtale3/screens/community_guidelines_screen.dart';
 
-class DriverHomeScreen extends StatelessWidget {
+class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
 
   @override
+  State<DriverHomeScreen> createState() => _DriverHomeScreenState();
+}
+
+class _DriverHomeScreenState extends State<DriverHomeScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+    });
+  }
+
+  @override
+  void dispose() {
+    context.read<app_auth.AuthProvider>().removeListener(_checkIfBlocked);
+    super.dispose();
+  }
+
+  void _checkIfBlocked() {
+    final auth = context.read<app_auth.AuthProvider>();
+    if (!auth.isLoggedIn && auth.wasBlocked) {
+      auth.clearBlockedFlag();
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Row(
+            children: [
+              Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              SizedBox(width: 10),
+              Text(
+                'Account Blocked',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Your account has been blocked by the admin. '
+            'If you believe this is a mistake, please contact '
+            'support at support@tale3.app.',
+            style: TextStyle(fontSize: 14, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const CommunityGuidelinesScreen(),
+                  ),
+                  (route) => false,
+                );
+              },
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // Watch the navigation provider to rebuild when the tab index changes.
     final navProvider = context.watch<NavigationProvider>();
 
     return Scaffold(
@@ -32,29 +110,28 @@ class DriverHomeScreen extends StatelessWidget {
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: navProvider.driverTabIndex,
         onTap: (index) {
-          // Use listen: false via context.read – we're inside a callback.
           context.read<NavigationProvider>().setDriverTab(index);
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home_outlined),
-            activeIcon: Icon(Icons.home),
-            label: 'HOME',
+            icon: const Icon(Icons.home_outlined),
+            activeIcon: const Icon(Icons.home),
+            label: context.l10n.home.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.directions_car_outlined),
-            activeIcon: Icon(Icons.directions_car),
-            label: 'MY RIDES',
+            icon: const Icon(Icons.directions_car_outlined),
+            activeIcon: const Icon(Icons.directions_car),
+            label: context.l10n.myRides.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'CHAT',
+            icon: const Icon(Icons.chat_bubble_outline),
+            activeIcon: const Icon(Icons.chat_bubble),
+            label: context.l10n.chat.toUpperCase(),
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: 'PROFILE',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: context.l10n.profile.toUpperCase(),
           ),
         ],
       ),
@@ -107,7 +184,7 @@ class _DriverHomeTab extends StatelessWidget {
                                 color: Colors.white.withValues(alpha: 0.5),
                                 width: 2),
                           ),
-                          child: CircleAvatar(
+                          child: const CircleAvatar(
                             radius: 22,
                             backgroundColor: Color(0x33FFFFFF),
                             child: Icon(Icons.person,
@@ -120,7 +197,7 @@ class _DriverHomeTab extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'GOOD ${_getGreeting().toUpperCase()}',
+                                'GOOD ${_getGreeting(context).toUpperCase()}',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
@@ -131,7 +208,7 @@ class _DriverHomeTab extends StatelessWidget {
                               const SizedBox(height: 2),
                               Text(
                                 'Capt. ${context.watch<app_auth.AuthProvider>().userName}',
-                                style: TextStyle(
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
                                   color: AppStyles.onPrimary,
@@ -151,7 +228,7 @@ class _DriverHomeTab extends StatelessWidget {
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
-                              Icon(Icons.notifications_none_rounded,
+                              const Icon(Icons.notifications_none_rounded,
                                   color: AppStyles.onPrimary, size: 22),
                               Positioned(
                                 top: 9,
@@ -181,14 +258,14 @@ class _DriverHomeTab extends StatelessWidget {
                       children: [
                         _buildStatCard(
                           icon: Icons.account_balance_wallet_rounded,
-                          label: 'Earnings',
+                          label: context.l10n.earnings,
                           value: '\$142.50',
                           iconColor: AppStyles.successColor,
                         ),
                         const SizedBox(width: 10),
                         _buildStatCard(
                           icon: Icons.star_rounded,
-                          label: 'Reviews',
+                          label: context.l10n.reviews,
                           value: '4.9',
                           iconColor: AppStyles.goldStar,
                           onTap: () => _showReviewsSheet(context),
@@ -232,12 +309,12 @@ class _DriverHomeTab extends StatelessWidget {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.add_circle_outline_rounded,
+                        const Icon(Icons.add_circle_outline_rounded,
                             color: AppStyles.onPrimary, size: 22),
-                        SizedBox(width: 10),
+                        const SizedBox(width: 10),
                         Text(
-                          'Create New Ride',
-                          style: TextStyle(
+                          context.l10n.createNewRide,
+                          style: const TextStyle(
                             color: AppStyles.onPrimary,
                             fontSize: 16,
                             fontWeight: FontWeight.w700,
@@ -251,55 +328,109 @@ class _DriverHomeTab extends StatelessWidget {
             ),
           ),
 
-
-
           // ═══════════════════════════════════════════════════════
-          //  CURRENT ACTIVE RIDE
+          //  RECENT RIDES (live from Firestore)
           // ═══════════════════════════════════════════════════════
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Active Ride',
-                      style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w800,
-                          color: context.colors.textPrimary),
+          StreamBuilder<List<RideModel>>(
+            stream: context.read<RideProvider>().myRidesStream,
+            builder: (context, snapshot) {
+              final rides = snapshot.data ?? [];
+              final activeRide = rides.isNotEmpty ? rides.first : null;
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              context.l10n.activeRide,
+                              style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.colors.textPrimary),
+                            ),
+                            if (activeRide != null) ...[
+                              const SizedBox(width: 8),
+                              const _LiveDot(),
+                            ],
+                          ],
+                        ),
+                        if (activeRide != null)
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    DriverRideDetailsScreen(ride: activeRide),
+                              ),
+                            ),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: context.colors.highlightBackgroundColor,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                '${context.l10n.details} →',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppStyles.primaryColor),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
-                    SizedBox(width: 8),
-                    _LiveDot(),
-                  ],
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const DriverRideDetailsScreen()),
                   ),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: context.colors.highlightBackgroundColor,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      'Details →',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppStyles.primaryColor),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 12),
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (activeRide == null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          color: context.colors.surfaceColor,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                              color: context.colors.borderColor
+                                  .withValues(alpha: 0.5)),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(Icons.directions_car_outlined,
+                                size: 40,
+                                color: context.colors.textTertiary),
+                            const SizedBox(height: 12),
+                            Text(
+                              context.l10n.noActiveRide,
+                              style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.colors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    _buildActiveRideCard(context, activeRide),
+                ],
+              );
+            },
           ),
-          const SizedBox(height: 12),
-          _buildActiveRideCard(context),
 
           const SizedBox(height: 32),
         ],
@@ -309,11 +440,11 @@ class _DriverHomeTab extends StatelessWidget {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  static String _getGreeting() {
+  String _getGreeting(BuildContext context) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Morning';
-    if (hour < 17) return 'Afternoon';
-    return 'Evening';
+    if (hour < 12) return context.l10n.goodMorning;
+    if (hour < 17) return context.l10n.goodAfternoon;
+    return context.l10n.goodEvening;
   }
 
   static Widget _buildStatCard({
@@ -339,7 +470,7 @@ class _DriverHomeTab extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: AppStyles.onPrimary,
@@ -379,11 +510,10 @@ class _DriverHomeTab extends StatelessWidget {
         height: MediaQuery.of(context).size.height * 0.75,
         decoration: BoxDecoration(
           color: context.colors.surfaceColor,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
           children: [
-            // Handle
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 40,
@@ -393,13 +523,12 @@ class _DriverHomeTab extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
               child: Row(
                 children: [
                   Text(
-                    'My Reviews',
+                    context.l10n.myReviews,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.w800,
@@ -408,14 +537,16 @@ class _DriverHomeTab extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
                       color: context.colors.highlightBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        Icon(Icons.star_rounded, color: AppStyles.goldStar, size: 16),
+                        Icon(Icons.star_rounded,
+                            color: AppStyles.goldStar, size: 16),
                         SizedBox(width: 4),
                         Text(
                           '4.9',
@@ -435,18 +566,20 @@ class _DriverHomeTab extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
                 '${reviews.length} reviews from passengers',
-                style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.textSecondary),
               ),
             ),
             const SizedBox(height: 12),
-            Divider(height: 1),
-            // Review list
+            const Divider(height: 1),
             Expanded(
               child: ListView.separated(
                 physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 16),
                 itemCount: reviews.length,
-                separatorBuilder: (context, index) => Divider(height: 28),
+                separatorBuilder: (context, index) =>
+                    const Divider(height: 28),
                 itemBuilder: (_, i) {
                   final r = reviews[i];
                   return Column(
@@ -456,10 +589,11 @@ class _DriverHomeTab extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: context.colors.highlightBackgroundColor,
+                            backgroundColor:
+                                context.colors.highlightBackgroundColor,
                             child: Text(
                               r.name[0],
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 color: AppStyles.primaryColor,
                               ),
@@ -488,7 +622,6 @@ class _DriverHomeTab extends StatelessWidget {
                               ],
                             ),
                           ),
-                          // Stars
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: List.generate(5, (si) {
@@ -523,15 +656,16 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-
-  Widget _buildActiveRideCard(BuildContext context) {
+  Widget _buildActiveRideCard(BuildContext context, RideModel ride) {
+    final bookedCount = ride.bookedSeats;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: context.colors.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(
+            color: context.colors.borderColor.withValues(alpha: 0.5)),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -541,11 +675,9 @@ class _DriverHomeTab extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Route timeline
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Timeline dots
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Column(
@@ -557,16 +689,19 @@ class _DriverHomeTab extends StatelessWidget {
                         color: AppStyles.primaryColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color: AppStyles.primaryColor.withValues(alpha: 0.3),
+                            color:
+                                AppStyles.primaryColor.withValues(alpha: 0.3),
                             width: 3),
                       ),
                     ),
                     Container(
-                        width: 2, height: 28, color: context.colors.borderColor),
+                        width: 2,
+                        height: 28,
+                        color: context.colors.borderColor),
                     Container(
                       width: 10,
                       height: 10,
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppStyles.successColor,
                         shape: BoxShape.circle,
                       ),
@@ -575,13 +710,12 @@ class _DriverHomeTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 14),
-              // Route text
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Amman, University St.',
+                      ride.origin,
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -589,7 +723,7 @@ class _DriverHomeTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 22),
                     Text(
-                      'Irbid, Yarmouk University',
+                      ride.destination,
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
@@ -598,7 +732,6 @@ class _DriverHomeTab extends StatelessWidget {
                   ],
                 ),
               ),
-              // Price tag
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -607,8 +740,8 @@ class _DriverHomeTab extends StatelessWidget {
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
-                  '12 JOD',
-                  style: TextStyle(
+                  '${ride.pricePerSeat} JOD',
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppStyles.primaryColor,
@@ -620,38 +753,42 @@ class _DriverHomeTab extends StatelessWidget {
 
           const SizedBox(height: 16),
 
-          // Info chips
           Row(
             children: [
-              _infoChip(context, Icons.access_time_rounded, 'Today, 2:30 PM'),
+              _infoChip(context, Icons.calendar_today_rounded,
+                  '${ride.date}  ·  ${ride.time}'),
               const SizedBox(width: 8),
-              _infoChip(context, Icons.airline_seat_recline_normal_rounded, '3 / 4 seats'),
+              _infoChip(
+                  context,
+                  Icons.airline_seat_recline_normal_rounded,
+                  '${ride.bookedSeats} / ${ride.totalSeats} ${context.l10n.seats}'),
             ],
           ),
 
           const SizedBox(height: 16),
-          Divider(height: 1),
+          const Divider(height: 1),
           const SizedBox(height: 14),
 
-          // Passenger row
           Row(
             children: [
-              // Stacked avatars
-              SizedBox(
-                width: 60,
-                height: 32,
-                child: Stack(
-                  children: [
-                    _stackedAvatar(context, 0, 'H'),
-                    _stackedAvatar(context, 20, 'S'),
-                    _stackedAvatar(context, 40, 'A'),
-                  ],
-                ),
-              ),
+              if (bookedCount > 0)
+                SizedBox(
+                  width: (bookedCount.clamp(1, 3) * 20 + 12).toDouble(),
+                  height: 32,
+                  child: Stack(
+                    children: List.generate(
+                      bookedCount.clamp(1, 3),
+                      (i) => _stackedAvatar(context, i * 20.0, '${i + 1}'),
+                    ),
+                  ),
+                )
+              else
+                Icon(Icons.person_outline,
+                    size: 24, color: context.colors.textTertiary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  '3 passengers booked',
+                  '$bookedCount ${context.l10n.passengers}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
@@ -669,12 +806,12 @@ class _DriverHomeTab extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle,
+                    const Icon(Icons.check_circle,
                         color: AppStyles.successColor, size: 14),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
-                      'On Track',
-                      style: TextStyle(
+                      context.l10n.onTrack,
+                      style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppStyles.successDarkText,
@@ -719,7 +856,8 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-  static Positioned _stackedAvatar(BuildContext context, double left, String letter) {
+  static Positioned _stackedAvatar(
+      BuildContext context, double left, String letter) {
     return Positioned(
       left: left,
       child: Container(
@@ -732,7 +870,7 @@ class _DriverHomeTab extends StatelessWidget {
           backgroundColor: context.colors.highlightBackgroundColor,
           child: Text(
             letter,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
               color: AppStyles.primaryColor,
@@ -742,9 +880,7 @@ class _DriverHomeTab extends StatelessWidget {
       ),
     );
   }
-
 }
-
 
 // ── Animated live dot ───────────────────────────────────────────────────────
 class _LiveDot extends StatefulWidget {
@@ -780,7 +916,7 @@ class _LiveDotState extends State<_LiveDot>
       child: Container(
         width: 8,
         height: 8,
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: AppStyles.successColor,
           shape: BoxShape.circle,
         ),

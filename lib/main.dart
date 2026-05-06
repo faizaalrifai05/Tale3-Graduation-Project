@@ -14,11 +14,13 @@ import 'package:testtale3/providers/saved_places_provider.dart';
 import 'package:testtale3/screens/splash_screen.dart';
 import 'package:testtale3/theme/app_styles.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  await FCMService.setup(); 
-  
+  await FCMService.setup(navigatorKey: navigatorKey);
+
   runApp(const Tale3App());
 }
 
@@ -78,6 +80,7 @@ class Tale3App extends StatelessWidget {
             GlobalCupertinoLocalizations.delegate,
           ],
 
+          navigatorKey: navigatorKey,
           home: const SplashScreen(),
         ),
       ),

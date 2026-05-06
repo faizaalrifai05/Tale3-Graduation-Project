@@ -1,6 +1,7 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerVerificationSuccessScreen extends StatelessWidget {
   const PassengerVerificationSuccessScreen({super.key});
@@ -18,7 +19,7 @@ class PassengerVerificationSuccessScreen extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Verification',
+          context.l10n.verification,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -96,7 +97,7 @@ class PassengerVerificationSuccessScreen extends StatelessWidget {
 
               // Title
               Text(
-                'Verification\nSuccessful!',
+                context.l10n.verificationSuccessful,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 28,
@@ -109,7 +110,7 @@ class PassengerVerificationSuccessScreen extends StatelessWidget {
               
               // Subtitle
               Text(
-                'Your email has been verified. You\ncan now use Tale3 to find and request a\nride. login', // "login" is present in the mockup string
+                context.l10n.verificationSuccessDesc,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -142,7 +143,7 @@ class PassengerVerificationSuccessScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: Text(
-                    'Go to Dashboard',
+                    context.l10n.goToDashboard,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,

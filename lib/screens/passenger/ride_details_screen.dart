@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
+
 
 class RideDetailsScreen extends StatelessWidget {
   final RideModel ride;
@@ -27,11 +29,11 @@ class RideDetailsScreen extends StatelessWidget {
                     icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
                       child: Text(
-                        'Ride Details',
-                        style: TextStyle(
+                        context.l10n.rideDetails,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF1A1A1A),
@@ -129,9 +131,9 @@ class RideDetailsScreen extends StatelessWidget {
                                   children: [
                                     const Icon(Icons.verified, color: _primaryColor, size: 14),
                                     const SizedBox(width: 4),
-                                    const Text(
-                                      'VERIFIED DRIVER',
-                                      style: TextStyle(
+                                    Text(
+                                      context.l10n.verifiedDriver,
+                                      style: const TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w700,
                                         color: _primaryColor,
@@ -189,9 +191,9 @@ class RideDetailsScreen extends StatelessWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'ROUTE',
-                                      style: TextStyle(
+                                    Text(
+                                      context.l10n.route,
+                                      style: const TextStyle(
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         color: Color(0xFF9E9E9E),
@@ -210,20 +212,20 @@ class RideDetailsScreen extends StatelessWidget {
                                   ],
                                 ),
                               ),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    'EST. TIME',
-                                    style: TextStyle(
+                                    context.l10n.estTime,
+                                    style: const TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.w600,
                                       color: Color(0xFF9E9E9E),
                                       letterSpacing: 1,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-                                  Text(
+                                  const SizedBox(height: 4),
+                                  const Text(
                                     '1h 15m',
                                     style: TextStyle(
                                       fontSize: 15,
@@ -240,11 +242,11 @@ class RideDetailsScreen extends StatelessWidget {
                           // Time, Seats, Price Cards
                           Row(
                             children: [
-                              _buildInfoCard(Icons.access_time, 'DEPARTURE', ride.time),
+                              _buildInfoCard(context, Icons.access_time, context.l10n.departure, ride.time),
                               const SizedBox(width: 12),
-                              _buildInfoCard(Icons.event_seat, 'SEATS LEFT', '${ride.availableSeats}'),
+                              _buildInfoCard(context, Icons.event_seat, context.l10n.seatsLeft, '${ride.availableSeats}'),
                               const SizedBox(width: 12),
-                              _buildInfoCard(Icons.payments_outlined, 'PRICE', '${ride.pricePerSeat} JOD', isPrice: true),
+                              _buildInfoCard(context, Icons.payments_outlined, context.l10n.price, '${ride.pricePerSeat} JOD', isPrice: true),
                             ],
                           ),
                         ],
@@ -260,9 +262,9 @@ class RideDetailsScreen extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            'TRIP RULES & FEATURES',
-                            style: TextStyle(
+                          Text(
+                            context.l10n.tripRulesFeatures,
+                            style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFF9E9E9E),
@@ -270,12 +272,12 @@ class RideDetailsScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          if (ride.noSmoking) _buildRuleItem(Icons.smoke_free, 'No smoking allowed'),
-                          if (ride.luggageEnabled) _buildRuleItem(Icons.luggage, 'Luggage space available'),
-                          if (ride.acEnabled) _buildRuleItem(Icons.ac_unit, 'Air conditioning'),
-                          if (ride.petsAllowed) _buildRuleItem(Icons.pets, 'Pets allowed'),
+                          if (ride.noSmoking) _buildRuleItem(Icons.smoke_free, context.l10n.noSmokingAllowed),
+                          if (ride.luggageEnabled) _buildRuleItem(Icons.luggage, context.l10n.luggageSpaceAvailable),
+                          if (ride.acEnabled) _buildRuleItem(Icons.ac_unit, context.l10n.airConditioning),
+                          if (ride.petsAllowed) _buildRuleItem(Icons.pets, context.l10n.petsAllowed),
                           if (!ride.noSmoking && !ride.luggageEnabled && !ride.acEnabled && !ride.petsAllowed)
-                            const Text('No special rules.', style: TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
+                            Text(context.l10n.noSpecialRules, style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
                         ],
                       ),
                     ),
@@ -305,9 +307,9 @@ class RideDetailsScreen extends StatelessWidget {
                       const Icon(Icons.event_seat, color: _primaryColor, size: 24),
                       const SizedBox(height: 4),
                       Text(
-                        'Select\nSeat',
+                        context.l10n.selectSeat,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: _primaryColor,
@@ -327,9 +329,9 @@ class RideDetailsScreen extends StatelessWidget {
                           ));
                         },
                         icon: const Icon(Icons.check_circle_outline, size: 20),
-                        label: const Text(
-                          'Request Booking',
-                          style: TextStyle(
+                        label: Text(
+                          context.l10n.requestBooking,
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),
@@ -354,7 +356,7 @@ class RideDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoCard(IconData icon, String label, String value, {bool isPrice = false}) {
+  Widget _buildInfoCard(BuildContext context, IconData icon, String label, String value, {bool isPrice = false}) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),

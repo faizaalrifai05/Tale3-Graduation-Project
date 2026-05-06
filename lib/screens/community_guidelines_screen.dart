@@ -1,6 +1,7 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class CommunityGuidelinesScreen extends StatelessWidget {
   const CommunityGuidelinesScreen({super.key});
@@ -23,7 +24,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                   
                   const SizedBox(width: 4),
                   Text(
-                    'Before you start',
+                    context.l10n.beforeYouStart,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -59,13 +60,13 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     // ── Community Guidelines ──────────────────────────
                     _buildSectionHeader(context,
                       icon: Icons.people_outline,
-                      title: 'Community Guidelines',
+                      title: context.l10n.communityGuidelines,
                     ),
                     const SizedBox(height: 6),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
-                        'Please review how Tale3 works to ensure a great experience for everyone.',
+                        context.l10n.guidelinesIntro,
                         style: TextStyle(
                           fontSize: 13,
                           color: context.colors.textSecondary,
@@ -77,27 +78,23 @@ class CommunityGuidelinesScreen extends StatelessWidget {
 
                     _buildGuidelineItem(context,
                       icon: Icons.people_outline,
-                      title: 'Shared Community',
-                      description:
-                          'Tale3 is a shared carpool community — not a private cab. Ride together, not alone.',
+                      title: context.l10n.sharedCommunity,
+                      description: context.l10n.guidelineSharedCab,
                     ),
                     _buildGuidelineItem(context,
                       icon: Icons.lightbulb_outline,
-                      title: 'Travel Smarter',
-                      description:
-                          'Share rides, split costs, and travel smarter together.',
+                      title: context.l10n.travelSmarter,
+                      description: context.l10n.guidelineShareRides,
                     ),
                     _buildGuidelineItem(context,
                       icon: Icons.access_time,
-                      title: 'Be Punctual',
-                      description:
-                          'Arrive a little early to keep things smooth. Showing up a few minutes before your driver arrives helps ensure a stress-free ride.',
+                      title: context.l10n.bePunctual,
+                      description: context.l10n.guidelineArriveEarly,
                     ),
                     _buildGuidelineItem(context,
                       icon: Icons.handshake_outlined,
-                      title: 'Trust & Community',
-                      description:
-                          'Carpooling helps keep travel affordable while building a friendly, trust-based community.',
+                      title: context.l10n.trustAndCommunity,
+                      description: context.l10n.guidelineCarpooling,
                     ),
 
                     const SizedBox(height: 28),
@@ -110,7 +107,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     // ── Seats Order ───────────────────────────────────
                     _buildSectionHeader(context,
                       icon: Icons.event_seat,
-                      title: 'Seats Order',
+                      title: context.l10n.seatsOrder,
                     ),
                     const SizedBox(height: 16),
 
@@ -162,16 +159,14 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                         children: [
                           _buildSeatRule(context,
                             icon: Icons.looks_one,
-                            title: 'Back Row Selection',
-                            desc:
-                                'Choose "Back Row" to reserve all three back seats for maximum comfort or luggage space.',
+                            title: context.l10n.backRowSelection,
+                            desc: context.l10n.backRowSelectionDesc,
                           ),
                           const SizedBox(height: 16),
                           _buildSeatRule(context,
                             icon: Icons.group,
-                            title: 'Full Car Selection',
-                            desc:
-                                'Choose "All" to reserve all four seats and have the entire vehicle to yourself.',
+                            title: context.l10n.fullCarSelection,
+                            desc: context.l10n.fullCarSelectionDesc,
                           ),
                         ],
                       ),
@@ -205,7 +200,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: Text(
-                    'I Understand & Get Started',
+                    context.l10n.iUnderstandGetStarted,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
