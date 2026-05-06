@@ -94,11 +94,22 @@ class _DriverVehicleDetailsScreenState
       if (!mounted) return;
 
       // Step 3: Upload ID images and set verificationStatus = pending
-      await authProvider.submitIdVerification(
+      final idError = await authProvider.submitIdVerification(
         frontImage: widget.frontIdImage,
         backImage: widget.backIdImage,
       );
       if (!mounted) return;
+      if (idError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(idError),
+            backgroundColor: AppStyles.primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        return;
+      }
 
       Navigator.of(context).push(
         MaterialPageRoute(

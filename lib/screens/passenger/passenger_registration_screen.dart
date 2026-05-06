@@ -26,6 +26,7 @@ class _PassengerRegistrationScreenState
   int _currentStep = 1;
   static const int _totalSteps = 2;
   bool _isLoading = false;
+  String? _errorMessage;
 
   // Step 1 controllers
   final _nameController = TextEditingController();
@@ -70,46 +71,22 @@ class _PassengerRegistrationScreenState
   }
 
   Future<void> _goNext() async {
+    setState(() => _errorMessage = null);
     if (_currentStep < _totalSteps) {
-      // Validate step 1 before advancing
       final name = _nameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
       if (name.isEmpty || email.isEmpty || password.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.fillAllFields),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        setState(() => _errorMessage = context.l10n.fillAllFields);
         return;
       }
       if (!email.contains('@')) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.enterValidEmail),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        setState(() => _errorMessage = context.l10n.enterValidEmail);
         return;
       }
       if (password.length < 8) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.l10n.passwordMinLength),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        setState(() => _errorMessage = context.l10n.passwordMinLength);
         return;
       }
       setState(() => _currentStep++);
@@ -118,14 +95,7 @@ class _PassengerRegistrationScreenState
 
     // Step 2 — submit registration
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.acceptTerms),
-          backgroundColor: AppStyles.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      setState(() => _errorMessage = context.l10n.acceptTerms);
       return;
     }
 
@@ -142,15 +112,7 @@ class _PassengerRegistrationScreenState
           );
       if (!mounted) return;
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(error),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        setState(() => _errorMessage = error);
       } else {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -337,7 +299,11 @@ class _PassengerRegistrationScreenState
               const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
       ),
-      const SizedBox(height: 32),
+      if (_errorMessage != null) ...[
+        const SizedBox(height: 8),
+        _buildErrorBanner(_errorMessage!),
+      ],
+      const SizedBox(height: 16),
 
       _buildNextButton(label: context.l10n.continueBtn, onPressed: _goNext),
       const SizedBox(height: 20),
@@ -518,7 +484,11 @@ class _PassengerRegistrationScreenState
           ),
         ],
       ),
-      const SizedBox(height: 32),
+      if (_errorMessage != null) ...[
+        const SizedBox(height: 8),
+        _buildErrorBanner(_errorMessage!),
+      ],
+      const SizedBox(height: 16),
 
       _buildNextButton(
         label: context.l10n.joinAsPassenger,
@@ -567,6 +537,35 @@ class _PassengerRegistrationScreenState
                   Icon(Icons.arrow_forward, size: 18),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildErrorBanner(String message) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF0F0),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFFFCDD2)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.error_outline_rounded,
+              color: Color(0xFFB71C1C), size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFFB71C1C),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

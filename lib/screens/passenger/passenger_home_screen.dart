@@ -6,7 +6,9 @@ import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
 import '../../providers/ride_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../models/ride_model.dart';
+import '../../models/booking_model.dart';
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
@@ -566,32 +568,51 @@ class _HomeTabState extends State<_HomeTab> {
           ),
           const SizedBox(height: 12),
 
-          StreamBuilder<List<RideModel>>(
-            stream: context.read<RideProvider>().availableRidesStream,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
-                );
-              }
-              final rides = (snapshot.data ?? []).take(3).toList();
-              if (rides.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 8),
-                  child: Text(
-                    context.l10n.noRidesAvailable,
-                    style: TextStyle(
-                        color: context.colors.textSecondary, fontSize: 14),
-                  ),
-                );
-              }
-              return Column(
-                children:
-                    rides.map((ride) => _LiveRideCard(ride: ride)).toList(),
+          StreamBuilder<List<BookingModel>>(
+            stream: context.read<BookingProvider>().myBookingsStream,
+            builder: (context, bookingSnap) {
+              final pastBookings = bookingSnap.data ?? [];
+              return StreamBuilder<List<RideModel>>(
+                stream: context.read<RideProvider>().availableRidesStream,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: CircularProgressIndicator(),
+                      ),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                      ),
+                    );
+                  }
+                  final rides = _rankRides(snapshot.data ?? [], pastBookings)
+                      .take(3)
+                      .toList();
+                  if (rides.isEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 8),
+                      child: Text(
+                        context.l10n.noRidesAvailable,
+                        style: TextStyle(
+                            color: context.colors.textSecondary, fontSize: 14),
+                      ),
+                    );
+                  }
+                  return Column(
+                    children: rides
+                        .map((ride) => _LiveRideCard(ride: ride))
+                        .toList(),
+                  );
+                },
               );
             },
           ),
@@ -629,6 +650,31 @@ class _HomeTabState extends State<_HomeTab> {
         ],
       ),
     );
+  }
+
+  static List<RideModel> _rankRides(
+      List<RideModel> rides, List<BookingModel> past) {
+    if (past.isEmpty) return rides;
+
+    final destFreq = <String, int>{};
+    final originFreq = <String, int>{};
+    final knownDrivers = <String>{};
+
+    for (final b in past) {
+      destFreq[b.destination] = (destFreq[b.destination] ?? 0) + 1;
+      originFreq[b.origin] = (originFreq[b.origin] ?? 0) + 1;
+      knownDrivers.add(b.driverId);
+    }
+
+    int score(RideModel r) =>
+        (destFreq[r.destination] ?? 0) * 3 +
+        (originFreq[r.origin] ?? 0) * 2 +
+        (knownDrivers.contains(r.driverId) ? 1 : 0);
+
+    return [...rides]..sort((a, b) {
+        final diff = score(b) - score(a);
+        return diff != 0 ? diff : b.createdAt.compareTo(a.createdAt);
+      });
   }
 
   static Widget _buildStatCard({

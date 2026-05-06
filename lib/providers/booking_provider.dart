@@ -34,11 +34,17 @@ class BookingProvider extends ChangeNotifier {
 
   int get totalPrice => selectedCount * (_currentRide?.pricePerSeat ?? 0);
 
+  String? _confirmError;
+  String? get confirmError => _confirmError;
+
   /// Initialises the seat map from [ride]'s real-time booked / total counts.
   void initFromRide(RideModel ride) {
     _currentRide = ride;
     for (int i = 1; i <= _passengerSlots; i++) {
-      if (i > ride.totalSeats) {
+      // Only treat as beyond-capacity when totalSeats is known (> 0).
+      // totalSeats == 0 means the field is missing from Firestore — don't
+      // hide seats in that case.
+      if (ride.totalSeats > 0 && i > ride.totalSeats) {
         _seatStates[i] = 2; // beyond capacity — render as occupied
       } else if (i <= ride.bookedSeats) {
         _seatStates[i] = 2; // already taken
@@ -69,14 +75,32 @@ class BookingProvider extends ChangeNotifier {
 
   /// Writes the booking to Firestore inside a transaction that checks seat
   /// availability. Returns the created [BookingModel] or null on failure.
-  Future<BookingModel?> confirmBooking() async {
+  Future<BookingModel?> confirmBooking({
+    double? pickupLat,
+    double? pickupLng,
+  }) async {
     final ride = _currentRide;
     final user = _auth.currentUser;
     if (ride == null || user == null || selectedCount == 0) return null;
 
     final seats = selectedCount;
 
+    _confirmError = null;
     try {
+      // Guard against duplicate bookings before opening the transaction.
+      final existing = await _db
+          .collection('bookings')
+          .where('rideId', isEqualTo: ride.id)
+          .where('passengerId', isEqualTo: user.uid)
+          .where('status', isEqualTo: 'confirmed')
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) {
+        _confirmError = 'already_booked';
+        notifyListeners();
+        return null;
+      }
+
       BookingModel? result;
       final rideRef = _db.collection('rides').doc(ride.id);
       final bookingRef = _db.collection('bookings').doc();
@@ -85,7 +109,7 @@ class BookingProvider extends ChangeNotifier {
         final rideSnap = await tx.get(rideRef);
         final booked = (rideSnap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
         final total = (rideSnap.data()!['totalSeats'] as num?)?.toInt() ?? 0;
-        if (booked + seats > total) {
+        if (total > 0 && booked + seats > total) {
           throw Exception('not_enough_seats');
         }
 
@@ -106,6 +130,8 @@ class BookingProvider extends ChangeNotifier {
           totalPrice: totalPrice,
           status: 'confirmed',
           createdAt: DateTime.now(),
+          pickupLat: pickupLat,
+          pickupLng: pickupLng,
         );
 
         tx.set(bookingRef, booking.toMap());
@@ -114,9 +140,32 @@ class BookingProvider extends ChangeNotifier {
       });
 
       return result;
-    } catch (_) {
+    } catch (e) {
+      final raw = e.toString();
+      _confirmError = raw.contains('not_enough_seats')
+          ? 'not_enough_seats'
+          : raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')
+              ? 'permission_denied'
+              : 'booking_failed';
+      notifyListeners();
       return null;
     }
+  }
+
+  /// Stream that emits the current user's confirmed booking for [rideId],
+  /// or null if they haven't booked it (or cancelled).
+  Stream<BookingModel?> existingBookingStream(String rideId) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(null);
+    return _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('passengerId', isEqualTo: uid)
+        .where('status', isEqualTo: 'confirmed')
+        .limit(1)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.isEmpty ? null : BookingModel.fromDoc(snap.docs.first));
   }
 
   /// Stream of confirmed bookings for a specific ride (driver view).
@@ -125,9 +174,22 @@ class BookingProvider extends ChangeNotifier {
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
         .where('status', isEqualTo: 'confirmed')
-        .orderBy('createdAt', descending: false)
         .snapshots()
-        .map((snap) => snap.docs.map(BookingModel.fromDoc).toList());
+        .map((snap) {
+          final bookings = snap.docs.map(BookingModel.fromDoc).toList();
+          bookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return bookings;
+        });
+  }
+
+  /// One-shot fetch of all confirmed bookings for a ride (driver route planning).
+  Future<List<BookingModel>> rideBookingsOnce(String rideId) async {
+    final snap = await _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('status', isEqualTo: 'confirmed')
+        .get();
+    return snap.docs.map(BookingModel.fromDoc).toList();
   }
 
   /// Stream of bookings belonging to the currently logged-in passenger.
@@ -137,9 +199,12 @@ class BookingProvider extends ChangeNotifier {
     return _db
         .collection('bookings')
         .where('passengerId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(BookingModel.fromDoc).toList());
+        .map((snap) {
+          final bookings = snap.docs.map(BookingModel.fromDoc).toList();
+          bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return bookings;
+        });
   }
 
   /// Cancels a booking in Firestore and decrements the ride's booked seat count.

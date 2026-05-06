@@ -12,6 +12,7 @@ import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
 import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 import 'package:testtale3/screens/driver/driver_chat_screen.dart';
+import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
@@ -263,12 +264,34 @@ class _DriverHomeTab extends StatelessWidget {
                           iconColor: AppStyles.successColor,
                         ),
                         const SizedBox(width: 10),
-                        _buildStatCard(
-                          icon: Icons.star_rounded,
-                          label: context.l10n.reviews,
-                          value: '4.9',
-                          iconColor: AppStyles.goldStar,
-                          onTap: () => _showReviewsSheet(context),
+                        StreamBuilder<List<dynamic>>(
+                          stream: context
+                              .read<RatingProvider>()
+                              .driverRatingsStream(
+                                  context
+                                      .read<app_auth.AuthProvider>()
+                                      .currentUser
+                                      ?.uid ??
+                                      ''),
+                          builder: (ctx, snap) {
+                            final ratings = snap.data ?? [];
+                            final avg = ratings.isEmpty
+                                ? null
+                                : (ratings
+                                            .map((r) =>
+                                                (r as dynamic).stars as int)
+                                            .reduce((a, b) => a + b) /
+                                        ratings.length);
+                            return _buildStatCard(
+                              icon: Icons.star_rounded,
+                              label: context.l10n.reviews,
+                              value: avg == null
+                                  ? '—'
+                                  : avg.toStringAsFixed(1),
+                              iconColor: AppStyles.goldStar,
+                              onTap: () => _showReviewsSheet(context),
+                            );
+                          },
                         ),
                       ],
                     ),

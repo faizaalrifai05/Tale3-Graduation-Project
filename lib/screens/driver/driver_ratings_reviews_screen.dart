@@ -1,14 +1,19 @@
+import 'package:testtale3/providers/auth_provider.dart';
+import 'package:testtale3/providers/rating_provider.dart';
+import 'package:testtale3/models/rating_model.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 class RatingsReviewsScreen extends StatelessWidget {
   const RatingsReviewsScreen({super.key});
 
-  
-
   @override
   Widget build(BuildContext context) {
+    final driverId =
+        context.read<AuthProvider>().currentUser?.uid ?? '';
+
     return Scaffold(
       appBar: AppBar(
         elevation: 0,
@@ -27,185 +32,149 @@ class RatingsReviewsScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: Column(
-            children: [
-              // Rating Overview
-              Container(
-                color: context.colors.surfaceColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-                child: Row(
-                  children: [
-                    // Big Score
-                    Column(
-                      children: [
-                        Text(
-                          '4.8',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w800,
-                            color: context.colors.textPrimary,
-                            height: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(5, (index) {
-                            return Icon(
-                              index < 4 ? Icons.star : Icons.star_half,
-                              color: AppStyles.starRatingColor,
-                              size: 16,
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '1,418 ${context.l10n.reviewsLabel}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: context.colors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(width: 32),
-                    // Distribution Bars
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _buildDistributionBar(context, 5, 0.8),
-                          _buildDistributionBar(context, 4, 0.15),
-                          _buildDistributionBar(context, 3, 0.03),
-                          _buildDistributionBar(context, 2, 0.01),
-                          _buildDistributionBar(context, 1, 0.01),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+        child: StreamBuilder<List<RatingModel>>(
+          stream:
+              context.read<RatingProvider>().driverRatingsStream(driverId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final ratings = snapshot.data ?? [];
+            final avg = ratings.isEmpty
+                ? 0.0
+                : ratings.map((r) => r.stars).reduce((a, b) => a + b) /
+                    ratings.length;
 
-              // Reviews Header
-              Container(
-                color: context.colors.surfaceColor,
-                padding: const EdgeInsets.all(20),
-                width: double.infinity,
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            final counts = List.generate(5, (i) {
+              final star = 5 - i;
+              return ratings.where((r) => r.stars == star).length;
+            });
+
+            return SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
+                children: [
+                  // Rating overview
+                  Container(
+                    color: context.colors.surfaceColor,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 32),
+                    child: Row(
                       children: [
-                        Text(
-                          context.l10n.passengerFeedback,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: context.colors.textPrimary,
-                          ),
-                        ),
-                        Row(
+                        Column(
                           children: [
                             Text(
-                              context.l10n.sortBy,
+                              ratings.isEmpty
+                                  ? '—'
+                                  : avg.toStringAsFixed(1),
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: 48,
+                                fontWeight: FontWeight.w800,
+                                color: context.colors.textPrimary,
+                                height: 1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: List.generate(5, (i) {
+                                final full = i < avg.floor();
+                                final half =
+                                    !full && i < avg && (avg - avg.floor()) >= 0.5;
+                                return Icon(
+                                  full
+                                      ? Icons.star
+                                      : half
+                                          ? Icons.star_half
+                                          : Icons.star_border,
+                                  color: AppStyles.starRatingColor,
+                                  size: 16,
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '${ratings.length} ${context.l10n.reviewsLabel}',
+                              style: TextStyle(
+                                fontSize: 12,
                                 color: context.colors.textSecondary,
                               ),
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              context.l10n.newest,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: AppStyles.primaryColor,
-                              ),
-                            ),
-                            Icon(Icons.keyboard_arrow_down, color: AppStyles.primaryColor, size: 16),
                           ],
+                        ),
+                        const SizedBox(width: 32),
+                        Expanded(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(5, (i) {
+                              final star = 5 - i;
+                              final frac = ratings.isEmpty
+                                  ? 0.0
+                                  : counts[i] / ratings.length;
+                              return _buildDistributionBar(
+                                  context, star, frac);
+                            }),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 24),
-                    
-                    // Reviews List
-                    _buildReviewItem(context,
-                      'Sarah Jenkins',
-                      '1 day ago',
-                      5.0,
-                      'The driver was incredibly polite and drove very safely. The car was incredibly clean and smelling very nice! Highly recommend.',
-                      12,
-                    ),
-                    Divider(height: 32, color: context.colors.dividerColor),
-                    _buildReviewItem(context,
-                      'Thomas Khalil',
-                      '3 days ago',
-                      4.0,
-                      'Good ride, cheap booking online, my route changed and driver cooperated however air conditioning was a bit weak in the back.',
-                      4,
-                    ),
-                    Divider(height: 32, color: context.colors.dividerColor),
-                    _buildReviewItem(context,
-                      'Aisha Al-Saidi',
-                      '1 week ago',
-                      5.0,
-                      'Hassan is definitely the best! Very friendly and professional! We arrived on time! Can\'t represent better services!',
-                      15,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+                  ),
+                  const SizedBox(height: 16),
 
-      // Bottom Navigation
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: context.colors.surfaceColor,
-          border: Border(top: BorderSide(color: context.colors.borderColor, width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: 3, // Since it reviews driver, let's keep it generally on profile or unselected
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: context.colors.surfaceColor,
-          selectedItemColor: AppStyles.primaryColor,
-          unselectedItemColor: context.colors.textTertiary,
-          selectedFontSize: 10,
-          unselectedFontSize: 10,
-          elevation: 0,
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: context.l10n.home.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.history_outlined),
-              activeIcon: const Icon(Icons.history),
-              label: context.l10n.myTrips.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.chat_bubble_outline),
-              activeIcon: const Icon(Icons.chat_bubble),
-              label: context.l10n.chat.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: context.l10n.profile.toUpperCase(),
-            ),
-          ],
+                  // Reviews list
+                  Container(
+                    color: context.colors.surfaceColor,
+                    padding: const EdgeInsets.all(20),
+                    width: double.infinity,
+                    child: ratings.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 32),
+                              child: Text(
+                                'No reviews yet.',
+                                style: TextStyle(
+                                    color: context.colors.textSecondary),
+                              ),
+                            ),
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                context.l10n.passengerFeedback,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ...ratings.asMap().entries.map((entry) {
+                                final i = entry.key;
+                                final r = entry.value;
+                                return Column(
+                                  children: [
+                                    if (i > 0)
+                                      Divider(
+                                          height: 32,
+                                          color: context.colors.dividerColor),
+                                    _buildReviewItem(context, r),
+                                  ],
+                                );
+                              }),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
   }
 
-  Widget _buildDistributionBar(BuildContext context, int stars, double percentage) {
+  Widget _buildDistributionBar(
+      BuildContext context, int stars, double percentage) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
@@ -230,7 +199,8 @@ class RatingsReviewsScreen extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: percentage,
                 backgroundColor: context.colors.cardBackgroundColor,
-                valueColor: AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    AppStyles.primaryColor),
                 minHeight: 6,
               ),
             ),
@@ -240,7 +210,7 @@ class RatingsReviewsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewItem(BuildContext context, String name, String time, double rating, String comment, int helpfulCount) {
+  Widget _buildReviewItem(BuildContext context, RatingModel r) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -250,7 +220,9 @@ class RatingsReviewsScreen extends StatelessWidget {
               radius: 16,
               backgroundColor: context.colors.cardBackgroundColor,
               child: Text(
-                name[0].toUpperCase(),
+                r.passengerName.isNotEmpty
+                    ? r.passengerName[0].toUpperCase()
+                    : '?',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w800,
@@ -264,7 +236,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    name,
+                    r.passengerName,
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -272,7 +244,7 @@ class RatingsReviewsScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    time,
+                    _formatDate(r.createdAt),
                     style: TextStyle(
                       fontSize: 11,
                       color: context.colors.textTertiary,
@@ -282,17 +254,19 @@ class RatingsReviewsScreen extends StatelessWidget {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: AppStyles.starRatingLightBg,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
+                  Icon(Icons.star,
+                      color: AppStyles.starRatingColor, size: 12),
                   const SizedBox(width: 4),
                   Text(
-                    rating.toString(),
+                    r.stars.toString(),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -304,44 +278,28 @@ class RatingsReviewsScreen extends StatelessWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          comment,
-          style: TextStyle(
-            fontSize: 14,
-            color: context.colors.textDeep,
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            _buildHelpfulAction(context, Icons.thumb_up_outlined, helpfulCount.toString()),
-            const SizedBox(width: 16),
-            _buildHelpfulAction(context, Icons.thumb_down_outlined, ''),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildHelpfulAction(BuildContext context, IconData icon, String label) {
-    return Row(
-      children: [
-        Icon(icon, color: context.colors.textTertiary, size: 16),
-        if (label.isNotEmpty) ...[
-          const SizedBox(width: 4),
+        if (r.comment.isNotEmpty) ...[
+          const SizedBox(height: 12),
           Text(
-            label,
+            r.comment,
             style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: context.colors.textSecondary,
+              fontSize: 14,
+              color: context.colors.textDeep,
+              height: 1.5,
             ),
           ),
         ],
       ],
     );
   }
-}
 
+  String _formatDate(DateTime dt) {
+    final now = DateTime.now();
+    final diff = now.difference(dt);
+    if (diff.inDays == 0) return 'Today';
+    if (diff.inDays == 1) return 'Yesterday';
+    if (diff.inDays < 7) return '${diff.inDays} days ago';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()} week${(diff.inDays / 7).floor() > 1 ? 's' : ''} ago';
+    return '${dt.day}/${dt.month}/${dt.year}';
+  }
+}

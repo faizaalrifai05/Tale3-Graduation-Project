@@ -25,6 +25,8 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _sendingVerification = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -42,14 +44,14 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    setState(() => _isGoogleLoading = true);
+    setState(() { _isGoogleLoading = true; _errorMessage = null; });
     try {
       final error = await context
           .read<app_auth.AuthProvider>()
           .signInWithGoogle(UserRole.driver);
       if (!mounted) return;
       if (error != null) {
-        _showError(error);
+        setState(() => _errorMessage = error);
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
@@ -60,10 +62,27 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
     }
   }
 
+  Future<void> _resendVerification() async {
+    setState(() { _sendingVerification = true; _errorMessage = null; });
+    try {
+      await context.read<app_auth.AuthProvider>().sendVerificationEmail();
+      if (mounted) {
+        setState(() => _sendingVerification = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Verification email sent. Please check your inbox.'),
+            backgroundColor: Color(0xFF388E3C),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) setState(() => _sendingVerification = false);
+    }
+  }
+
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final error = await context
           .read<app_auth.AuthProvider>()
@@ -74,7 +93,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
           );
       if (!mounted) return;
       if (error != null) {
-        _showError(error);
+        setState(() => _errorMessage = error);
       } else {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
@@ -83,17 +102,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppStyles.errorColor,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
   }
 
   @override
@@ -218,7 +226,61 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFCDD2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            color: Color(0xFFB71C1C), size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _errorMessage == 'email_not_verified'
+                                ? 'Please verify your email before logging in. Check your inbox for the verification link.'
+                                : _errorMessage!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFFB71C1C),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (_errorMessage == 'email_not_verified') ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: _sendingVerification ? null : _resendVerification,
+                        icon: _sendingVerification
+                            ? const SizedBox(
+                                width: 14, height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF8B1A2B)))
+                            : const Icon(Icons.email_outlined,
+                                size: 16, color: Color(0xFF8B1A2B)),
+                        label: const Text('Resend Verification Email',
+                            style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF8B1A2B))),
+                      ),
+                    ),
+                  ],
+                ],
+                const SizedBox(height: 24),
 
                 SizedBox(
                   width: double.infinity,

@@ -5,15 +5,65 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/providers/ride_provider.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:testtale3/screens/driver/driver_ride_live_screen.dart';
+import 'package:testtale3/screens/shared/conversation_screen.dart';
+import 'package:testtale3/services/maps_service.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
-class DriverRideDetailsScreen extends StatelessWidget {
+// ignore_for_file: use_build_context_synchronously
+
+class DriverRideDetailsScreen extends StatefulWidget {
   final RideModel? ride;
   const DriverRideDetailsScreen({super.key, this.ride});
 
+  @override
+  State<DriverRideDetailsScreen> createState() =>
+      _DriverRideDetailsScreenState();
+}
+
+class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
+  bool _cancelling = false;
+
+  Future<void> _confirmCancel(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(context.l10n.cancelRide,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text(
+          'This will cancel the ride and notify all booked passengers.',
+          style: TextStyle(height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.l10n.keepRide,
+                style: const TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(context.l10n.confirmCancellation,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    setState(() => _cancelling = true);
+    try {
+      await context.read<RideProvider>().cancelRide(widget.ride!.id);
+      if (mounted) Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
   void _showShareSheet(BuildContext context) {
-    final r = ride;
+    final r = widget.ride;
     final shareText = r != null
         ? 'Check out this ride on Tale3!\n🚗 ${r.origin} → ${r.destination} • ${r.date} at ${r.time}\nBook now on Tale3 — the trusted carpool app.'
         : 'Check out this ride on Tale3!\nBook now on Tale3 — the trusted carpool app.';
@@ -123,11 +173,11 @@ class DriverRideDetailsScreen extends StatelessWidget {
                 child: Column(
                   children: [
                     // ── Map placeholder ──────────────────────────────────────
-                    _MapSection(origin: ride?.origin, destination: ride?.destination),
+                    _MapSection(origin: widget.ride?.origin, destination: widget.ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Route timeline ───────────────────────────────────────
-                    _RouteSection(origin: ride?.origin, destination: ride?.destination),
+                    _RouteSection(origin: widget.ride?.origin, destination: widget.ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Info cards (date / seats / price) ────────────────────
@@ -138,15 +188,15 @@ class DriverRideDetailsScreen extends StatelessWidget {
                         children: [
                           _buildInfoCard(context, Icons.calendar_today_rounded,
                               context.l10n.dateAndTime.toUpperCase(),
-                              '${ride?.date ?? '-'}\n${ride?.time ?? '-'}'),
+                              '${widget.ride?.date ?? '-'}\n${widget.ride?.time ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.event_seat_rounded,
                               context.l10n.seatsLeft.toUpperCase(),
-                              '${ride?.availableSeats ?? '-'} / ${ride?.totalSeats ?? '-'}'),
+                              '${widget.ride?.availableSeats ?? '-'} / ${widget.ride?.totalSeats ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.payments_outlined,
                               context.l10n.price.toUpperCase(),
-                              '${ride?.pricePerSeat ?? '-'} JOD',
+                              '${widget.ride?.pricePerSeat ?? '-'} JOD',
                               isPrice: true),
                         ],
                       ),
@@ -154,11 +204,11 @@ class DriverRideDetailsScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     // ── Passengers ───────────────────────────────────────────
-                    _PassengersSection(rideId: ride?.id),
+                    _PassengersSection(rideId: widget.ride?.id),
                     const SizedBox(height: 8),
 
                     // ── Rules & preferences ──────────────────────────────────
-                    _RulesSection(ride: ride),
+                    _RulesSection(ride: widget.ride),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -178,29 +228,89 @@ class DriverRideDetailsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const DriverRideLiveScreen()),
-                    );
-                  },
-                  icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
-                  label: Text(
-                    context.l10n.startRide,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppStyles.darkMaroon,
-                    foregroundColor: AppStyles.onPrimary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
-                  ),
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (widget.ride?.status == 'active') ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => DriverRideLiveScreen(
+                                rideId: widget.ride!.id,
+                                origin: widget.ride!.origin,
+                                destination: widget.ride!.destination,
+                                driverName: widget.ride!.driverName,
+                              ),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
+                        label: Text(
+                          context.l10n.startRide,
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppStyles.darkMaroon,
+                          foregroundColor: AppStyles.onPrimary,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: _cancelling ? null : () => _confirmCancel(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.red,
+                          side: const BorderSide(color: Colors.red, width: 1.5),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: _cancelling
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.red),
+                              )
+                            : Text(
+                                context.l10n.cancelRide,
+                                style: const TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
+                      ),
+                    ),
+                  ] else
+                    Container(
+                      width: double.infinity,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        widget.ride?.status == 'cancelled'
+                            ? 'Ride Cancelled'
+                            : 'Ride Completed',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: widget.ride?.status == 'cancelled'
+                              ? Colors.red
+                              : AppStyles.successDarkText,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           ],
@@ -251,12 +361,58 @@ class DriverRideDetailsScreen extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  MAP SECTION — stylised route map placeholder
+//  MAP SECTION — real Google Map with route polyline
 // ─────────────────────────────────────────────────────────────────────────────
-class _MapSection extends StatelessWidget {
+class _MapSection extends StatefulWidget {
   final String? origin;
   final String? destination;
   const _MapSection({this.origin, this.destination});
+
+  @override
+  State<_MapSection> createState() => _MapSectionState();
+}
+
+class _MapSectionState extends State<_MapSection> {
+  GoogleMapController? _mapController;
+  List<LatLng> _polylinePoints = [];
+  bool _loading = true;
+
+  static const LatLng _fallback = LatLng(31.9454, 35.9284); // Amman
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRoute();
+  }
+
+  Future<void> _loadRoute() async {
+    final origin = widget.origin;
+    final destination = widget.destination;
+    if (origin == null || destination == null) {
+      setState(() => _loading = false);
+      return;
+    }
+    final points = await MapsService.getRoute(origin, destination);
+    if (mounted) setState(() { _polylinePoints = points; _loading = false; });
+  }
+
+  void _onMapCreated(GoogleMapController controller) async {
+    _mapController = controller;
+    if (_polylinePoints.isEmpty) return;
+    final bounds = await MapsService.getBounds(
+        widget.origin!, widget.destination!);
+    if (bounds != null && mounted) {
+      _mapController?.animateCamera(
+        CameraUpdate.newLatLngBounds(bounds, 48),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -266,163 +422,61 @@ class _MapSection extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: SizedBox(
-          height: 180,
+          height: 200,
           width: double.infinity,
-          child: Stack(
-            children: [
-              // Tinted map background
-              Container(color: AppStyles.successLightBg),
-
-              // Decorative road lines
-              CustomPaint(
-                size: const Size(double.infinity, 180),
-                painter: _RoutePainter(color: AppStyles.primaryColor),
-              ),
-
-              // Origin pin
-              Positioned(
-                left: 48,
-                top: 32,
-                child: _MapPin(
-                  label: origin ?? context.l10n.pickup,
-                  color: AppStyles.primaryColor,
-                  icon: Icons.radio_button_checked,
-                ),
-              ),
-
-              // Destination pin
-              Positioned(
-                right: 48,
-                bottom: 32,
-                child: _MapPin(
-                  label: destination ?? context.l10n.dropOff,
-                  color: AppStyles.successDarkText,
-                  icon: Icons.location_on,
-                ),
-              ),
-
-              // Distance badge
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: context.colors.surfaceColor,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 8,
+          child: _loading
+              ? Container(
+                  color: AppStyles.successLightBg,
+                  child: const Center(child: CircularProgressIndicator()),
+                )
+              : GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _polylinePoints.isNotEmpty
+                        ? _polylinePoints[0]
+                        : _fallback,
+                    zoom: 10,
+                  ),
+                  onMapCreated: _onMapCreated,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  scrollGesturesEnabled: false,
+                  rotateGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  zoomGesturesEnabled: false,
+                  markers: {
+                    if (_polylinePoints.isNotEmpty) ...[
+                      Marker(
+                        markerId: const MarkerId('origin'),
+                        position: _polylinePoints.first,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueRed),
+                        infoWindow: InfoWindow(
+                            title: widget.origin ?? ''),
+                      ),
+                      Marker(
+                        markerId: const MarkerId('destination'),
+                        position: _polylinePoints.last,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(
+                            BitmapDescriptor.hueGreen),
+                        infoWindow: InfoWindow(
+                            title: widget.destination ?? ''),
                       ),
                     ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.route_rounded,
-                          size: 13, color: AppStyles.primaryColor),
-                      const SizedBox(width: 4),
-                      Text(
-                        '12.4 km · 15 min',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.textPrimary,
-                        ),
+                  },
+                  polylines: {
+                    if (_polylinePoints.isNotEmpty)
+                      Polyline(
+                        polylineId: const PolylineId('route'),
+                        points: _polylinePoints,
+                        color: AppStyles.primaryColor,
+                        width: 4,
                       ),
-                    ],
-                  ),
+                  },
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );
   }
-}
-
-class _MapPin extends StatelessWidget {
-  final String label;
-  final Color color;
-  final IconData icon;
-  const _MapPin({required this.label, required this.color, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.colors.surfaceColor,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1), blurRadius: 4),
-            ],
-          ),
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w700,
-                  color: color)),
-        ),
-        const SizedBox(height: 3),
-        Icon(icon, color: color, size: 22),
-      ],
-    );
-  }
-}
-
-class _RoutePainter extends CustomPainter {
-  final Color color;
-  const _RoutePainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color.withValues(alpha: 0.35)
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    final path = Path()
-      ..moveTo(size.width * 0.15, size.height * 0.25)
-      ..cubicTo(
-        size.width * 0.35, size.height * 0.15,
-        size.width * 0.55, size.height * 0.75,
-        size.width * 0.85, size.height * 0.72,
-      );
-
-    // Draw dashed path
-    const dashLen = 10.0;
-    const gapLen = 6.0;
-    final pathMetrics = path.computeMetrics();
-    for (final metric in pathMetrics) {
-      double distance = 0;
-      while (distance < metric.length) {
-        final start = distance;
-        final end = (distance + dashLen).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(start, end), paint);
-        distance += dashLen + gapLen;
-      }
-    }
-
-    // Draw dots at endpoints
-    final dotPaint = Paint()
-      ..color = color
-      ..style = PaintingStyle.fill;
-    canvas.drawCircle(
-        Offset(size.width * 0.15, size.height * 0.25), 5, dotPaint);
-    canvas.drawCircle(
-        Offset(size.width * 0.85, size.height * 0.72), 5, dotPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -610,6 +664,7 @@ class _PassengersSection extends StatelessWidget {
               else
                 ...bookings.asMap().entries.map((e) => _PassengerRow(
                       name: e.value.passengerName,
+                      passengerId: e.value.passengerId,
                       seat: 'Seat ${e.key + 1}',
                       seatsBooked: e.value.seatsBooked,
                     )),
@@ -623,10 +678,12 @@ class _PassengersSection extends StatelessWidget {
 
 class _PassengerRow extends StatelessWidget {
   final String name;
+  final String passengerId;
   final String seat;
   final int seatsBooked;
   const _PassengerRow({
     required this.name,
+    required this.passengerId,
     required this.seat,
     this.seatsBooked = 1,
   });
@@ -689,15 +746,23 @@ class _PassengerRow extends StatelessWidget {
             ],
           ),
           const SizedBox(width: 12),
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: context.colors.highlightBackgroundColor,
-              borderRadius: BorderRadius.circular(8),
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => ConversationScreen(
+                otherUserId: passengerId,
+                otherUserName: name,
+              ),
+            )),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: context.colors.highlightBackgroundColor,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.chat_bubble_outline_rounded,
+                  size: 16, color: AppStyles.primaryColor),
             ),
-            child: Icon(Icons.chat_bubble_outline_rounded,
-                size: 16, color: AppStyles.primaryColor),
           ),
         ],
       ),

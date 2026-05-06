@@ -40,10 +40,15 @@ service cloud.firestore {
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
 
+      // Users may create their own document on registration.
+      allow create: if isSelf(uid)
+        && request.resource.data.role in ['driver', 'passenger']
+        && request.resource.data.isBlocked == false;
+
       // Self: update only personal / vehicle fields — not role or verificationStatus.
-      allow update: if isSelf(uid)
+      allow update: if (isSelf(uid)
         && !request.resource.data.diff(resource.data).affectedKeys()
-            .hasAny(['role', 'verificationStatus', 'idFrontUrl', 'idBackUrl', 'createdAt'])
+            .hasAny(['role', 'verificationStatus', 'idFrontUrl', 'idBackUrl', 'createdAt']))
         || isAdmin();
 
       // Drivers may update their own idFrontUrl / idBackUrl / verificationStatus
@@ -72,12 +77,14 @@ service cloud.firestore {
       allow update: if isAdmin()
         || (isDriver() && resource.data.driverId == request.auth.uid)
         // Passengers may only increment bookedSeats by a positive amount
-        // when the ride is still active and not yet full.
+        // when the ride is still active. Allow when totalSeats == 0 (missing
+        // field on legacy rides) so the app-side transaction handles capacity.
         || (isPassenger()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedSeats'])
             && request.resource.data.bookedSeats > resource.data.bookedSeats
             && resource.data.status == 'active'
-            && resource.data.bookedSeats < resource.data.totalSeats);
+            && (resource.data.get('totalSeats', 0) == 0
+                || resource.data.bookedSeats < resource.data.get('totalSeats', 0)));
 
       allow delete: if isAdmin();
     }
@@ -100,12 +107,17 @@ service cloud.firestore {
         && request.resource.data.status == 'confirmed';
 
       // Passenger may cancel only their own confirmed booking.
+      // Driver may cancel all bookings on their own ride.
       allow update: if isAdmin()
         || (isPassenger()
             && resource.data.passengerId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
             && request.resource.data.status == 'cancelled'
-            && resource.data.status == 'confirmed');
+            && resource.data.status == 'confirmed')
+        || (isDriver()
+            && resource.data.driverId == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && request.resource.data.status == 'cancelled');
 
       allow delete: if isAdmin();
     }

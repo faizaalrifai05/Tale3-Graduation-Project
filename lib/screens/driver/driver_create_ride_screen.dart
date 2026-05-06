@@ -427,64 +427,38 @@ class DriverCreateRideScreen extends StatelessWidget {
                             color: context.colors.textPrimary,
                           ),
                         ),
-                        const SizedBox(height: 16),
-                        Row(
+                        const SizedBox(height: 12),
+                        GridView.count(
+                          crossAxisCount: 2,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.8,
                           children: [
-                            Expanded(
-                              child: CheckboxListTile(
-                                value: rideProvider.acChecked,
-                                onChanged: (v) =>
-                                    rideProvider.toggleAc(v ?? false),
-                                title: Text(context.l10n.airConditioning,
-                                    style: const TextStyle(fontSize: 13)),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: AppStyles.primaryColor,
-                              ),
+                            _PrefTile(
+                              icon: Icons.ac_unit_rounded,
+                              label: context.l10n.airConditioning,
+                              value: rideProvider.acChecked,
+                              onTap: () => rideProvider.toggleAc(!rideProvider.acChecked),
                             ),
-                            Expanded(
-                              child: CheckboxListTile(
-                                value: rideProvider.luggageChecked,
-                                onChanged: (v) =>
-                                    rideProvider.toggleLuggage(v ?? false),
-                                title: Text(context.l10n.luggage,
-                                    style: const TextStyle(fontSize: 13)),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: AppStyles.primaryColor,
-                              ),
+                            _PrefTile(
+                              icon: Icons.luggage_rounded,
+                              label: context.l10n.luggage,
+                              value: rideProvider.luggageChecked,
+                              onTap: () => rideProvider.toggleLuggage(!rideProvider.luggageChecked),
                             ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: CheckboxListTile(
-                                value: rideProvider.petsChecked,
-                                onChanged: (v) =>
-                                    rideProvider.togglePets(v ?? false),
-                                title: Text(context.l10n.petsAllowed,
-                                    style: const TextStyle(fontSize: 13)),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: AppStyles.primaryColor,
-                              ),
+                            _PrefTile(
+                              icon: Icons.pets_rounded,
+                              label: context.l10n.petsAllowed,
+                              value: rideProvider.petsChecked,
+                              onTap: () => rideProvider.togglePets(!rideProvider.petsChecked),
                             ),
-                            Expanded(
-                              child: CheckboxListTile(
-                                value: rideProvider.noSmokingChecked,
-                                onChanged: (v) =>
-                                    rideProvider.toggleNoSmoking(v ?? false),
-                                title: Text(context.l10n.noSmoking,
-                                    style: const TextStyle(fontSize: 13)),
-                                controlAffinity:
-                                    ListTileControlAffinity.leading,
-                                contentPadding: EdgeInsets.zero,
-                                activeColor: AppStyles.primaryColor,
-                              ),
+                            _PrefTile(
+                              icon: Icons.smoke_free_rounded,
+                              label: context.l10n.noSmoking,
+                              value: rideProvider.noSmokingChecked,
+                              onTap: () => rideProvider.toggleNoSmoking(!rideProvider.noSmokingChecked),
                             ),
                           ],
                         ),
@@ -719,6 +693,66 @@ class DriverCreateRideScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── Preference tile ───────────────────────────────────────────────────────
+class _PrefTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool value;
+  final VoidCallback onTap;
+
+  const _PrefTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.onTap,
+  });
+
+  static const Color _primary = Color(0xFF8B1A2B);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: value
+              ? _primary.withValues(alpha: 0.08)
+              : context.colors.inputFillColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: value ? _primary : context.colors.borderColor,
+            width: value ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: value ? _primary : context.colors.textTertiary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: value ? _primary : context.colors.textSecondary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              value ? Icons.check_circle_rounded : Icons.circle_outlined,
+              size: 18,
+              color: value ? _primary : context.colors.textTertiary,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

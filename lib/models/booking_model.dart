@@ -17,6 +17,8 @@ class BookingModel {
   final int totalPrice;
   final String status;
   final DateTime createdAt;
+  final double? pickupLat;
+  final double? pickupLng;
 
   const BookingModel({
     required this.id,
@@ -35,6 +37,8 @@ class BookingModel {
     required this.totalPrice,
     required this.status,
     required this.createdAt,
+    this.pickupLat,
+    this.pickupLng,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot doc) {
@@ -56,6 +60,8 @@ class BookingModel {
       totalPrice: (d['totalPrice'] as num?)?.toInt() ?? 0,
       status: d['status'] as String? ?? 'confirmed',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      pickupLat: (d['pickupLat'] as num?)?.toDouble(),
+      pickupLng: (d['pickupLng'] as num?)?.toDouble(),
     );
   }
 
@@ -75,5 +81,7 @@ class BookingModel {
         'totalPrice': totalPrice,
         'status': status,
         'createdAt': FieldValue.serverTimestamp(),
+        if (pickupLat != null) 'pickupLat': pickupLat,
+        if (pickupLng != null) 'pickupLng': pickupLng,
       };
 }

@@ -48,7 +48,7 @@ class RideModel {
   });
 
   int get availableSeats => totalSeats - bookedSeats;
-  bool get isFull => availableSeats <= 0;
+  bool get isFull => totalSeats > 0 && availableSeats <= 0;
   String get carShortInfo => '$carMake $carModel';
   String get carFullInfo => '$carMake $carModel \u00b7 $carColor';
 

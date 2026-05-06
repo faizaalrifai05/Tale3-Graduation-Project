@@ -1,3 +1,4 @@
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,9 @@ import 'package:testtale3/providers/auth_provider.dart';
 import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/screens/shared/ride_deep_link_screen.dart';
 import 'package:testtale3/providers/chat_provider.dart';
+import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/providers/settings_provider.dart';
 import 'package:testtale3/providers/saved_places_provider.dart';
 import 'package:testtale3/screens/splash_screen.dart';
@@ -20,8 +23,32 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await FCMService.setup(navigatorKey: navigatorKey);
+  _initDeepLinks();
 
   runApp(const Tale3App());
+}
+
+void _initDeepLinks() {
+  final appLinks = AppLinks();
+
+  // Cold-start link (app was not running)
+  appLinks.getInitialLink().then((uri) {
+    if (uri != null) _handleDeepLink(uri);
+  }).catchError((_) {});
+
+  // Resume link (app already running)
+  appLinks.uriLinkStream.listen(_handleDeepLink, onError: (_) {});
+}
+
+void _handleDeepLink(Uri uri) {
+  if (uri.scheme != 'tale3') return;
+  // tale3://ride/{rideId}
+  if (uri.host == 'ride' && uri.pathSegments.isNotEmpty) {
+    final rideId = uri.pathSegments.first;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      navigatorKey.currentState?.pushNamed('/ride', arguments: rideId);
+    });
+  }
 }
 
 class Tale3App extends StatelessWidget {
@@ -43,6 +70,10 @@ class Tale3App extends StatelessWidget {
         ),
         ChangeNotifierProxyProvider<AuthProvider, ChatProvider>(
           create: (ctx) => ChatProvider(ctx.read<AuthProvider>()),
+          update: (_, auth, prev) => prev!..updateAuth(auth),
+        ),
+        ChangeNotifierProxyProvider<AuthProvider, RatingProvider>(
+          create: (ctx) => RatingProvider(ctx.read<AuthProvider>()),
           update: (_, auth, prev) => prev!..updateAuth(auth),
         ),
         ChangeNotifierProvider(create: (_) => SettingsProvider()),
@@ -82,6 +113,15 @@ class Tale3App extends StatelessWidget {
 
           navigatorKey: navigatorKey,
           home: const SplashScreen(),
+          onGenerateRoute: (settings) {
+            if (settings.name == '/ride') {
+              final rideId = settings.arguments as String? ?? '';
+              return MaterialPageRoute(
+                builder: (_) => RideDeepLinkScreen(rideId: rideId),
+              );
+            }
+            return null;
+          },
         ),
       ),
     );

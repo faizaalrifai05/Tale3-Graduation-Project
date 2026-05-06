@@ -32,6 +32,7 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
   bool _agreeToTerms = false;
   String? _selectedGender;
   DateTime? _selectedBirthday;
+  String? _errorMessage;
 
   late final TapGestureRecognizer _termsTap;
   late final TapGestureRecognizer _privacyTap;
@@ -134,27 +135,14 @@ If you have any questions about this Privacy Policy, please contact us through t
 
 
   void _handleSubmit() {
+    setState(() => _errorMessage = null);
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.acceptTerms),
-          backgroundColor: AppStyles.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      setState(() => _errorMessage = context.l10n.acceptTerms);
       return;
     }
     if (!_formKey.currentState!.validate()) return;
     if (_selectedGender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.selectGenderMsg),
-          backgroundColor: AppStyles.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
+      setState(() => _errorMessage = context.l10n.selectGenderMsg);
       return;
     }
 
@@ -589,7 +577,37 @@ If you have any questions about this Privacy Policy, please contact us through t
                     ),
                   ],
                 ),
-                const SizedBox(height: 32),
+                if (_errorMessage != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFFCDD2)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            color: Color(0xFFB71C1C), size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFFB71C1C),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
 
                 // ── Submit Button ─────────────────────────────────────────
                 SizedBox(

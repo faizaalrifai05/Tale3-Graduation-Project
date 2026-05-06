@@ -7,8 +7,8 @@
   },
   "functions": [
     {
-      "source": "functions",
-      "codebase": "default",
+      "source": "functions 2",
+      "codebase": "notificatiobs",
       "disallowLegacyRuntimeConfig": true,
       "ignore": [
         "node_modules",
