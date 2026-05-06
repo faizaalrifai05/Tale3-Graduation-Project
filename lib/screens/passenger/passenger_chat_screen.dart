@@ -126,7 +126,7 @@ class _PassengerChatScreenState extends State<PassengerChatScreen> {
               return ListView.separated(
                 physics: const BouncingScrollPhysics(),
                 itemCount: conversations.length,
-                separatorBuilder: (_, __) => Divider(
+                separatorBuilder: (_, _) => Divider(
                     height: 1, indent: 76, color: context.colors.borderColor),
                 itemBuilder: (context, index) {
                   final conv = conversations[index];

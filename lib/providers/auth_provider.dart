@@ -527,6 +527,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  /// Reloads the Firebase Auth user and returns whether the email is verified.
+  Future<bool> checkEmailVerified() async {
+    try {
+      await _auth.currentUser?.reload();
+      return _auth.currentUser?.emailVerified ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Alias for signOut — kept for backwards compatibility.
   Future<void> logout() => signOut();
 

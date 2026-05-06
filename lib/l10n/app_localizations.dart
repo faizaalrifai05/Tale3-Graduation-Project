@@ -115,6 +115,14 @@ class AppLocalizations {
   String get enterFullCode => _t('enterFullCode');
   String get verificationSuccessful => _t('verificationSuccessful');
   String get verificationSuccessDesc => _t('verificationSuccessDesc');
+  // ── EMAIL VERIFICATION ────────────────────────────────────────────────────
+  String get emailLinkSentTo => _t('emailLinkSentTo');
+  String get emailVerifyInstructions => _t('emailVerifyInstructions');
+  String get resendEmail => _t('resendEmail');
+  String get didntReceiveEmail => _t('didntReceiveEmail');
+  String get iVerifiedMyEmail => _t('iVerifiedMyEmail');
+  String get waitingForVerification => _t('waitingForVerification');
+  String get emailNotYetVerified => _t('emailNotYetVerified');
   // ── PROFILE ───────────────────────────────────────────────────────────────
   String get myProfile => _t('myProfile');
   String get editProfile => _t('editProfile');
@@ -578,7 +586,7 @@ class AppLocalizations {
     'selectDateOfBirth': 'Select your date of birth',
     'nationalId': 'National ID Number',
     'nationalIdHint': 'Enter ID number',
-    'passwordMinHint': 'Min. 8 characters, one uppercase letter and one number',
+    'passwordMinHint': 'Min. 8 chars · uppercase · lowercase · number · special character',
     'confirmPassword': 'Confirm Password',
     'pleaseConfirmPassword': 'Please confirm your password',
     'passwordsDoNotMatch': 'Passwords do not match',
@@ -843,6 +851,13 @@ class AppLocalizations {
     'enterFullCode': 'Please enter the full 4-digit code.',
     'verificationSuccessful': 'Verification\nSuccessful!',
     'verificationSuccessDesc': 'Your email has been verified. You can now use Tale3 to find and request a ride.',
+    'emailLinkSentTo': "We've sent a verification link to",
+    'emailVerifyInstructions': 'Open the link in your email to verify your account.',
+    'resendEmail': 'Resend Email',
+    'didntReceiveEmail': "Didn't receive the email?",
+    'iVerifiedMyEmail': "I've Verified My Email",
+    'waitingForVerification': 'Waiting for verification...',
+    'emailNotYetVerified': 'Email not yet verified. Check your inbox and click the link.',
 
     'settings': 'Settings',
     'account': 'ACCOUNT',
@@ -1033,7 +1048,7 @@ class AppLocalizations {
     'selectDateOfBirth': 'اختر تاريخ ميلادك',
     'nationalId': 'رقم الهوية الوطنية',
     'nationalIdHint': 'أدخل رقم الهوية',
-    'passwordMinHint': '8 أحرف على الأقل، حرف كبير ورقم واحد',
+    'passwordMinHint': '8 أحرف على الأقل · حرف كبير · حرف صغير · رقم · رمز خاص',
     'confirmPassword': 'تأكيد كلمة المرور',
     'pleaseConfirmPassword': 'يرجى تأكيد كلمة المرور',
     'passwordsDoNotMatch': 'كلمات المرور غير متطابقة',
@@ -1298,6 +1313,13 @@ class AppLocalizations {
     'enterFullCode': 'يرجى إدخال الرمز المكون من 4 أرقام كاملاً.',
     'verificationSuccessful': 'تم التحقق\nبنجاح!',
     'verificationSuccessDesc': 'تم التحقق من بريدك الإلكتروني. يمكنك الآن استخدام Tale3 للعثور على رحلة وطلبها.',
+    'emailLinkSentTo': 'لقد أرسلنا رابط تحقق إلى',
+    'emailVerifyInstructions': 'افتح الرابط في بريدك الإلكتروني للتحقق من حسابك.',
+    'resendEmail': 'إعادة إرسال البريد',
+    'didntReceiveEmail': 'لم تستلم البريد الإلكتروني؟',
+    'iVerifiedMyEmail': 'لقد تحققت من بريدي الإلكتروني',
+    'waitingForVerification': 'في انتظار التحقق...',
+    'emailNotYetVerified': 'لم يتم التحقق من البريد الإلكتروني بعد. تحقق من صندوق الوارد واضغط على الرابط.',
 
     'settings': 'الإعدادات',
     'account': 'الحساب',
