@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/providers/navigation_provider.dart';
+import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
@@ -158,7 +160,12 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                         await context
                             .read<BookingProvider>()
                             .cancelBooking(widget.booking);
-                        Navigator.of(context).popUntil((route) => route.isFirst);
+                        context.read<NavigationProvider>().setPassengerTab(1);
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                              builder: (_) => const PassengerHomeScreen()),
+                          (route) => false,
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppStyles.primaryColor,

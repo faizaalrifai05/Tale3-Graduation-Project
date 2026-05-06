@@ -54,8 +54,28 @@ class MyTripsScreen extends StatelessWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 final all = snapshot.data ?? [];
-                final upcoming =
-                    all.where((b) => b.status == 'confirmed').toList();
+                final today = DateTime(
+                  DateTime.now().year,
+                  DateTime.now().month,
+                  DateTime.now().day,
+                );
+
+                DateTime? parseDate(String d) {
+                  try { return DateTime.parse(d); } catch (_) { return null; }
+                }
+
+                final upcoming = all.where((b) {
+                  if (b.status != 'confirmed') return false;
+                  final d = parseDate(b.date);
+                  return d == null || !d.isBefore(today);
+                }).toList();
+
+                final past = all.where((b) {
+                  if (b.status != 'confirmed') return false;
+                  final d = parseDate(b.date);
+                  return d != null && d.isBefore(today);
+                }).toList();
+
                 final cancelled =
                     all.where((b) => b.status == 'cancelled').toList();
 
@@ -66,9 +86,9 @@ class MyTripsScreen extends StatelessWidget {
                       bookings: upcoming,
                       emptyMessage: context.l10n.noUpcomingTrips,
                     ),
-                    Center(
-                      child: Text(context.l10n.noPastTrips,
-                          style: const TextStyle(color: AppStyles.textSecondary)),
+                    _BookingList(
+                      bookings: past,
+                      emptyMessage: context.l10n.noPastTrips,
                     ),
                     _BookingList(
                       bookings: cancelled,

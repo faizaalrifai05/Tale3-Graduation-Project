@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/models/booking_model.dart';
@@ -21,6 +22,22 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   static const Color _darkMaroon = Color(0xFF5C0A1A);
 
   bool _isConfirming = false;
+  String? _errorMessage;
+  double? _pickupLat;
+  double? _pickupLng;
+
+  String _mapError(String? code) {
+    switch (code) {
+      case 'already_booked':
+        return "You've already booked this ride.";
+      case 'not_enough_seats':
+        return 'No seats available. Someone may have just booked the last one.';
+      case 'permission_denied':
+        return 'Booking failed — please make sure you are logged in and try again.';
+      default:
+        return 'Something went wrong. Please try again.';
+    }
+  }
 
   @override
   void initState() {
@@ -28,20 +45,41 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<BookingProvider>().initFromRide(widget.ride);
     });
+    _fetchLocation();
+  }
+
+  Future<void> _fetchLocation() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) return;
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.low),
+      );
+      if (!mounted) return;
+      setState(() {
+        _pickupLat = pos.latitude;
+        _pickupLng = pos.longitude;
+      });
+    } catch (_) {}
   }
 
   Future<void> _confirm() async {
     setState(() => _isConfirming = true);
     final BookingModel? booking =
-        await context.read<BookingProvider>().confirmBooking();
+        await context.read<BookingProvider>().confirmBooking(
+              pickupLat: _pickupLat,
+              pickupLng: _pickupLng,
+            );
     setState(() => _isConfirming = false);
 
     if (booking == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(context.l10n.bookingFailed),
-        ),
-      );
+      final code = context.read<BookingProvider>().confirmError;
+      setState(() => _errorMessage = _mapError(code));
       return;
     }
 
@@ -224,6 +262,37 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           ),
                         ],
                       ),
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0F0),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                                color: const Color(0xFFFFCDD2)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.error_outline_rounded,
+                                  color: Color(0xFFB71C1C), size: 18),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFFB71C1C),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
@@ -232,7 +301,10 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           onPressed: (_isConfirming ||
                                   bookingProvider.selectedCount == 0)
                               ? null
-                              : _confirm,
+                              : () {
+                                  setState(() => _errorMessage = null);
+                                  _confirm();
+                                },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _darkMaroon,
                             foregroundColor: Colors.white,

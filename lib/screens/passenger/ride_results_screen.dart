@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
+import 'package:testtale3/services/maps_service.dart';
 import 'package:testtale3/theme/app_styles.dart';
 
 enum _SortMode { newest, priceLow, priceHigh, time }
@@ -34,6 +37,38 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
   bool _filterNoSmoking = false;
   bool _filterLuggage = false;
   bool _filterPets = false;
+
+  LatLng? _passengerPos;
+  bool _locationDenied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchLocation();
+  }
+
+  Future<void> _fetchLocation() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        if (mounted) setState(() => _locationDenied = true);
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings:
+            const LocationSettings(accuracy: LocationAccuracy.low),
+      );
+      if (mounted) {
+        setState(() => _passengerPos = LatLng(pos.latitude, pos.longitude));
+      }
+    } catch (_) {
+      if (mounted) setState(() => _locationDenied = true);
+    }
+  }
 
   bool get _hasActiveFilters =>
       _maxPrice < 200 ||
@@ -425,6 +460,28 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
               ),
             ),
 
+            // Location denied notice — distance filter inactive
+            if (_locationDenied)
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                color: const Color(0xFFFFF8E1),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_off_rounded,
+                        size: 16, color: Color(0xFFF57F17)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Location access denied. The 5 km distance filter is disabled — all rides are shown.',
+                        style: const TextStyle(
+                            fontSize: 12, color: Color(0xFFF57F17)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
             // Results list
             Expanded(
               child: StreamBuilder<List<RideModel>>(
@@ -434,6 +491,18 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
                     return Center(
                         child: CircularProgressIndicator(
                             color: AppStyles.primaryColor));
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'Error: ${snapshot.error}',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppStyles.errorColor, fontSize: 13),
+                        ),
+                      ),
+                    );
                   }
                   final all = snapshot.data ?? [];
                   final rides = _applyFilters(all);
@@ -463,8 +532,10 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.all(20),
                     itemCount: rides.length,
-                    itemBuilder: (context, index) =>
-                        _RideCard(ride: rides[index]),
+                    itemBuilder: (context, index) => _RideCard(
+                      ride: rides[index],
+                      passengerPos: _passengerPos,
+                    ),
                   );
                 },
               ),
@@ -481,10 +552,21 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 class _RideCard extends StatelessWidget {
   final RideModel ride;
-  const _RideCard({required this.ride});
+  final LatLng? passengerPos;
+  const _RideCard({required this.ride, this.passengerPos});
+
+  double? get _distanceKm {
+    if (passengerPos == null) return null;
+    final origin = MapsService.cityCoords(ride.origin);
+    if (origin == null) return null;
+    return MapsService.distanceKm(passengerPos!, origin);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final dist = _distanceKm;
+    final tooFar = dist != null && dist > 5.0;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -574,6 +656,43 @@ class _RideCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // Distance badge
+                  if (dist != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: tooFar
+                            ? const Color(0xFFFFF3E0)
+                            : const Color(0xFFE8F5E9),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.near_me_rounded,
+                            size: 10,
+                            color: tooFar
+                                ? const Color(0xFFE65100)
+                                : const Color(0xFF2E7D32),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            '${dist.toStringAsFixed(1)} km',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: tooFar
+                                  ? const Color(0xFFE65100)
+                                  : const Color(0xFF2E7D32),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ],
@@ -598,6 +717,35 @@ class _RideCard extends StatelessWidget {
             ),
           if (ride.acEnabled || ride.noSmoking || ride.luggageEnabled || ride.petsAllowed)
             const SizedBox(height: 12),
+
+          // Out-of-range warning
+          if (tooFar) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF3E0),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.location_off_rounded,
+                      size: 14, color: Color(0xFFE65100)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Pickup point is ${dist.toStringAsFixed(1)} km away — must be within 5 km to book',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFFE65100),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
 
           Divider(height: 1, color: context.colors.borderColor),
           const SizedBox(height: 12),
@@ -632,13 +780,16 @@ class _RideCard extends StatelessWidget {
                 height: 36,
                 width: 80,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => RideDetailsScreen(ride: ride)),
-                  ),
+                  onPressed: tooFar
+                      ? null
+                      : () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                                builder: (_) => RideDetailsScreen(ride: ride)),
+                          ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppStyles.darkMaroon,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: context.colors.borderColor,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                     padding: EdgeInsets.zero,

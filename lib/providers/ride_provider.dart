@@ -248,6 +248,45 @@ class RideProvider extends ChangeNotifier {
     }
   }
 
+  // ── Cancel ride ──────────────────────────────────────────────────────────
+
+  /// Marks the ride as cancelled and cancels every confirmed booking on it.
+  Future<void> cancelRide(String rideId) async {
+    final bookingsSnap = await _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('status', isEqualTo: 'confirmed')
+        .get();
+
+    final batch = _db.batch();
+    batch.update(_db.collection('rides').doc(rideId), {'status': 'cancelled'});
+    for (final doc in bookingsSnap.docs) {
+      batch.update(doc.reference, {'status': 'cancelled'});
+    }
+    await batch.commit();
+  }
+
+  Future<void> announceArrival(String rideId) async {
+    await _db.collection('rides').doc(rideId).update({'driverArrived': true});
+  }
+
+  /// Marks a ride and all its confirmed bookings as 'completed'.
+  Future<void> completeRide(String rideId) async {
+    final bookingsSnap = await _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('status', isEqualTo: 'confirmed')
+        .get();
+
+    final batch = _db.batch();
+    batch.update(
+        _db.collection('rides').doc(rideId), {'status': 'completed'});
+    for (final doc in bookingsSnap.docs) {
+      batch.update(doc.reference, {'status': 'completed'});
+    }
+    await batch.commit();
+  }
+
   // ── Firestore streams ─────────────────────────────────────────────────────
 
   Stream<List<RideModel>> get availableRidesStream {
@@ -255,12 +294,26 @@ class RideProvider extends ChangeNotifier {
     return _db
         .collection('rides')
         .where('status', isEqualTo: 'active')
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs
-            .map(RideModel.fromDoc)
-            .where((r) => r.driverId != uid && !r.isFull)
-            .toList());
+        .map((snap) {
+          final rides = snap.docs
+              .map(RideModel.fromDoc)
+              .where((r) => r.driverId != uid && !r.isFull)
+              .toList();
+          rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return rides;
+        });
+  }
+
+  /// Fetch a single ride by ID — used by deep link handler.
+  Future<RideModel?> getRideById(String rideId) async {
+    try {
+      final doc = await _db.collection('rides').doc(rideId).get();
+      if (!doc.exists) return null;
+      return RideModel.fromDoc(doc);
+    } catch (_) {
+      return null;
+    }
   }
 
   Stream<List<RideModel>> get myRidesStream {
@@ -269,8 +322,11 @@ class RideProvider extends ChangeNotifier {
     return _db
         .collection('rides')
         .where('driverId', isEqualTo: uid)
-        .orderBy('createdAt', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map(RideModel.fromDoc).toList());
+        .map((snap) {
+          final rides = snap.docs.map(RideModel.fromDoc).toList();
+          rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return rides;
+        });
   }
 }

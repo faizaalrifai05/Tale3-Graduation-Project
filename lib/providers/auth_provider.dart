@@ -7,6 +7,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
+import '../Services/FCM_service.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -47,6 +48,7 @@ class AuthProvider extends ChangeNotifier {
       _userSubscription = null;
     } else {
       await _fetchUserData(firebaseUser.uid);
+      FCMService.registerToken(firebaseUser.uid);
 
       // Save to saved accounts list if not already there
       if (_currentUser != null) {
@@ -191,6 +193,13 @@ class AuthProvider extends ChangeNotifier {
         email: email,
         password: password,
       );
+
+      // Require email verification for email/password accounts.
+      if (!cred.user!.emailVerified) {
+        await _auth.signOut();
+        return 'email_not_verified';
+      }
+
       final doc = await _db.collection('users').doc(cred.user!.uid).get();
       if (doc.exists) {
         // Check if blocked
@@ -231,6 +240,9 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
       await cred.user!.updateDisplayName(name);
+
+      // Send email verification — non-critical, don't fail if it errors.
+      try { await cred.user!.sendEmailVerification(); } catch (_) {}
 
       // Set current user immediately so navigation isn't blocked
       _currentUser = UserModel(
@@ -323,37 +335,76 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sets verificationStatus to pending in Firestore without uploading images.
-  /// Firebase Storage is not required — driver appears in admin verification
-  /// queue immediately after submitting.
-  /// Returns null on success, error message on failure.
+  /// Uploads both ID images to Firebase Storage then sets verificationStatus
+  /// to 'pending' in Firestore. Returns null on success, error on failure.
   Future<String?> submitIdVerification({
-    required dynamic frontImage,
-    required dynamic backImage,
+    required File frontImage,
+    required File backImage,
   }) async {
-    final uid = _auth.currentUser?.uid;
-    if (uid == null) return 'Not logged in.';
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return 'Not logged in.';
+    final uid = firebaseUser.uid;
     try {
+      final storage = FirebaseStorage.instance;
+
+      // Ensure the Firestore user document exists before uploading.
+      // registerWithEmail() should have created it, but create it here
+      // as a fallback in case of a timing issue or a rules denial.
+      final userDoc = await _db.collection('users').doc(uid).get();
+      if (!userDoc.exists) {
+        await _db.collection('users').doc(uid).set({
+          'name': _currentUser?.name ?? firebaseUser.displayName ?? '',
+          'email': _currentUser?.email ?? firebaseUser.email ?? '',
+          'role': 'driver',
+          'phone': _currentUser?.phone ?? '',
+          'photoUrl': '',
+          'verificationStatus': 'unsubmitted',
+          'idFrontUrl': '',
+          'idBackUrl': '',
+          'isBlocked': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      final frontRef = storage.ref('id_images/$uid/front.jpg');
+      await frontRef.putFile(
+        frontImage,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      final frontUrl = await frontRef.getDownloadURL();
+
+      final backRef = storage.ref('id_images/$uid/back.jpg');
+      await backRef.putFile(
+        backImage,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+      final backUrl = await backRef.getDownloadURL();
+
       await _db.collection('users').doc(uid).update({
         'verificationStatus': 'pending',
-        'idFrontUrl': '',
-        'idBackUrl': '',
+        'idFrontUrl': frontUrl,
+        'idBackUrl': backUrl,
       });
 
       _currentUser = _currentUser?.copyWith(
         verificationStatus: VerificationStatus.pending,
+        idFrontUrl: frontUrl,
+        idBackUrl: backUrl,
       );
       notifyListeners();
       return null;
-    } catch (_) {
-      return 'Failed to submit verification. Please try again.';
+    } catch (e) {
+      debugPrint('submitIdVerification error: $e');
+      return 'Failed to upload ID. Please check your connection and try again.';
     }
   }
 
   /// Signs out the current user and cancels the real-time listener.
   Future<void> signOut() async {
+    final uid = _currentUser?.uid;
     _userSubscription?.cancel();
     _userSubscription = null;
+    if (uid != null) await FCMService.unregisterToken(uid);
     await _googleSignIn.signOut();
     await _auth.signOut();
     _currentUser = null;
@@ -462,6 +513,17 @@ class AuthProvider extends ChangeNotifier {
       return _friendlyError(e.code);
     } catch (_) {
       return 'Something went wrong. Please try again.';
+    }
+  }
+
+  /// Resends the email verification link to the currently signed-in user.
+  /// Returns null on success, error message on failure.
+  Future<String?> sendVerificationEmail() async {
+    try {
+      await _auth.currentUser?.sendEmailVerification();
+      return null;
+    } catch (_) {
+      return 'Could not send verification email. Please try again later.';
     }
   }
 

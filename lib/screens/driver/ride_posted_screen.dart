@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/screens/driver/driver_home_screen.dart';
 
 
 class RidePostedScreen extends StatefulWidget {
@@ -221,7 +222,11 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                 height: 52,
                 child: OutlinedButton(
                   onPressed: () {
-                   Navigator.of(context).popUntil((route) => route.isFirst);
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(
+                          builder: (_) => const DriverHomeScreen()),
+                      (route) => false,
+                    );
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF1A1A1A),

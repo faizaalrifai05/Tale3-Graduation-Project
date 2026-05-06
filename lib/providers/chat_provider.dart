@@ -71,9 +71,15 @@ class ChatProvider extends ChangeNotifier {
     return _db
         .collection('chats')
         .where('participants', arrayContains: uid)
-        .orderBy('lastMessageTime', descending: true)
         .snapshots()
-        .map((snap) => snap.docs.map((doc) {
+        .map((snap) {
+          final docs = snap.docs.toList()
+            ..sort((a, b) {
+              final aTime = (a.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
+              final bTime = (b.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
+              return bTime.compareTo(aTime);
+            });
+          return docs.map((doc) {
               final data = doc.data();
               final participants =
                   List<String>.from(data['participants'] as List? ?? []);
@@ -93,21 +99,29 @@ class ChatProvider extends ChangeNotifier {
                         DateTime.now(),
                 unreadCount: (unread[uid] as num?)?.toInt() ?? 0,
               );
-            }).toList());
+            }).toList();
+        });
   }
 
   /// Stream of messages for a specific chat, oldest first.
+  /// Sorted client-side — avoids Firestore index requirements and includes
+  /// optimistic local writes whose serverTimestamp is still pending.
   Stream<List<ChatMessage>> messagesStream(String id) {
     return _db
         .collection('chats')
         .doc(id)
         .collection('messages')
-        .orderBy('timestamp')
         .snapshots()
-        .map((snap) => snap.docs.map(ChatMessage.fromDoc).toList());
+        .map((snap) {
+          final msgs = snap.docs.map(ChatMessage.fromDoc).toList();
+          msgs.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+          return msgs;
+        });
   }
 
-  /// Send a message. Creates the chat document if it doesn't exist yet.
+  /// Send a message. Creates the chat document first if it doesn't exist,
+  /// then writes the message in a separate batch so the message rule's
+  /// get(chats/chatId) call finds an existing document.
   Future<void> sendMessage({
     required String otherUserId,
     required String otherUserName,
@@ -118,6 +132,19 @@ class ChatProvider extends ChangeNotifier {
     final trimmed = text.trim();
     final id = chatId(uid, otherUserId);
     final chatRef = _db.collection('chats').doc(id);
+
+    final chatSnap = await chatRef.get();
+    if (!chatSnap.exists) {
+      await chatRef.set({
+        'participants': [uid, otherUserId],
+        'participantNames': {uid: _userName, otherUserId: otherUserName},
+        'lastMessage': '',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastSenderId': '',
+        'unread': {},
+      });
+    }
+
     final msgRef = chatRef.collection('messages').doc();
     final batch = _db.batch();
     batch.set(msgRef, {
@@ -126,7 +153,6 @@ class ChatProvider extends ChangeNotifier {
       'timestamp': FieldValue.serverTimestamp(),
     });
     batch.set(chatRef, {
-      'participants': [uid, otherUserId],
       'participantNames': {uid: _userName, otherUserId: otherUserName},
       'lastMessage': trimmed,
       'lastMessageTime': FieldValue.serverTimestamp(),
