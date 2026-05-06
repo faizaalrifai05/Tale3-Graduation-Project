@@ -6,7 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
-import 'package:testtale3/screens/passenger/passenger_verification_screen.dart';
+import 'package:testtale3/utils/validators.dart';
+import 'package:testtale3/screens/shared/email_verification_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
@@ -32,7 +33,9 @@ class _PassengerRegistrationScreenState
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   // Step 2 controllers
   final _universityController = TextEditingController();
@@ -54,6 +57,7 @@ class _PassengerRegistrationScreenState
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _universityController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -77,7 +81,8 @@ class _PassengerRegistrationScreenState
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      if (name.isEmpty || email.isEmpty || password.isEmpty ||
+          _confirmPasswordController.text.isEmpty) {
         setState(() => _errorMessage = context.l10n.fillAllFields);
         return;
       }
@@ -85,8 +90,13 @@ class _PassengerRegistrationScreenState
         setState(() => _errorMessage = context.l10n.enterValidEmail);
         return;
       }
-      if (password.length < 8) {
-        setState(() => _errorMessage = context.l10n.passwordMinLength);
+      final passwordError = Validators.registrationPassword(password);
+      if (passwordError != null) {
+        setState(() => _errorMessage = passwordError);
+        return;
+      }
+      if (_confirmPasswordController.text != password) {
+        setState(() => _errorMessage = context.l10n.passwordsDoNotMatch);
         return;
       }
       setState(() => _currentStep++);
@@ -116,8 +126,9 @@ class _PassengerRegistrationScreenState
       } else {
         Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (_) => PassengerVerificationScreen(
+            builder: (_) => EmailVerificationScreen(
               email: _emailController.text.trim(),
+              role: UserRole.passenger,
             ),
           ),
         );
@@ -280,6 +291,69 @@ class _PassengerRegistrationScreenState
             ),
             onPressed: () =>
                 setState(() => _obscurePassword = !_obscurePassword),
+          ),
+          filled: true,
+          fillColor: context.colors.cardBackgroundColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: context.colors.borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: context.colors.borderColor),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 6, left: 4),
+        child: Text(
+          context.l10n.passwordMinHint,
+          style: TextStyle(fontSize: 11, color: context.colors.textTertiary),
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // Confirm password field
+      Text(
+        context.l10n.confirmPassword,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colors.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _confirmPasswordController,
+        obscureText: _obscureConfirmPassword,
+        decoration: InputDecoration(
+          hintText: '••••••••',
+          hintStyle: TextStyle(
+            color: context.colors.inputHintColor,
+            fontSize: 14,
+            letterSpacing: 2,
+          ),
+          prefixIcon: Icon(
+            Icons.lock_outline,
+            color: context.colors.textTertiary,
+            size: 20,
+          ),
+          suffixIcon: IconButton(
+            icon: Icon(
+              _obscureConfirmPassword
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
+              color: context.colors.textTertiary,
+              size: 20,
+            ),
+            onPressed: () => setState(
+                () => _obscureConfirmPassword = !_obscureConfirmPassword),
           ),
           filled: true,
           fillColor: context.colors.cardBackgroundColor,

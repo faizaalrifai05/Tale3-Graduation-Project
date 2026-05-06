@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
-import 'package:testtale3/screens/driver/driver_verification_status_screen.dart';
+import 'package:testtale3/screens/shared/email_verification_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVehicleDetailsScreen extends StatefulWidget {
@@ -93,27 +93,19 @@ class _DriverVehicleDetailsScreenState
       );
       if (!mounted) return;
 
-      // Step 3: Upload ID images and set verificationStatus = pending
-      final idError = await authProvider.submitIdVerification(
+      // Step 3: Upload ID images in the background — don't block navigation
+      authProvider.submitIdVerification(
         frontImage: widget.frontIdImage,
         backImage: widget.backIdImage,
       );
-      if (!mounted) return;
-      if (idError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(idError),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
-        return;
-      }
 
       Navigator.of(context).push(
         MaterialPageRoute(
-            builder: (_) => const DriverVerificationStatusScreen()),
+          builder: (_) => EmailVerificationScreen(
+            email: widget.email,
+            role: UserRole.driver,
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isLoading = false);
