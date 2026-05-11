@@ -15,8 +15,6 @@ class DriverRegistrationScreen extends StatefulWidget {
 }
 
 class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
-  
-  
 
   final _formKey = GlobalKey<FormState>();
 
@@ -136,6 +134,7 @@ If you have any questions about this Privacy Policy, please contact us through t
 
   void _handleSubmit() {
     setState(() => _errorMessage = null);
+
     if (!_agreeToTerms) {
       setState(() => _errorMessage = context.l10n.acceptTerms);
       return;
@@ -143,6 +142,13 @@ If you have any questions about this Privacy Policy, please contact us through t
     if (!_formKey.currentState!.validate()) return;
     if (_selectedGender == null) {
       setState(() => _errorMessage = context.l10n.selectGenderMsg);
+      return;
+    }
+
+    // ── Birthday validation ───────────────────────────────────────────────
+    final birthdayError = Validators.birthday(_selectedBirthday);
+    if (birthdayError != null) {
+      setState(() => _errorMessage = birthdayError);
       return;
     }
 
@@ -302,15 +308,14 @@ If you have any questions about this Privacy Policy, please contact us through t
                 const SizedBox(height: 8),
                 GestureDetector(
                   onTap: () async {
+                    final today = DateTime.now();
                     final picked = await showDatePicker(
                       context: context,
                       initialDate: _selectedBirthday ??
-                          DateTime(DateTime.now().year - 20),
+                          DateTime(today.year - 20, today.month, today.day),
                       firstDate: DateTime(1950),
-                      lastDate: DateTime(
-                          DateTime.now().year - 18,
-                          DateTime.now().month,
-                          DateTime.now().day),
+                      // lastDate = exactly 18 years ago today → enforces 18+
+                      lastDate: DateTime(today.year - 18, today.month, today.day),
                       builder: (context, child) => Theme(
                         data: Theme.of(context).copyWith(
                           colorScheme: ColorScheme.light(
@@ -333,7 +338,13 @@ If you have any questions about this Privacy Policy, please contact us through t
                     decoration: BoxDecoration(
                       color: context.colors.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: context.colors.borderColor),
+                      border: Border.all(
+                        // Highlight red if tried to submit without picking
+                        color: (_errorMessage != null &&
+                                _selectedBirthday == null)
+                            ? Colors.red
+                            : context.colors.borderColor,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -393,18 +404,16 @@ If you have any questions about this Privacy Policy, please contact us through t
                 TextFormField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
                   autovalidateMode: AutovalidateMode.onUserInteraction,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return context.l10n.phoneRequired;
-                    if (v.length < 10) return context.l10n.enterValidPhone;
-                    return null;
-                  },
+                  validator: Validators.phone,
                   decoration: _inputDecoration(
-                      hint: '07XXXXXXXX', icon: Icons.phone_outlined),
+                      hint: '07XXXXXXXX',
+                      icon: Icons.phone_outlined),
                 ),
                 const SizedBox(height: 16),
-
 
                 // ── Password ─────────────────────────────────────────────
                 _buildLabel(context.l10n.passwordLabel),
@@ -449,11 +458,10 @@ If you have any questions about this Privacy Policy, please contact us through t
                             color: AppStyles.primaryColor, width: 2)),
                     errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.red)),
+                        borderSide: const BorderSide(color: Colors.red)),
                     focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
+                        borderSide: const BorderSide(
                             color: Colors.red, width: 1.5)),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -462,7 +470,7 @@ If you have any questions about this Privacy Policy, please contact us through t
 
                 // Password hint
                 Padding(
-                  padding: EdgeInsets.only(top: 6, left: 4),
+                  padding: const EdgeInsets.only(top: 6, left: 4),
                   child: Text(
                     context.l10n.passwordMinHint,
                     style: TextStyle(fontSize: 11, color: context.colors.textTertiary),
@@ -517,11 +525,10 @@ If you have any questions about this Privacy Policy, please contact us through t
                             color: AppStyles.primaryColor, width: 2)),
                     errorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide:
-                            BorderSide(color: Colors.red)),
+                        borderSide: const BorderSide(color: Colors.red)),
                     focusedErrorBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
+                        borderSide: const BorderSide(
                             color: Colors.red, width: 1.5)),
                     contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
@@ -624,13 +631,12 @@ If you have any questions about this Privacy Policy, please contact us through t
                       elevation: 0,
                     ),
                     child: Text(context.l10n.joinAsDriver,
-                        style: TextStyle(
+                        style: const TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(height: 32),
 
-                
                 const SizedBox(height: 32),
               ],
             ),
@@ -671,10 +677,10 @@ If you have any questions about this Privacy Policy, please contact us through t
           borderSide: BorderSide(color: AppStyles.primaryColor, width: 2)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red)),
+          borderSide: const BorderSide(color: Colors.red)),
       focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red, width: 1.5)),
+          borderSide: const BorderSide(color: Colors.red, width: 1.5)),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     );

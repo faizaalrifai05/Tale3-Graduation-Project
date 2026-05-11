@@ -103,6 +103,9 @@ class AuthProvider extends ChangeNotifier {
           idFrontUrl: data['idFrontUrl'] ?? '',
           idBackUrl: data['idBackUrl'] ?? '',
           isBlocked: false,
+          averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
+          ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
         );
         notifyListeners();
       });
@@ -169,6 +172,9 @@ class AuthProvider extends ChangeNotifier {
           idFrontUrl: data['idFrontUrl'] ?? '',
           idBackUrl: data['idBackUrl'] ?? '',
           isBlocked: data['isBlocked'] as bool? ?? false,
+          averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
+          ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
         );
 
         // Block check on initial fetch
@@ -264,6 +270,8 @@ class AuthProvider extends ChangeNotifier {
           'idFrontUrl': '',
           'idBackUrl': '',
           'isBlocked': false,
+          'averageRating': 0.0,
+          'ratingCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
         debugPrint('✅ Firestore write SUCCESS');
@@ -324,6 +332,8 @@ class AuthProvider extends ChangeNotifier {
           'idFrontUrl': '',
           'idBackUrl': '',
           'isBlocked': false,
+          'averageRating': 0.0,
+          'ratingCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
@@ -362,6 +372,8 @@ class AuthProvider extends ChangeNotifier {
           'idFrontUrl': '',
           'idBackUrl': '',
           'isBlocked': false,
+          'averageRating': 0.0,
+          'ratingCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }

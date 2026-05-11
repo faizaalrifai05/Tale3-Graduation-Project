@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/screens/settings_screen.dart';
 import 'package:testtale3/providers/auth_provider.dart';
+import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/driver/driver_saved_places_screen.dart';
 import 'dart:io';
@@ -307,6 +308,14 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
     final displayPhone = _phoneNumber.isNotEmpty
         ? _phoneNumber
         : (authUser?.phone.isNotEmpty == true ? authUser!.phone : context.l10n.addPhoneNumber);
+
+    // ── Dynamic rating value ─────────────────────────────────────────────────
+    final avgRating = authUser?.averageRating ?? 0.0;
+    final ratingCount = authUser?.ratingCount ?? 0;
+    // Show '—' if no ratings yet, otherwise show the real average
+    final ratingDisplay = ratingCount == 0
+        ? '—'
+        : avgRating.toStringAsFixed(1);
 
     return Stack(
       children: [
@@ -696,10 +705,9 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
 
         // ════════════════════════════════════════════════════════
         // OVERLAPPING STATS CARD
-        // (Positioned absolutely over the gradient edge)
         // ════════════════════════════════════════════════════════
         Positioned(
-          top: 200, // Roughly where the gradient ends
+          top: 200,
           left: 20,
           right: 20,
           child: Material(
@@ -711,22 +719,39 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
                 children: [
+                  // ── DYNAMIC RATING ──────────────────────────────────
                   _buildStatCard(
-                      icon: Icons.star_rounded,
-                      iconColor: AppStyles.goldStar,
-                      value: '4.9',
+                      icon: ratingCount == 0
+                          ? Icons.star_border_rounded
+                          : Icons.star_rounded,
+                      iconColor: ratingCount == 0
+                          ? context.colors.textTertiary
+                          : AppStyles.goldStar,
+                      value: ratingDisplay,
                       label: context.l10n.rating),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
-                  _buildStatCard(
-                      icon: Icons.directions_car_rounded,
-                      iconColor: AppStyles.primaryColor,
-                      value: '1,418',
-                      label: context.l10n.rides),
+                  // ── DYNAMIC RIDES COUNT ──────────────────────────────
+                  StreamBuilder<int>(
+                    stream: context
+                        .read<RideProvider>()
+                        .completedRidesCountStream(authUser?.uid ?? ''),
+                    builder: (_, snap) {
+                      final count = snap.data ?? 0;
+                      return _buildStatCard(
+                          icon: Icons.directions_car_rounded,
+                          iconColor: AppStyles.primaryColor,
+                          value: count == 0 ? '0' : '$count',
+                          label: context.l10n.rides);
+                    },
+                  ),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
+                  // ── DYNAMIC YEARS ON PLATFORM ────────────────────────
                   _buildStatCard(
                       icon: Icons.calendar_today_rounded,
                       iconColor: AppStyles.successColor,
-                      value: '4.2',
+                      value: authUser?.yearsOnPlatform == null || authUser!.yearsOnPlatform == 0
+                          ? '< 1'
+                          : '${authUser.yearsOnPlatform}',
                       label: context.l10n.years),
                 ],
               ),

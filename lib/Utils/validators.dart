@@ -78,16 +78,34 @@ class Validators {
   }
 
   // ─── Phone Number ────────────────────────────────────────────────────────
+  //
+  // Must start with 07 and be exactly 10 digits.
+  // e.g. 0791234567
 
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) {
       return 'Phone number is required';
     }
-    // Jordanian numbers: 07X-XXXXXXX (10 digits starting with 07)
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (!RegExp(r'^(07\d{8}|009627\d{8}|\+9627\d{8})$').hasMatch(digits) &&
-        digits.length < 9) {
-      return 'Please enter a valid phone number';
+
+    final cleaned = value.trim().replaceAll(RegExp(r'[\s\-]'), '');
+
+    if (!RegExp(r'^07\d{8}$').hasMatch(cleaned)) {
+      return 'Phone number must start with 07 and be 10 digits';
+    }
+
+    return null;
+  }
+
+  // ─── Birthday (must be 18 or older) ──────────────────────────────────────
+
+  static String? birthday(DateTime? value) {
+    if (value == null) {
+      return 'Date of birth is required';
+    }
+    final today = DateTime.now();
+    final eighteenYearsAgo = DateTime(today.year - 18, today.month, today.day);
+    if (value.isAfter(eighteenYearsAgo)) {
+      return 'You must be at least 18 years old to register';
     }
     return null;
   }

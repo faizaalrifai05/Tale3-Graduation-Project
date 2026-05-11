@@ -194,20 +194,16 @@ class RideProvider extends ChangeNotifier {
   }) async {
     final user = _auth.currentUser;
 
-    // Check if logged in
     if (user == null) return 'Not logged in.';
 
-    // Check if driver is verified
     if (user.verificationStatus != VerificationStatus.verified) {
       return 'Your account is not verified yet. Please submit your ID for verification and wait for admin approval.';
     }
 
-    // Check if driver is blocked
     if (user.isBlocked) {
       return 'Your account has been blocked. Please contact support.';
     }
 
-    // Check if admin has set a price for this route
     if (_adminPrice == null) {
       return 'No price has been set for this route by the admin yet.';
     }
@@ -250,7 +246,6 @@ class RideProvider extends ChangeNotifier {
 
   // ── Cancel ride ──────────────────────────────────────────────────────────
 
-  /// Marks the ride as cancelled and cancels every confirmed booking on it.
   Future<void> cancelRide(String rideId) async {
     final bookingsSnap = await _db
         .collection('bookings')
@@ -328,5 +323,17 @@ class RideProvider extends ChangeNotifier {
           rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return rides;
         });
+  }
+
+  /// Stream that emits the count of completed rides for a driver.
+  /// Updates live every time a ride is marked completed.
+  Stream<int> completedRidesCountStream(String driverId) {
+    if (driverId.isEmpty) return Stream.value(0);
+    return _db
+        .collection('rides')
+        .where('driverId', isEqualTo: driverId)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snap) => snap.docs.length);
   }
 }
