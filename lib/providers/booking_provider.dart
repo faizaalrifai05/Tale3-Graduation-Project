@@ -41,15 +41,12 @@ class BookingProvider extends ChangeNotifier {
   void initFromRide(RideModel ride) {
     _currentRide = ride;
     for (int i = 1; i <= _passengerSlots; i++) {
-      // Only treat as beyond-capacity when totalSeats is known (> 0).
-      // totalSeats == 0 means the field is missing from Firestore — don't
-      // hide seats in that case.
       if (ride.totalSeats > 0 && i > ride.totalSeats) {
-        _seatStates[i] = 2; // beyond capacity — render as occupied
+        _seatStates[i] = 2;
       } else if (i <= ride.bookedSeats) {
-        _seatStates[i] = 2; // already taken
+        _seatStates[i] = 2;
       } else {
-        _seatStates[i] = 0; // available
+        _seatStates[i] = 0;
       }
     }
     notifyListeners();
@@ -87,7 +84,6 @@ class BookingProvider extends ChangeNotifier {
 
     _confirmError = null;
     try {
-      // Guard against duplicate bookings before opening the transaction.
       final existing = await _db
           .collection('bookings')
           .where('rideId', isEqualTo: ride.id)
@@ -217,5 +213,26 @@ class BookingProvider extends ChangeNotifier {
       tx.update(rideRef,
           {'bookedSeats': FieldValue.increment(-booking.seatsBooked)});
     });
+  }
+
+  /// Stream of total earnings for a driver.
+  /// Sums the [totalPrice] of all bookings where:
+  ///   - driverId == [driverId]
+  ///   - status   == 'completed'
+  /// Emits 0 if the driver has no completed bookings yet.
+  Stream<int> driverEarningsStream(String driverId) {
+    if (driverId.isEmpty) return Stream.value(0);
+    return _db
+        .collection('bookings')
+        .where('driverId', isEqualTo: driverId)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .map((snap) {
+          if (snap.docs.isEmpty) return 0;
+          return snap.docs
+              .map(BookingModel.fromDoc)
+              .map((b) => b.totalPrice)
+              .reduce((a, b) => a + b);
+        });
   }
 }

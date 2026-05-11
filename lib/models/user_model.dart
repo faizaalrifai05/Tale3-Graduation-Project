@@ -20,6 +20,11 @@ class UserModel {
   final String idFrontUrl;
   final String idBackUrl;
   final bool isBlocked;
+  // Driver rating
+  final double averageRating;
+  final int ratingCount;
+  // Account creation date
+  final DateTime? createdAt;
 
   const UserModel({
     required this.uid,
@@ -37,9 +42,25 @@ class UserModel {
     this.idFrontUrl = '',
     this.idBackUrl = '',
     this.isBlocked = false,
+    this.averageRating = 0.0,
+    this.ratingCount = 0,
+    this.createdAt,
   });
 
   bool get isVerified => verificationStatus == VerificationStatus.verified;
+
+  /// How many full years since account was created.
+  /// Returns 0 if createdAt is null (brand new account).
+  int get yearsOnPlatform {
+    if (createdAt == null) return 0;
+    final now = DateTime.now();
+    int years = now.year - createdAt!.year;
+    if (now.month < createdAt!.month ||
+        (now.month == createdAt!.month && now.day < createdAt!.day)) {
+      years--;
+    }
+    return years < 0 ? 0 : years;
+  }
 
   UserModel copyWith({
     String? uid,
@@ -57,6 +78,9 @@ class UserModel {
     String? idFrontUrl,
     String? idBackUrl,
     bool? isBlocked,
+    double? averageRating,
+    int? ratingCount,
+    DateTime? createdAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -74,6 +98,9 @@ class UserModel {
       idFrontUrl: idFrontUrl ?? this.idFrontUrl,
       idBackUrl: idBackUrl ?? this.idBackUrl,
       isBlocked: isBlocked ?? this.isBlocked,
+      averageRating: averageRating ?? this.averageRating,
+      ratingCount: ratingCount ?? this.ratingCount,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

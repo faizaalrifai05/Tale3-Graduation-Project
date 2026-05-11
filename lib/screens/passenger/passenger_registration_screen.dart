@@ -21,7 +21,6 @@ class PassengerRegistrationScreen extends StatefulWidget {
 
 class _PassengerRegistrationScreenState
     extends State<PassengerRegistrationScreen> {
-  
 
   // Step tracking
   int _currentStep = 1;
@@ -41,6 +40,7 @@ class _PassengerRegistrationScreenState
   final _universityController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _selectedGender;
+  DateTime? _selectedBirthday;
   bool _agreeToTerms = false;
   File? _profilePhoto;
 
@@ -76,7 +76,9 @@ class _PassengerRegistrationScreenState
 
   Future<void> _goNext() async {
     setState(() => _errorMessage = null);
+
     if (_currentStep < _totalSteps) {
+      // ── Step 1 validation ───────────────────────────────────────────
       final name = _nameController.text.trim();
       final email = _emailController.text.trim();
       final password = _passwordController.text;
@@ -103,9 +105,23 @@ class _PassengerRegistrationScreenState
       return;
     }
 
-    // Step 2 — submit registration
+    // ── Step 2 validation ─────────────────────────────────────────────
     if (!_agreeToTerms) {
       setState(() => _errorMessage = context.l10n.acceptTerms);
+      return;
+    }
+
+    // Phone validation
+    final phoneError = Validators.phone(_phoneController.text.trim());
+    if (phoneError != null) {
+      setState(() => _errorMessage = phoneError);
+      return;
+    }
+
+    // Birthday validation (18+)
+    final birthdayError = Validators.birthday(_selectedBirthday);
+    if (birthdayError != null) {
+      setState(() => _errorMessage = birthdayError);
       return;
     }
 
@@ -388,6 +404,7 @@ class _PassengerRegistrationScreenState
 
   List<Widget> _buildStep2() {
     return [
+      // Profile photo
       Center(
         child: GestureDetector(
           onTap: () => _pickImage(ImageSource.gallery),
@@ -424,7 +441,7 @@ class _PassengerRegistrationScreenState
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppStyles.primaryColor,
-                    boxShadow: [
+                    boxShadow: const [
                       BoxShadow(
                         color: Colors.black12,
                         blurRadius: 4,
@@ -441,26 +458,189 @@ class _PassengerRegistrationScreenState
         ),
       ),
       const SizedBox(height: 24),
-      _buildLabeledTextField(
-        label: context.l10n.phoneNumber,
-        controller: _phoneController,
-        hintText: context.l10n.phoneHint,
-        icon: Icons.phone_outlined,
-        keyboardType: TextInputType.phone,
-        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+
+      // ── Phone Number ─────────────────────────────────────────────────
+      Text(
+        context.l10n.phoneNumber,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colors.textPrimary,
+        ),
       ),
-      const SizedBox(height: 16),
-      _buildDropdownField(
-        label: context.l10n.gender,
-        hintText: context.l10n.selectGender,
-        icon: Icons.people_outline,
-        items: [context.l10n.genderMale, context.l10n.genderFemale, context.l10n.genderPreferNotToSay],
-        value: _selectedGender,
-        onChanged: (val) => setState(() => _selectedGender = val),
+      const SizedBox(height: 8),
+      TextField(
+        controller: _phoneController,
+        keyboardType: TextInputType.phone,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+        ],
+        decoration: InputDecoration(
+          hintText: '07XXXXXXXX',
+          hintStyle:
+              TextStyle(color: context.colors.inputHintColor, fontSize: 13),
+          prefixIcon: Icon(Icons.phone_outlined,
+              color: context.colors.textTertiary, size: 20),
+          filled: true,
+          fillColor: context.colors.cardBackgroundColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: context.colors.borderColor),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: context.colors.borderColor),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
+          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
       ),
       const SizedBox(height: 16),
 
-      // University optional
+      // ── Gender selector ───────────────────────────────────────────────
+      Text(
+        context.l10n.gender,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colors.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Row(
+        children: [context.l10n.genderMale, context.l10n.genderFemale].map((gender) {
+          final selected = _selectedGender == gender;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedGender = gender),
+              child: Container(
+                margin: EdgeInsets.only(
+                    right: gender == context.l10n.genderMale ? 8 : 0),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppStyles.primaryColor.withValues(alpha: 0.08)
+                      : context.colors.cardBackgroundColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: selected
+                        ? AppStyles.primaryColor
+                        : context.colors.borderColor,
+                    width: selected ? 2 : 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      gender == context.l10n.genderMale
+                          ? Icons.male
+                          : Icons.female,
+                      color: selected
+                          ? AppStyles.primaryColor
+                          : context.colors.textTertiary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      gender,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: selected
+                            ? AppStyles.primaryColor
+                            : context.colors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 16),
+
+      // ── Date of Birth (18+) ───────────────────────────────────────────
+      Text(
+        context.l10n.dateOfBirth,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: context.colors.textPrimary,
+        ),
+      ),
+      const SizedBox(height: 8),
+      GestureDetector(
+        onTap: () async {
+          final today = DateTime.now();
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: _selectedBirthday ??
+                DateTime(today.year - 20, today.month, today.day),
+            firstDate: DateTime(1950),
+            // lastDate = exactly 18 years ago today → enforces 18+
+            lastDate: DateTime(today.year - 18, today.month, today.day),
+            builder: (context, child) => Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(
+                  primary: AppStyles.primaryColor,
+                  onPrimary: AppStyles.onPrimary,
+                  surface: AppStyles.onPrimary,
+                  onSurface: context.colors.textPrimary,
+                ),
+              ),
+              child: child!,
+            ),
+          );
+          if (picked != null) {
+            setState(() => _selectedBirthday = picked);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: context.colors.cardBackgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              // Highlight red border if tried to submit without picking
+              color: (_errorMessage != null && _selectedBirthday == null)
+                  ? Colors.red
+                  : context.colors.borderColor,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.cake_outlined,
+                  color: context.colors.textTertiary, size: 20),
+              const SizedBox(width: 12),
+              Text(
+                _selectedBirthday == null
+                    ? context.l10n.selectDateOfBirth
+                    : '${_selectedBirthday!.day.toString().padLeft(2, '0')}/'
+                        '${_selectedBirthday!.month.toString().padLeft(2, '0')}/'
+                        '${_selectedBirthday!.year}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: _selectedBirthday == null
+                      ? context.colors.inputHintColor
+                      : context.colors.textPrimary,
+                ),
+              ),
+              const Spacer(),
+              Icon(Icons.calendar_today_outlined,
+                  color: context.colors.textTertiary, size: 18),
+            ],
+          ),
+        ),
+      ),
+      const SizedBox(height: 16),
+
+      // ── University (optional) ─────────────────────────────────────────
       Row(
         children: [
           Text(
@@ -512,7 +692,7 @@ class _PassengerRegistrationScreenState
       ),
       const SizedBox(height: 24),
 
-      // Terms checkbox
+      // ── Terms checkbox ────────────────────────────────────────────────
       Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -605,10 +785,10 @@ class _PassengerRegistrationScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(label,
-                      style: TextStyle(
+                      style: const TextStyle(
                           fontSize: 16, fontWeight: FontWeight.w600)),
                   const SizedBox(width: 6),
-                  Icon(Icons.arrow_forward, size: 18),
+                  const Icon(Icons.arrow_forward, size: 18),
                 ],
               ),
       ),
@@ -717,65 +897,6 @@ class _PassengerRegistrationScreenState
               borderRadius: BorderRadius.circular(12),
               borderSide:
                   BorderSide(color: AppStyles.primaryColor, width: 2),
-            ),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdownField({
-    required String label,
-    required String hintText,
-    required IconData icon,
-    required List<String> items,
-    required String? value,
-    required void Function(String?) onChanged,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: context.colors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          initialValue: value,
-          onChanged: onChanged,
-          items: items
-              .map((e) => DropdownMenuItem(
-                  value: e,
-                  child:
-                      Text(e, style: TextStyle(fontSize: 14))))
-              .toList(),
-          icon: Icon(Icons.keyboard_arrow_down,
-              color: context.colors.textTertiary),
-          decoration: InputDecoration(
-            hintText: hintText,
-            hintStyle:
-                TextStyle(color: context.colors.inputHintColor, fontSize: 14),
-            prefixIcon:
-                Icon(icon, color: context.colors.textTertiary, size: 20),
-            filled: true,
-            fillColor: context.colors.cardBackgroundColor,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.colors.borderColor),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: context.colors.borderColor),
-            ),
-            focusedBorder: const OutlineInputBorder(
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              borderSide: BorderSide(color: AppStyles.primaryColor, width: 2),
             ),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 16, vertical: 14),

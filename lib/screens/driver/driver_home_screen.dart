@@ -7,12 +7,14 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
 import '../../providers/ride_provider.dart';
 import '../../models/ride_model.dart';
+import '../../models/rating_model.dart';
 import 'package:testtale3/screens/driver/driver_create_ride_screen.dart';
 import 'package:testtale3/screens/driver/driver_profile_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
 import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 import 'package:testtale3/screens/driver/driver_chat_screen.dart';
 import 'package:testtale3/providers/rating_provider.dart';
+import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 
 class DriverHomeScreen extends StatefulWidget {
@@ -257,14 +259,29 @@ class _DriverHomeTab extends StatelessWidget {
                     // ── Stats row ──
                     Row(
                       children: [
-                        _buildStatCard(
-                          icon: Icons.account_balance_wallet_rounded,
-                          label: context.l10n.earnings,
-                          value: '\$142.50',
-                          iconColor: AppStyles.successColor,
+                        // ── DYNAMIC earnings stat card ─────────────────
+                        StreamBuilder<int>(
+                          stream: context
+                              .read<BookingProvider>()
+                              .driverEarningsStream(
+                                  context
+                                      .read<app_auth.AuthProvider>()
+                                      .currentUser
+                                      ?.uid ??
+                                      ''),
+                          builder: (ctx, snap) {
+                            final total = snap.data ?? 0;
+                            return _buildStatCard(
+                              icon: Icons.account_balance_wallet_rounded,
+                              label: context.l10n.earnings,
+                              value: total == 0 ? '0 JOD' : '$total JOD',
+                              iconColor: AppStyles.successColor,
+                            );
+                          },
                         ),
                         const SizedBox(width: 10),
-                        StreamBuilder<List<dynamic>>(
+                        // ── DYNAMIC reviews stat card ──────────────────
+                        StreamBuilder<List<RatingModel>>(
                           stream: context
                               .read<RatingProvider>()
                               .driverRatingsStream(
@@ -277,18 +294,19 @@ class _DriverHomeTab extends StatelessWidget {
                             final ratings = snap.data ?? [];
                             final avg = ratings.isEmpty
                                 ? null
-                                : (ratings
-                                            .map((r) =>
-                                                (r as dynamic).stars as int)
-                                            .reduce((a, b) => a + b) /
-                                        ratings.length);
+                                : ratings
+                                        .map((r) => r.stars)
+                                        .reduce((a, b) => a + b) /
+                                    ratings.length;
                             return _buildStatCard(
                               icon: Icons.star_rounded,
                               label: context.l10n.reviews,
                               value: avg == null
                                   ? '—'
                                   : avg.toStringAsFixed(1),
-                              iconColor: AppStyles.goldStar,
+                              iconColor: avg == null
+                                  ? Colors.white.withValues(alpha: 0.4)
+                                  : AppStyles.goldStar,
                               onTap: () => _showReviewsSheet(context),
                             );
                           },
@@ -516,166 +534,259 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
+  // ── Reviews bottom sheet — fully dynamic from Firestore ─────────────────
   static void _showReviewsSheet(BuildContext context) {
-    final reviews = [
-      _Review(name: 'Hassan A.', rating: 5.0, date: 'Today', text: 'Great driver, very punctual and friendly. The car was clean and the ride was smooth.'),
-      _Review(name: 'Sarah T.', rating: 5.0, date: 'Yesterday', text: 'Very comfortable ride. Arrived right on time!'),
-      _Review(name: 'Ali H.', rating: 4.0, date: '2 days ago', text: 'Good ride overall. Would ride again.'),
-      _Review(name: 'Lina K.', rating: 5.0, date: 'Last week', text: 'Best carpooling experience I\'ve had. Super reliable!'),
-      _Review(name: 'Omar S.', rating: 5.0, date: 'Last week', text: 'Always on time and very professional driver.'),
-    ];
+    final driverUid =
+        context.read<app_auth.AuthProvider>().currentUser?.uid ?? '';
+    final stream =
+        context.read<RatingProvider>().driverRatingsStream(driverUid);
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.75,
-        decoration: BoxDecoration(
-          color: context.colors.surfaceColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: context.colors.borderColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-              child: Row(
+      builder: (sheetCtx) {
+        // Use outer context for all theme/l10n/provider access.
+        // Use sheetCtx ONLY for MediaQuery so the height is correct.
+        return Container(
+          height: MediaQuery.of(sheetCtx).size.height * 0.75,
+          decoration: BoxDecoration(
+            color: context.colors.surfaceColor,
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: StreamBuilder<List<RatingModel>>(
+            stream: stream,
+            builder: (_, snap) {
+              final reviews = snap.data ?? [];
+              final avg = reviews.isEmpty
+                  ? null
+                  : reviews.map((r) => r.stars).reduce((a, b) => a + b) /
+                      reviews.length;
+
+              return Column(
                 children: [
-                  Text(
-                    context.l10n.myReviews,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: context.colors.textPrimary,
+                  // Handle bar
+                  Container(
+                    margin: const EdgeInsets.only(top: 12),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.colors.borderColor,
+                      borderRadius: BorderRadius.circular(2),
                     ),
                   ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: context.colors.highlightBackgroundColor,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
+
+                  // Header row
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    child: Row(
                       children: [
-                        Icon(Icons.star_rounded,
-                            color: AppStyles.goldStar, size: 16),
-                        SizedBox(width: 4),
                         Text(
-                          '4.9',
+                          context.l10n.myReviews,
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 20,
                             fontWeight: FontWeight.w800,
-                            color: AppStyles.primaryColor,
+                            color: context.colors.textPrimary,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                '${reviews.length} reviews from passengers',
-                style: TextStyle(
-                    fontSize: 13, color: context.colors.textSecondary),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Divider(height: 1),
-            Expanded(
-              child: ListView.separated(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 16),
-                itemCount: reviews.length,
-                separatorBuilder: (context, index) =>
-                    const Divider(height: 28),
-                itemBuilder: (_, i) {
-                  final r = reviews[i];
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor:
-                                context.colors.highlightBackgroundColor,
-                            child: Text(
-                              r.name[0],
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                                color: AppStyles.primaryColor,
-                              ),
+                        const Spacer(),
+                        // Average badge — only shown when there are reviews
+                        if (avg != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: context.colors.highlightBackgroundColor,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            child: Row(
                               children: [
+                                const Icon(Icons.star_rounded,
+                                    color: AppStyles.goldStar, size: 16),
+                                const SizedBox(width: 4),
                                 Text(
-                                  r.name,
-                                  style: TextStyle(
+                                  avg.toStringAsFixed(1),
+                                  style: const TextStyle(
                                     fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: context.colors.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  r.date,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: context.colors.textTertiary,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppStyles.primaryColor,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: List.generate(5, (si) {
-                              return Icon(
-                                si < r.rating.floor()
-                                    ? Icons.star_rounded
-                                    : Icons.star_outline_rounded,
-                                color: AppStyles.goldStar,
-                                size: 16,
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        r.text,
+                      ],
+                    ),
+                  ),
+
+                  // Subtitle
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        reviews.isEmpty
+                            ? 'No reviews yet'
+                            : '${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'} from passengers',
                         style: TextStyle(
-                          fontSize: 13,
-                          height: 1.5,
-                          color: context.colors.textSecondary,
-                        ),
+                            fontSize: 13,
+                            color: context.colors.textSecondary),
                       ),
-                    ],
-                  );
-                },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(height: 1),
+
+                  // Body — empty state or list
+                  Expanded(
+                    child: reviews.isEmpty
+                        ? _buildEmptyReviews(context)
+                        : ListView.separated(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 16),
+                            itemCount: reviews.length,
+                            separatorBuilder: (_, __) =>
+                                const Divider(height: 28),
+                            itemBuilder: (_, i) =>
+                                _buildReviewItem(context, reviews[i]),
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  // Empty state widget shown when driver has no reviews yet
+  static Widget _buildEmptyReviews(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.star_border_rounded,
+              size: 64,
+              color: context.colors.textTertiary.withValues(alpha: 0.4),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No reviews yet',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: context.colors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Complete trips and passengers will leave\nreviews here.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                color: context.colors.textTertiary,
+                height: 1.5,
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  // Single review item built from real RatingModel data
+  static Widget _buildReviewItem(BuildContext context, RatingModel r) {
+    final now = DateTime.now();
+    final diff = now.difference(r.createdAt);
+    final String dateStr;
+    if (diff.inDays == 0) {
+      dateStr = 'Today';
+    } else if (diff.inDays == 1) {
+      dateStr = 'Yesterday';
+    } else if (diff.inDays < 7) {
+      dateStr = '${diff.inDays} days ago';
+    } else if (diff.inDays < 14) {
+      dateStr = 'Last week';
+    } else {
+      dateStr =
+          '${r.createdAt.day}/${r.createdAt.month}/${r.createdAt.year}';
+    }
+
+    final displayName =
+        r.passengerName.isNotEmpty ? r.passengerName : 'Passenger';
+    final initial = displayName[0].toUpperCase();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: context.colors.highlightBackgroundColor,
+              child: Text(
+                initial,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: AppStyles.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    displayName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    dateStr,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: context.colors.textTertiary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: List.generate(5, (si) {
+                return Icon(
+                  si < r.stars
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  color: AppStyles.goldStar,
+                  size: 16,
+                );
+              }),
+            ),
+          ],
+        ),
+        if (r.comment.trim().isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            r.comment,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: context.colors.textSecondary,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -946,19 +1057,4 @@ class _LiveDotState extends State<_LiveDot>
       ),
     );
   }
-}
-
-// ── Review data class ───────────────────────────────────────────────────────
-class _Review {
-  final String name;
-  final double rating;
-  final String date;
-  final String text;
-
-  const _Review({
-    required this.name,
-    required this.rating,
-    required this.date,
-    required this.text,
-  });
 }

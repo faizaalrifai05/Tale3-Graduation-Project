@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -99,26 +100,79 @@ class RideDetailsScreen extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFFF8E1),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Row(
-                                        children: [
-                                          Icon(Icons.star, color: Color(0xFFFFC107), size: 12),
-                                          SizedBox(width: 2),
-                                          Text(
-                                            '4.8',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFFF57F17),
+                                    // ── Dynamic rating badge ──────────────
+                                    FutureBuilder<DocumentSnapshot>(
+                                      future: FirebaseFirestore.instance
+                                          .collection('users')
+                                          .doc(ride.driverId)
+                                          .get(),
+                                      builder: (context, snap) {
+                                        double avg = 0.0;
+                                        int count = 0;
+                                        if (snap.hasData && snap.data!.exists) {
+                                          final data = snap.data!.data()
+                                              as Map<String, dynamic>;
+                                          avg = (data['averageRating'] as num?)
+                                                  ?.toDouble() ??
+                                              0.0;
+                                          count = (data['ratingCount'] as num?)
+                                                  ?.toInt() ??
+                                              0;
+                                        }
+                                        // Show nothing if no ratings yet
+                                        if (count == 0) {
+                                          return Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF5F5F5),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
+                                            child: const Row(
+                                              children: [
+                                                Icon(Icons.star_border,
+                                                    color: Color(0xFF9E9E9E),
+                                                    size: 12),
+                                                SizedBox(width: 2),
+                                                Text(
+                                                  'New',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w600,
+                                                    color: Color(0xFF9E9E9E),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+                                        return Container(
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 6, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFFF8E1),
+                                            borderRadius:
+                                                BorderRadius.circular(4),
                                           ),
-                                        ],
-                                      ),
+                                          child: Row(
+                                            children: [
+                                              const Icon(Icons.star,
+                                                  color: Color(0xFFFFC107),
+                                                  size: 12),
+                                              const SizedBox(width: 2),
+                                              Text(
+                                                avg.toStringAsFixed(1),
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFFF57F17),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ],
                                 ),
@@ -204,10 +258,10 @@ class RideDetailsScreen extends StatelessWidget {
                                         letterSpacing: 1,
                                       ),
                                     ),
-                                    SizedBox(height: 4),
+                                    const SizedBox(height: 4),
                                     Text(
                                       '${ride.origin} → ${ride.destination}',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w700,
                                         color: Color(0xFF1A1A1A),
@@ -321,12 +375,12 @@ class RideDetailsScreen extends StatelessWidget {
                                 color: const Color(0xFFE8F5E9),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: Row(
+                              child: const Row(
                                 children: [
-                                  const Icon(Icons.check_circle_rounded,
+                                  Icon(Icons.check_circle_rounded,
                                       color: Color(0xFF2E7D32), size: 16),
-                                  const SizedBox(width: 8),
-                                  const Expanded(
+                                  SizedBox(width: 8),
+                                  Expanded(
                                     child: Text(
                                       "You've already booked this ride",
                                       style: TextStyle(
@@ -492,5 +546,3 @@ class RideDetailsScreen extends StatelessWidget {
     );
   }
 }
-
-
