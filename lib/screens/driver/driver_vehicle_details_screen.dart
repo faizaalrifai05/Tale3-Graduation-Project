@@ -33,9 +33,6 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
 
 class _DriverVehicleDetailsScreenState
     extends State<DriverVehicleDetailsScreen> {
-  
-  
-
   final _formKey = GlobalKey<FormState>();
   final _makeController = TextEditingController();
   final _modelController = TextEditingController();
@@ -62,7 +59,7 @@ class _DriverVehicleDetailsScreenState
     try {
       final authProvider = context.read<app_auth.AuthProvider>();
 
-      // Step 1: Create the Firebase account (only happens here, after all steps)
+      // Step 1: Create the Firebase account
       final error = await authProvider.registerWithEmail(
         email: widget.email,
         password: widget.password,
@@ -77,7 +74,8 @@ class _DriverVehicleDetailsScreenState
             content: Text(error),
             backgroundColor: AppStyles.primaryColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
         return;
@@ -93,12 +91,21 @@ class _DriverVehicleDetailsScreenState
       );
       if (!mounted) return;
 
-      // Step 3: Upload ID images in the background — don't block navigation
-      authProvider.submitIdVerification(
+      // Step 3: Submit verification — sets verificationStatus to 'pending'
+      // in Firestore so admin can see the driver in the verification queue.
+      // No Firebase Storage needed — photos are stored locally only.
+      final verifyError = await authProvider.submitIdVerification(
         frontImage: widget.frontIdImage,
         backImage: widget.backIdImage,
       );
+      if (!mounted) return;
+      if (verifyError != null) {
+        // Log the error but don't block navigation
+        // Driver can retry verification from their profile
+        debugPrint('Verification submission error: $verifyError');
+      }
 
+      // Navigate to email verification screen
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => EmailVerificationScreen(
@@ -166,8 +173,8 @@ class _DriverVehicleDetailsScreenState
                 LinearProgressIndicator(
                   value: 0.75,
                   backgroundColor: context.colors.neutralLight,
-                  valueColor:
-                      const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                      AppStyles.primaryColor),
                   borderRadius: BorderRadius.circular(2),
                   minHeight: 4,
                 ),
@@ -203,7 +210,8 @@ class _DriverVehicleDetailsScreenState
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: context.l10n.carMakeHint, icon: Icons.directions_car_outlined),
+                      hint: context.l10n.carMakeHint,
+                      icon: Icons.directions_car_outlined),
                 ),
                 const SizedBox(height: 16),
 
@@ -272,7 +280,8 @@ class _DriverVehicleDetailsScreenState
                                 : null,
                             autovalidateMode:
                                 AutovalidateMode.onUserInteraction,
-                            decoration: _inputDecoration(hint: context.l10n.colorHint),
+                            decoration:
+                                _inputDecoration(hint: context.l10n.colorHint),
                           ),
                         ],
                       ),
@@ -292,7 +301,8 @@ class _DriverVehicleDetailsScreenState
                       : null,
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: context.l10n.plateHint, icon: Icons.credit_card_outlined),
+                      hint: context.l10n.plateHint,
+                      icon: Icons.credit_card_outlined),
                 ),
                 const SizedBox(height: 48),
 
@@ -321,11 +331,11 @@ class _DriverVehicleDetailsScreenState
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(context.l10n.nextStep,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600)),
-                              SizedBox(width: 8),
-                              Icon(Icons.arrow_forward, size: 20),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.arrow_forward, size: 20),
                             ],
                           ),
                   ),
@@ -350,7 +360,8 @@ class _DriverVehicleDetailsScreenState
   InputDecoration _inputDecoration({required String hint, IconData? icon}) =>
       InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
+        hintStyle:
+            TextStyle(color: context.colors.inputHintColor, fontSize: 14),
         prefixIcon: icon != null
             ? Icon(icon, color: context.colors.textTertiary, size: 20)
             : null,
@@ -364,13 +375,14 @@ class _DriverVehicleDetailsScreenState
             borderSide: BorderSide(color: context.colors.borderColor)),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppStyles.primaryColor, width: 2)),
+            borderSide:
+                const BorderSide(color: AppStyles.primaryColor, width: 2)),
         errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red)),
+            borderSide: const BorderSide(color: Colors.red)),
         focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.red, width: 1.5)),
+            borderSide: const BorderSide(color: Colors.red, width: 1.5)),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       );

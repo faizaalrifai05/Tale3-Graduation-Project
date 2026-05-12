@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
@@ -248,7 +247,9 @@ class AuthProvider extends ChangeNotifier {
       await cred.user!.updateDisplayName(name);
 
       // Send email verification — non-critical, don't fail if it errors.
-      try { await cred.user!.sendEmailVerification(); } catch (_) {}
+      try {
+        await cred.user!.sendEmailVerification();
+      } catch (_) {}
 
       // Set current user immediately so navigation isn't blocked
       _currentUser = UserModel(
@@ -345,8 +346,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Uploads both ID images to Firebase Storage then sets verificationStatus
-  /// to 'pending' in Firestore. Returns null on success, error on failure.
+  /// Sets verificationStatus to pending in Firestore without uploading images.
+  /// Firebase Storage is not required — driver appears in admin verification
+  /// queue immediately after submitting.
+  /// Returns null on success, error message on failure.
   Future<String?> submitIdVerification({
     required File frontImage,
     required File backImage,
@@ -355,9 +358,7 @@ class AuthProvider extends ChangeNotifier {
     if (firebaseUser == null) return 'Not logged in.';
     final uid = firebaseUser.uid;
     try {
-      final storage = FirebaseStorage.instance;
-
-      // Ensure the Firestore user document exists before uploading.
+      // Ensure the Firestore user document exists before writing.
       // registerWithEmail() should have created it, but create it here
       // as a fallback in case of a timing issue or a rules denial.
       final userDoc = await _db.collection('users').doc(uid).get();
@@ -378,36 +379,21 @@ class AuthProvider extends ChangeNotifier {
         });
       }
 
-      final frontRef = storage.ref('id_images/$uid/front.jpg');
-      await frontRef.putFile(
-        frontImage,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-      final frontUrl = await frontRef.getDownloadURL();
-
-      final backRef = storage.ref('id_images/$uid/back.jpg');
-      await backRef.putFile(
-        backImage,
-        SettableMetadata(contentType: 'image/jpeg'),
-      );
-      final backUrl = await backRef.getDownloadURL();
-
+      // Set verification status to pending — no Storage needed
       await _db.collection('users').doc(uid).update({
         'verificationStatus': 'pending',
-        'idFrontUrl': frontUrl,
-        'idBackUrl': backUrl,
+        'idFrontUrl': '',
+        'idBackUrl': '',
       });
 
       _currentUser = _currentUser?.copyWith(
         verificationStatus: VerificationStatus.pending,
-        idFrontUrl: frontUrl,
-        idBackUrl: backUrl,
       );
       notifyListeners();
       return null;
     } catch (e) {
       debugPrint('submitIdVerification error: $e');
-      return 'Failed to upload ID. Please check your connection and try again.';
+      return 'Failed to submit verification. Please try again.';
     }
   }
 
