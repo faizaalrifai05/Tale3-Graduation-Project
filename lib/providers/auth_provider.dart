@@ -17,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   bool _wasBlocked = false;
+  bool _isSendingVerificationEmail = false;
   final List<SavedAccount> _savedAccounts = [];
   StreamSubscription? _userSubscription;
 
@@ -41,6 +42,7 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
+    if (_isSendingVerificationEmail) return;
     if (firebaseUser == null) {
       _currentUser = null;
       _userSubscription?.cancel();
@@ -105,6 +107,7 @@ class AuthProvider extends ChangeNotifier {
           averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
           ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
           createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          gender: data['gender'] as String? ?? '',
         );
         notifyListeners();
       });
@@ -238,6 +241,7 @@ class AuthProvider extends ChangeNotifier {
     required String name,
     required UserRole role,
     String phone = '',
+    String gender = '',
   }) async {
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
@@ -266,6 +270,7 @@ class AuthProvider extends ChangeNotifier {
           'email': email,
           'role': _roleToString(role),
           'phone': phone,
+          'gender': gender,
           'photoUrl': '',
           'verificationStatus': 'unsubmitted',
           'idFrontUrl': '',
@@ -341,7 +346,13 @@ class AuthProvider extends ChangeNotifier {
       return null;
     } on FirebaseAuthException catch (e) {
       return _friendlyError(e.code);
-    } catch (_) {
+    } catch (e) {
+      final msg = e.toString();
+      // ApiException 10 / 12500 = SHA-1 not registered in Firebase Console
+      if (msg.contains('10:') || msg.contains('12500') || msg.contains('DEVELOPER_ERROR')) {
+        return 'Google Sign-In is not configured for this device. Please contact support.';
+      }
+      debugPrint('Google Sign-In error: $e');
       return 'Google Sign-In failed. Please try again.';
     }
   }
@@ -514,13 +525,79 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Resends the email verification link to the currently signed-in user.
-  /// Returns null on success, error message on failure.
-  Future<String?> sendVerificationEmail() async {
+  /// Returns true if the email is already registered, false if not.
+  /// Returns null when the result cannot be determined (e.g. Email Enumeration
+  /// Protection is enabled on this Firebase project, or a network error).
+  Future<bool?> checkEmailInUse(String email) async {
     try {
-      await _auth.currentUser?.sendEmailVerification();
-      return null;
+      // Attempt a sign-in with a guaranteed-invalid password.
+      // Firebase returns different error codes depending on whether the account
+      // exists, which lets us infer registration status without a deprecated API.
+      await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: '\x00__invalid_check__',
+      );
+      // Should never reach here, but treat it as "exists" if it somehow does.
+      await _auth.signOut();
+      return true;
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'wrong-password':
+        case 'invalid-password':
+          return true;  // Account exists, password is just wrong
+        case 'user-not-found':
+          return false; // No account with this email
+        case 'invalid-credential':
+          // Email Enumeration Protection is on — can't tell either way.
+          return null;
+        default:
+          return null;
+      }
     } catch (_) {
+      return null;
+    }
+  }
+
+  /// Sends or resends the email verification link.
+  /// Pass [email] + [password] when the user is not currently signed in
+  /// (e.g. from the login screen after a failed login due to unverified email).
+  Future<String?> sendVerificationEmail({String? email, String? password}) async {
+    try {
+      if (_auth.currentUser != null) {
+        await _auth.currentUser!.sendEmailVerification();
+        return null;
+      }
+
+      if (email == null || password == null) {
+        return 'Could not send verification email. Please try again later.';
+      }
+
+      // Temporarily sign in to send the verification email.
+      // The _isSendingVerificationEmail flag prevents the auth-state listener
+      // from treating this as a real sign-in and updating the app state.
+      _isSendingVerificationEmail = true;
+      try {
+        final cred = await _auth.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+        await cred.user!.sendEmailVerification();
+      } finally {
+        await _auth.signOut();
+        _isSendingVerificationEmail = false;
+      }
+      return null;
+    } on FirebaseAuthException catch (e) {
+      _isSendingVerificationEmail = false;
+      if (e.code == 'too-many-requests') {
+        return 'Too many attempts. Please wait a few minutes before trying again.';
+      }
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        return 'Incorrect password. Could not resend verification email.';
+      }
+      return 'Could not send verification email. Please try again later.';
+    } catch (_) {
+      _isSendingVerificationEmail = false;
       return 'Could not send verification email. Please try again later.';
     }
   }

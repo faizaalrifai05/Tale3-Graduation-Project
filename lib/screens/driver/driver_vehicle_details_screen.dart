@@ -13,6 +13,7 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
   final String email;
   final String password;
   final String phone;
+  final String gender;
   final File frontIdImage;
   final File backIdImage;
 
@@ -22,6 +23,7 @@ class DriverVehicleDetailsScreen extends StatefulWidget {
     required this.email,
     required this.password,
     required this.phone,
+    this.gender = '',
     required this.frontIdImage,
     required this.backIdImage,
   });
@@ -66,6 +68,7 @@ class _DriverVehicleDetailsScreenState
         name: widget.name,
         role: UserRole.driver,
         phone: widget.phone,
+        gender: widget.gender,
       );
       if (!mounted) return;
       if (error != null) {

@@ -70,6 +70,21 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Keeps seat states in sync with the live booking stream.
+  /// Called whenever the booking stream fires.
+  void updateOccupiedSeats(int bookedCount, int totalSeats) {
+    for (int i = 1; i <= _passengerSlots; i++) {
+      if (totalSeats > 0 && i > totalSeats) {
+        _seatStates[i] = 2;
+      } else if (i <= bookedCount) {
+        if (_seatStates[i] != 1) _seatStates[i] = 2;
+      } else {
+        if (_seatStates[i] == 2) _seatStates[i] = 0;
+      }
+    }
+    notifyListeners();
+  }
+
   /// Writes the booking to Firestore inside a transaction that checks seat
   /// availability. Returns the created [BookingModel] or null on failure.
   Future<BookingModel?> confirmBooking({
@@ -114,6 +129,7 @@ class BookingProvider extends ChangeNotifier {
           rideId: ride.id,
           passengerId: user.uid,
           passengerName: user.name,
+          passengerGender: user.gender,
           driverId: ride.driverId,
           driverName: ride.driverName,
           carInfo: ride.carFullInfo,
@@ -180,12 +196,25 @@ class BookingProvider extends ChangeNotifier {
 
   /// One-shot fetch of all confirmed bookings for a ride (driver route planning).
   Future<List<BookingModel>> rideBookingsOnce(String rideId) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return [];
     final snap = await _db
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
         .where('status', isEqualTo: 'confirmed')
         .get();
-    return snap.docs.map(BookingModel.fromDoc).toList();
+    return snap.docs
+        .map((doc) {
+          try {
+            return BookingModel.fromDoc(doc);
+          } catch (e) {
+            debugPrint('⚠️ Skipping malformed booking ${doc.id}: $e');
+            return null;
+          }
+        })
+        .whereType<BookingModel>()
+        .toList();
   }
 
   /// Stream of bookings belonging to the currently logged-in passenger.

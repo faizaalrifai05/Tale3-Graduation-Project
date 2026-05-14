@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -7,15 +8,53 @@ import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 
+// ignore_for_file: use_build_context_synchronously
 
-class RideDetailsScreen extends StatelessWidget {
+class RideDetailsScreen extends StatefulWidget {
   final RideModel ride;
 
   const RideDetailsScreen({super.key, required this.ride});
 
+  @override
+  State<RideDetailsScreen> createState() => _RideDetailsScreenState();
+}
+
+class _RideDetailsScreenState extends State<RideDetailsScreen> {
+  RideModel get ride => widget.ride;
+
   static const Color _primaryColor = Color(0xFF8B1A2B);
   static const Color _darkMaroon = Color(0xFF5C0A1A);
+
+  String? _locationError;
+
+  Future<void> _handleBooking() async {
+    var perm = await Geolocator.checkPermission();
+
+    if (perm == LocationPermission.denied) {
+      final allowed = await showPermissionDialog(context, PermissionType.location);
+      if (!mounted) return;
+      if (allowed) {
+        perm = await Geolocator.requestPermission();
+      }
+    }
+
+    if (!mounted) return;
+
+    if (perm == LocationPermission.denied ||
+        perm == LocationPermission.deniedForever) {
+      setState(() => _locationError = perm == LocationPermission.deniedForever
+          ? 'Location is permanently blocked. Please enable it in your device settings to book a ride.'
+          : 'Location access is required to book a ride.');
+      return;
+    }
+
+    setState(() => _locationError = null);
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => SelectSeatScreen(ride: ride)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -422,7 +461,41 @@ class RideDetailsScreen extends StatelessWidget {
                             ),
                           ],
                         )
-                      : Row(
+                      : Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (_locationError != null) ...[
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 12),
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFF0F0),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                      color: const Color(0xFFFFCDD2)),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.location_off_rounded,
+                                        color: Color(0xFFB71C1C), size: 18),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Text(
+                                        _locationError!,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Color(0xFFB71C1C),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            Row(
                           children: [
                             Column(
                               mainAxisSize: MainAxisSize.min,
@@ -447,13 +520,7 @@ class RideDetailsScreen extends StatelessWidget {
                               child: SizedBox(
                                 height: 52,
                                 child: ElevatedButton.icon(
-                                  onPressed: () {
-                                    Navigator.of(context)
-                                        .push(MaterialPageRoute(
-                                      builder: (_) =>
-                                          SelectSeatScreen(ride: ride),
-                                    ));
-                                  },
+                                  onPressed: _handleBooking,
                                   icon: const Icon(Icons.check_circle_outline,
                                       size: 20),
                                   label: Text(
@@ -474,6 +541,8 @@ class RideDetailsScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
+                          ],
+                        ),
                           ],
                         ),
                 );

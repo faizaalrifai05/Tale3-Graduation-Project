@@ -286,55 +286,64 @@ class DriverCreateRideScreen extends StatelessWidget {
 
                         // ── Seats & Price ────────────────────────────────
                         Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Available Seats
+                            // Available Seats — visual car selector
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    context.l10n.availableSeats,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: context.colors.textPrimary,
-                                    ),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        context.l10n.availableSeats,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: context.colors.textPrimary,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${rideProvider.seats} seat${rideProvider.seats == 1 ? '' : 's'}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w700,
+                                          color: _primaryColor,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 8),
                                   Container(
-                                    height: 52,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                                     decoration: BoxDecoration(
                                       color: context.colors.inputFillColor,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: context.colors.borderColor),
+                                      border: Border.all(color: context.colors.borderColor),
                                     ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceEvenly,
+                                    child: Column(
                                       children: [
-                                        IconButton(
-                                          icon: Icon(Icons.remove,
-                                              color:
-                                                  context.colors.textPrimary,
-                                              size: 16),
-                                          onPressed:
-                                              rideProvider.decrementSeats,
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            _buildDriverSeatDot(context),
+                                            _buildPassengerSeatDot(context, 1, rideProvider),
+                                          ],
                                         ),
+                                        const SizedBox(height: 8),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            _buildPassengerSeatDot(context, 2, rideProvider),
+                                            _buildPassengerSeatDot(context, 3, rideProvider),
+                                            _buildPassengerSeatDot(context, 4, rideProvider),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 6),
                                         Text(
-                                          '${rideProvider.seats}',
-                                          style: const TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.add,
-                                              color:
-                                                  context.colors.textPrimary,
-                                              size: 16),
-                                          onPressed:
-                                              rideProvider.incrementSeats,
+                                          'Tap to include/exclude',
+                                          style: TextStyle(fontSize: 10, color: context.colors.textTertiary),
                                         ),
                                       ],
                                     ),
@@ -573,6 +582,44 @@ class DriverCreateRideScreen extends StatelessWidget {
                   },
                 ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDriverSeatDot(BuildContext context) {
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE8EAF6),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Center(
+        child: Icon(Icons.drive_eta, color: Color(0xFF9FA8DA), size: 20),
+      ),
+    );
+  }
+
+  Widget _buildPassengerSeatDot(
+      BuildContext context, int index, RideProvider rideProvider) {
+    final available = index <= rideProvider.seats;
+    return GestureDetector(
+      onTap: () => rideProvider.tapSeat(index),
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: available ? _primaryColor : context.colors.inputFillColor,
+          borderRadius: BorderRadius.circular(8),
+          border: available ? null : Border.all(color: context.colors.borderColor),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.person,
+            size: 20,
+            color: available ? Colors.white : context.colors.textTertiary,
           ),
         ),
       ),

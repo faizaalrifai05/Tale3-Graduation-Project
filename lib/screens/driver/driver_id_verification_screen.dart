@@ -10,6 +10,7 @@ class DriverIdVerificationScreen extends StatefulWidget {
   final String email;
   final String password;
   final String phone;
+  final String gender;
 
   const DriverIdVerificationScreen({
     super.key,
@@ -17,6 +18,7 @@ class DriverIdVerificationScreen extends StatefulWidget {
     required this.email,
     required this.password,
     required this.phone,
+    this.gender = '',
   });
 
   @override
@@ -105,6 +107,7 @@ class _DriverIdVerificationScreenState
           email: widget.email,
           password: widget.password,
           phone: widget.phone,
+          gender: widget.gender,
           frontIdImage: _frontImage!,
           backIdImage: _backImage!,
         ),

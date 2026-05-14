@@ -1,8 +1,11 @@
 import 'package:testtale3/theme/app_styles.dart';
+import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import '../../utils/validators.dart';
+import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_id_verification_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
@@ -31,6 +34,9 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
   String? _selectedGender;
   DateTime? _selectedBirthday;
   String? _errorMessage;
+  String? _emailError;
+  bool _checkingEmail = false;
+  Timer? _emailDebounce;
 
   late final TapGestureRecognizer _termsTap;
   late final TapGestureRecognizer _privacyTap;
@@ -44,6 +50,7 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
 
   @override
   void dispose() {
+    _emailDebounce?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _nationalIdController.dispose();
@@ -53,6 +60,32 @@ class _DriverRegistrationScreenState extends State<DriverRegistrationScreen> {
     _termsTap.dispose();
     _privacyTap.dispose();
     super.dispose();
+  }
+
+  void _onEmailChanged(String value) {
+    _emailDebounce?.cancel();
+    if (_emailError != null || _checkingEmail) {
+      setState(() { _emailError = null; _checkingEmail = false; });
+    }
+    final email = value.trim();
+    if (!email.contains('@') || !email.contains('.')) return;
+    _emailDebounce = Timer(
+      const Duration(milliseconds: 700),
+      () => _checkEmail(email),
+    );
+  }
+
+  Future<void> _checkEmail(String email) async {
+    if (!mounted) return;
+    setState(() => _checkingEmail = true);
+    final inUse = await context.read<app_auth.AuthProvider>().checkEmailInUse(email);
+    if (!mounted) return;
+    setState(() {
+      _checkingEmail = false;
+      _emailError = inUse == true
+          ? 'This email is already registered. Please log in instead.'
+          : null;
+    });
   }
 
   void _showDialog(String title, String content) {
@@ -139,6 +172,10 @@ If you have any questions about this Privacy Policy, please contact us through t
       setState(() => _errorMessage = context.l10n.acceptTerms);
       return;
     }
+    if (_checkingEmail) {
+      setState(() => _errorMessage = 'Please wait, checking email...');
+      return;
+    }
     if (!_formKey.currentState!.validate()) return;
     if (_selectedGender == null) {
       setState(() => _errorMessage = context.l10n.selectGenderMsg);
@@ -159,6 +196,7 @@ If you have any questions about this Privacy Policy, please contact us through t
           email: _emailController.text.trim(),
           password: _passwordController.text,
           phone: _phoneController.text.trim(),
+          gender: _selectedGender ?? '',
         ),
       ),
     );
@@ -377,10 +415,28 @@ If you have any questions about this Privacy Policy, please contact us through t
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  validator: Validators.email,
+                  onChanged: _onEmailChanged,
+                  validator: (value) {
+                    final formatError = Validators.email(value);
+                    if (formatError != null) return formatError;
+                    if (_emailError != null) return _emailError;
+                    return null;
+                  },
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: context.l10n.emailHint, icon: Icons.email_outlined),
+                    hint: context.l10n.emailHint,
+                    icon: Icons.email_outlined,
+                    suffixIcon: _checkingEmail
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16, height: 16,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: AppStyles.primaryColor),
+                            ),
+                          )
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 16),
 
@@ -656,7 +712,7 @@ If you have any questions about this Privacy Policy, please contact us through t
     );
   }
 
-  InputDecoration _inputDecoration({required String hint, IconData? icon}) {
+  InputDecoration _inputDecoration({required String hint, IconData? icon, Widget? suffixIcon}) {
     return InputDecoration(
       hintText: hint,
       hintStyle:
@@ -664,6 +720,7 @@ If you have any questions about this Privacy Policy, please contact us through t
       prefixIcon: icon != null
           ? Icon(icon, color: context.colors.textTertiary, size: 20)
           : null,
+      suffixIcon: suffixIcon,
       filled: true,
       fillColor: context.colors.cardBackgroundColor,
       border: OutlineInputBorder(

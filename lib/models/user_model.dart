@@ -25,6 +25,7 @@ class UserModel {
   final int ratingCount;
   // Account creation date
   final DateTime? createdAt;
+  final String gender;
 
   const UserModel({
     required this.uid,
@@ -45,6 +46,7 @@ class UserModel {
     this.averageRating = 0.0,
     this.ratingCount = 0,
     this.createdAt,
+    this.gender = '',
   });
 
   bool get isVerified => verificationStatus == VerificationStatus.verified;
@@ -81,6 +83,7 @@ class UserModel {
     double? averageRating,
     int? ratingCount,
     DateTime? createdAt,
+    String? gender,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -101,6 +104,7 @@ class UserModel {
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
       createdAt: createdAt ?? this.createdAt,
+      gender: gender ?? this.gender,
     );
   }
 }

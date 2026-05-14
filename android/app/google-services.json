@@ -1,6 +1,7 @@
-{
+﻿{
   "project_info": {
     "project_number": "290962167334",
+    "firebase_url": "https://tale3-971c9-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "tale3-971c9",
     "storage_bucket": "tale3-971c9.firebasestorage.app"
   },
@@ -19,6 +20,14 @@
           "android_info": {
             "package_name": "com.example.testtale3",
             "certificate_hash": "1950485773afbfdae26cc72fdba1c85d191d09f0"
+          }
+        },
+        {
+          "client_id": "290962167334-t9427d1t7pq7rvkbqd1aknn50rqvjeqn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.testtale3",
+            "certificate_hash": "39a5df15629ff196a5d86c1340cc5a274dca1a4e"
           }
         },
         {

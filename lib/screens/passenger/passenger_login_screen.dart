@@ -64,23 +64,21 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
 
   Future<void> _resendVerification() async {
     setState(() { _sendingVerification = true; _errorMessage = null; });
-    // Sign in temporarily to get a user object, then send the email.
-    try {
-      await context.read<app_auth.AuthProvider>().sendVerificationEmail();
-      if (mounted) {
-        setState(() {
-          _sendingVerification = false;
-          _errorMessage = null;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification email sent. Please check your inbox.'),
-            backgroundColor: Color(0xFF388E3C),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) setState(() => _sendingVerification = false);
+    final error = await context.read<app_auth.AuthProvider>().sendVerificationEmail(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+    );
+    if (!mounted) return;
+    setState(() => _sendingVerification = false);
+    if (error != null) {
+      setState(() => _errorMessage = error);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Verification email sent. Please check your inbox.'),
+          backgroundColor: Color(0xFF388E3C),
+        ),
+      );
     }
   }
 

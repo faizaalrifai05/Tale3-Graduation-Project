@@ -18,8 +18,8 @@ class CancelTripScreen extends StatefulWidget {
 }
 
 class _CancelTripScreenState extends State<CancelTripScreen> {
-  
   int _selectedReasonIndex = 0;
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -100,33 +100,39 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: context.colors.dividerColor, width: 1.5),
                       ),
-                      child: Column(
-                        children: List.generate(
-                          reasons.length,
-                          (index) => Column(
-                            children: [
-                              RadioListTile<int>(
-                                value: index,
-                                groupValue: _selectedReasonIndex,
-                                activeColor: AppStyles.primaryColor,
-                                title: Text(
-                                  reasons[index],
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: _selectedReasonIndex == index ? FontWeight.w700 : FontWeight.w500,
-                                    color: _selectedReasonIndex == index ? context.colors.textPrimary : context.colors.textSecondary,
+                      child: RadioGroup<int>(
+                        groupValue: _selectedReasonIndex,
+                        onChanged: (value) {
+                          setState(() {
+                            if (value != null) _selectedReasonIndex = value;
+                          });
+                        },
+                        child: Column(
+                          children: List.generate(
+                            reasons.length,
+                            (index) => Column(
+                              children: [
+                                RadioListTile<int>(
+                                  value: index,
+                                  fillColor: WidgetStateProperty.resolveWith(
+                                    (states) => states.contains(WidgetState.selected)
+                                        ? AppStyles.primaryColor
+                                        : null,
                                   ),
+                                  title: Text(
+                                    reasons[index],
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: _selectedReasonIndex == index ? FontWeight.w700 : FontWeight.w500,
+                                      color: _selectedReasonIndex == index ? context.colors.textPrimary : context.colors.textSecondary,
+                                    ),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                                 ),
-                                onChanged: (value) {
-                                  setState(() {
-                                    if (value != null) _selectedReasonIndex = value;
-                                  });
-                                },
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                              ),
-                              if (index < reasons.length - 1)
-                                Divider(height: 1, indent: 16, endIndent: 16),
-                            ],
+                                if (index < reasons.length - 1)
+                                  Divider(height: 1, indent: 16, endIndent: 16),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -156,17 +162,34 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        await context
-                            .read<BookingProvider>()
-                            .cancelBooking(widget.booking);
-                        context.read<NavigationProvider>().setPassengerTab(1);
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(
-                              builder: (_) => const PassengerHomeScreen()),
-                          (route) => false,
-                        );
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              setState(() => _isLoading = true);
+                              try {
+                                await context
+                                    .read<BookingProvider>()
+                                    .cancelBooking(widget.booking);
+                                context
+                                    .read<NavigationProvider>()
+                                    .setPassengerTab(1);
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const PassengerHomeScreen()),
+                                  (route) => false,
+                                );
+                              } catch (e) {
+                                setState(() => _isLoading = false);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                        'Failed to cancel: ${e.toString()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppStyles.primaryColor,
                         foregroundColor: AppStyles.onPrimary,
@@ -175,13 +198,20 @@ class _CancelTripScreenState extends State<CancelTripScreen> {
                         ),
                         elevation: 0,
                       ),
-                      child: Text(
-                        context.l10n.confirmCancellation,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2.5, color: Colors.white),
+                            )
+                          : Text(
+                              context.l10n.confirmCancellation,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(height: 16),

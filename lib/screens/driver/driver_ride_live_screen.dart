@@ -3,6 +3,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/Services/maps_service.dart';
@@ -37,7 +38,10 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
   bool _completing = false;
 
   OptimizedRoute? _optimizedRoute;
+  List<LatLng> _fallbackRoutePoints = [];
   bool _loadingRoute = true;
+  bool _routeFailed = false;
+  List<BookingModel> _bookings = [];
   GoogleMapController? _mapController;
 
   @override
@@ -54,34 +58,55 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
   }
 
   Future<void> _loadOptimizedRoute() async {
-    final bookings = await context
-        .read<BookingProvider>()
-        .rideBookingsOnce(widget.rideId);
+    List<BookingModel> sorted = [];
+    try {
+      final bookings = await context
+          .read<BookingProvider>()
+          .rideBookingsOnce(widget.rideId);
 
-    final pickups = bookings
-        .where((b) => b.pickupLat != null && b.pickupLng != null)
-        .map((b) => LatLng(b.pickupLat!, b.pickupLng!))
-        .toList();
+      sorted = [...bookings]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-    if (pickups.isEmpty) {
-      if (mounted) setState(() => _loadingRoute = false);
-      return;
-    }
+      final pickups = sorted
+          .where((b) => b.pickupLat != null && b.pickupLng != null)
+          .map((b) => LatLng(b.pickupLat!, b.pickupLng!))
+          .toList();
 
-    final route = await MapsService.getOptimizedRoute(
-      origin: widget.origin,
-      destination: widget.destination,
-      pickups: pickups,
-    );
-
-    if (mounted) {
-      setState(() {
-        _optimizedRoute = route;
-        _loadingRoute = false;
-      });
-      if (route != null && _mapController != null) {
-        _fitRouteBounds(route.polylinePoints);
+      if (pickups.isNotEmpty) {
+        final route = await MapsService.getOptimizedRoute(
+          origin: widget.origin,
+          destination: widget.destination,
+          pickups: pickups,
+        );
+        if (mounted) {
+          if (route != null) {
+            setState(() {
+              _bookings = sorted;
+              _optimizedRoute = route;
+              _loadingRoute = false;
+            });
+            if (_mapController != null) _fitRouteBounds(route.polylinePoints);
+            return;
+          }
+        }
       }
+      await _loadFallbackRoute(sorted);
+    } catch (e) {
+      debugPrint('❌ _loadOptimizedRoute error: $e');
+      await _loadFallbackRoute(sorted);
+    }
+  }
+
+  Future<void> _loadFallbackRoute(List<BookingModel> sorted) async {
+    final points = await MapsService.getRoute(widget.origin, widget.destination);
+    if (!mounted) return;
+    setState(() {
+      _bookings = sorted;
+      _fallbackRoutePoints = points;
+      _routeFailed = points.isEmpty;
+      _loadingRoute = false;
+    });
+    if (points.isNotEmpty && _mapController != null) {
+      _fitRouteBounds(points);
     }
   }
 
@@ -142,34 +167,38 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
     }
 
     final route = _optimizedRoute;
-    if (route == null) return const SizedBox.shrink();
+    final polylinePoints = route?.polylinePoints ?? _fallbackRoutePoints;
+    if (polylinePoints.isEmpty) return const SizedBox.shrink();
 
     final polyline = Polyline(
       polylineId: const PolylineId('route'),
-      points: route.polylinePoints,
+      points: polylinePoints,
       color: AppStyles.primaryColor,
       width: 4,
     );
 
     final markers = <Marker>{};
-    for (int i = 0; i < route.orderedPickups.length; i++) {
-      final p = route.orderedPickups[i];
-      markers.add(Marker(
-        markerId: MarkerId('stop_$i'),
-        position: p,
-        infoWindow: InfoWindow(title: 'Stop ${i + 1}'),
-      ));
+    if (route != null) {
+      for (int i = 0; i < route.orderedPickups.length; i++) {
+        final p = route.orderedPickups[i];
+        markers.add(Marker(
+          markerId: MarkerId('stop_$i'),
+          position: p,
+          infoWindow: InfoWindow(title: 'Stop ${i + 1}'),
+        ));
+      }
     }
 
-    final initialTarget = route.polylinePoints.isNotEmpty
-        ? route.polylinePoints[route.polylinePoints.length ~/ 2]
-        : LatLng(31.9539, 35.9106);
+    final initialTarget = polylinePoints[polylinePoints.length ~/ 2];
+    final label = route != null
+        ? '${route.orderedPickups.length} stop${route.orderedPickups.length == 1 ? '' : 's'} optimized'
+        : 'Route — ${widget.origin} → ${widget.destination}';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Optimized Pickup Route',
+          route != null ? 'Optimized Pickup Route' : 'Route',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -190,14 +219,14 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
               zoomControlsEnabled: false,
               onMapCreated: (ctrl) {
                 _mapController = ctrl;
-                _fitRouteBounds(route.polylinePoints);
+                _fitRouteBounds(polylinePoints);
               },
             ),
           ),
         ),
         const SizedBox(height: 8),
         Text(
-          '${route.orderedPickups.length} passenger stop${route.orderedPickups.length == 1 ? '' : 's'} optimized',
+          label,
           style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
         ),
       ],
@@ -438,6 +467,130 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
 
               // Optimized pickup route map
               _buildRouteMap(),
+
+              // Route status banner
+              if (!_loadingRoute) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: _routeFailed
+                        ? const Color(0xFFFFF3E0)
+                        : const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _routeFailed ? Icons.warning_amber_rounded : Icons.check_circle_rounded,
+                        size: 16,
+                        color: _routeFailed ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _routeFailed
+                            ? 'Route optimization unavailable — check Maps API key or connectivity.'
+                            : 'Route optimized: ${_bookings.length} passenger stop${_bookings.length == 1 ? '' : 's'}.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _routeFailed ? const Color(0xFFE65100) : const Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Passenger list with gender
+              if (_bookings.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Passengers (${_bookings.length})',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ..._bookings.map((b) {
+                  final isFemale = b.passengerGender.toLowerCase() == 'female' ||
+                      b.passengerGender.toLowerCase() == 'أنثى';
+                  final isMale = b.passengerGender.toLowerCase() == 'male' ||
+                      b.passengerGender.toLowerCase() == 'ذكر';
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: context.colors.inputFillColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.colors.borderColor),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isFemale
+                                ? const Color(0xFFFCE4EC)
+                                : isMale
+                                    ? const Color(0xFFE3F2FD)
+                                    : context.colors.highlightBackgroundColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            isFemale ? Icons.female : isMale ? Icons.male : Icons.person,
+                            size: 20,
+                            color: isFemale
+                                ? const Color(0xFFE91E63)
+                                : isMale
+                                    ? const Color(0xFF1976D2)
+                                    : AppStyles.primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                b.passengerName.isEmpty ? 'Passenger' : b.passengerName,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.colors.textPrimary,
+                                ),
+                              ),
+                              if (b.passengerGender.isNotEmpty)
+                                Text(
+                                  b.passengerGender,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: context.colors.textSecondary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        Text(
+                          '${b.seatsBooked} seat${b.seatsBooked > 1 ? 's' : ''}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: context.colors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
+              ],
 
               const SizedBox(height: 32),
 

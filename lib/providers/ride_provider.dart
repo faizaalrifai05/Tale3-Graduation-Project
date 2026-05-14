@@ -96,8 +96,9 @@ class RideProvider extends ChangeNotifier {
 
   void setDate(DateTime d) { _selectedDate = d; notifyListeners(); }
   void setTime(TimeOfDay t) { _selectedTime = t; notifyListeners(); }
-  void incrementSeats() { _seats++; notifyListeners(); }
+  void incrementSeats() { if (_seats < 4) { _seats++; notifyListeners(); } }
   void decrementSeats() { if (_seats > 1) { _seats--; notifyListeners(); } }
+  void tapSeat(int index) { if (index >= 1 && index <= 4) { _seats = index; notifyListeners(); } }
   void toggleAc(bool v) { _acChecked = v; notifyListeners(); }
   void toggleLuggage(bool v) { _luggageChecked = v; notifyListeners(); }
   void togglePets(bool v) { _petsChecked = v; notifyListeners(); }

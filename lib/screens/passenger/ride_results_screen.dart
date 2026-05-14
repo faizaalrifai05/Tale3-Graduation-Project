@@ -939,7 +939,8 @@ class _FeatureToggle extends StatelessWidget {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: AppStyles.primaryColor,
+            activeThumbColor: AppStyles.primaryColor,
+            activeTrackColor: AppStyles.primaryColor.withValues(alpha: 0.4),
           ),
         ],
       ),

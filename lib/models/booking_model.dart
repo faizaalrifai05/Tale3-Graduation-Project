@@ -19,6 +19,7 @@ class BookingModel {
   final DateTime createdAt;
   final double? pickupLat;
   final double? pickupLng;
+  final String passengerGender;
 
   const BookingModel({
     required this.id,
@@ -39,6 +40,7 @@ class BookingModel {
     required this.createdAt,
     this.pickupLat,
     this.pickupLng,
+    this.passengerGender = '',
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot doc) {
@@ -60,9 +62,17 @@ class BookingModel {
       totalPrice: (d['totalPrice'] as num?)?.toInt() ?? 0,
       status: d['status'] as String? ?? 'confirmed',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      pickupLat: (d['pickupLat'] as num?)?.toDouble(),
-      pickupLng: (d['pickupLng'] as num?)?.toDouble(),
+      pickupLat: _toDouble(d['pickupLat']),
+      pickupLng: _toDouble(d['pickupLng']),
+      passengerGender: d['passengerGender'] as String? ?? '',
     );
+  }
+
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
   }
 
   Map<String, dynamic> toMap() => {
@@ -83,5 +93,6 @@ class BookingModel {
         'createdAt': FieldValue.serverTimestamp(),
         if (pickupLat != null) 'pickupLat': pickupLat,
         if (pickupLng != null) 'pickupLng': pickupLng,
+        'passengerGender': passengerGender,
       };
 }

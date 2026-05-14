@@ -115,7 +115,7 @@ class MapsService {
     }
   }
 
-  /// Calls the Google Routes API with optimizeWaypointOrder=true.
+  /// Calls the Directions API with optimize:true waypoints.
   /// [origin] and [destination] are city name strings (Jordan).
   /// [pickups] are the passengers' GPS coords in booking order.
   /// Returns null on any failure.
@@ -126,56 +126,44 @@ class MapsService {
   }) async {
     if (pickups.isEmpty) return null;
     try {
-      final url = Uri.parse(
-          'https://routes.googleapis.com/directions/v2:computeRoutes');
-
       LatLng toCoord(String city) =>
-          cityCoords(city) ?? LatLng(31.9539, 35.9106);
-
-      Map<String, dynamic> latLngBody(LatLng p) => {
-            'location': {
-              'latLng': {'latitude': p.latitude, 'longitude': p.longitude}
-            }
-          };
+          cityCoords(city) ?? const LatLng(31.9539, 35.9106);
 
       final originCoord = toCoord(origin);
       final destCoord = toCoord(destination);
 
-      final body = json.encode({
-        'origin': latLngBody(originCoord),
-        'destination': latLngBody(destCoord),
-        'intermediates': pickups.map(latLngBody).toList(),
-        'travelMode': 'DRIVE',
-        'optimizeWaypointOrder': true,
-        'polylineEncoding': 'ENCODED_POLYLINE',
-      });
+      // Build waypoints string: "optimize:true|lat,lng|lat,lng|..."
+      final waypointParts = pickups
+          .map((p) => '${p.latitude},${p.longitude}')
+          .join('|');
+      final waypointsParam = 'optimize:true|$waypointParts';
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Goog-Api-Key': apiKey,
-          'X-Goog-FieldMask':
-              'routes.optimizedIntermediateWaypointIndex,routes.polyline.encodedPolyline',
-        },
-        body: body,
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/directions/json'
+        '?origin=${originCoord.latitude},${originCoord.longitude}'
+        '&destination=${destCoord.latitude},${destCoord.longitude}'
+        '&waypoints=${Uri.encodeComponent(waypointsParam)}'
+        '&key=$apiKey',
       );
 
+      final response = await http.get(url);
       if (response.statusCode != 200) {
-        debugPrint('Routes API error ${response.statusCode}: ${response.body}');
+        debugPrint('Directions API error ${response.statusCode}: ${response.body}');
         return null;
       }
+
       final data = json.decode(response.body) as Map<String, dynamic>;
-      final routes = data['routes'] as List?;
-      if (routes == null || routes.isEmpty) return null;
-      final route = routes[0] as Map<String, dynamic>;
+      debugPrint('Directions API status: ${data['status']}');
+      if (data['status'] != 'OK') {
+        debugPrint('Directions API body: ${response.body}');
+        return null;
+      }
 
-      final encoded =
-          route['polyline']?['encodedPolyline'] as String? ?? '';
-      final points = encoded.isNotEmpty ? _decode(encoded) : <LatLng>[];
+      final route = (data['routes'] as List).first as Map<String, dynamic>;
+      final encoded = route['overview_polyline']['points'] as String;
+      final points = _decode(encoded);
 
-      final rawOrder =
-          route['optimizedIntermediateWaypointIndex'] as List? ?? [];
+      final rawOrder = route['waypoint_order'] as List? ?? [];
       final order = rawOrder.map((e) => (e as num).toInt()).toList();
 
       final orderedPickups = order.isEmpty

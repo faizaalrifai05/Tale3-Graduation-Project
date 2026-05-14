@@ -1,4 +1,5 @@
 import 'package:testtale3/theme/app_styles.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,9 @@ class _PassengerRegistrationScreenState
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  String? _emailError;
+  bool _checkingEmail = false;
+  Timer? _emailDebounce;
 
   // Step 2 controllers
   final _universityController = TextEditingController();
@@ -54,6 +58,7 @@ class _PassengerRegistrationScreenState
 
   @override
   void dispose() {
+    _emailDebounce?.cancel();
     _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -61,6 +66,27 @@ class _PassengerRegistrationScreenState
     _universityController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  void _onEmailChanged(String value) {
+    _emailDebounce?.cancel();
+    if (_emailError != null || _checkingEmail) {
+      setState(() { _emailError = null; _checkingEmail = false; });
+    }
+    final email = value.trim();
+    if (!email.contains('@') || !email.contains('.')) return;
+    _emailDebounce = Timer(const Duration(milliseconds: 700), () => _checkEmail(email));
+  }
+
+  Future<void> _checkEmail(String email) async {
+    if (!mounted) return;
+    setState(() => _checkingEmail = true);
+    final inUse = await context.read<app_auth.AuthProvider>().checkEmailInUse(email);
+    if (!mounted) return;
+    setState(() {
+      _checkingEmail = false;
+      _emailError = inUse == true ? 'This email is already registered. Please log in instead.' : null;
+    });
   }
 
   String _stepTitle(BuildContext context) {
@@ -91,6 +117,13 @@ class _PassengerRegistrationScreenState
       if (!email.contains('@')) {
         setState(() => _errorMessage = context.l10n.enterValidEmail);
         return;
+      }
+      if (_checkingEmail) {
+        setState(() => _errorMessage = 'Please wait, checking email...');
+        return;
+      }
+      if (_emailError != null) {
+        return; // Error already shown inline on the email field
       }
       final passwordError = Validators.registrationPassword(password);
       if (passwordError != null) {
@@ -135,6 +168,7 @@ class _PassengerRegistrationScreenState
             name: _nameController.text.trim(),
             role: UserRole.passenger,
             phone: _phoneController.text.trim(),
+            gender: _selectedGender ?? '',
           );
       if (!mounted) return;
       if (error != null) {
@@ -263,12 +297,70 @@ class _PassengerRegistrationScreenState
         icon: Icons.person_outline,
       ),
       const SizedBox(height: 16),
-      _buildLabeledTextField(
-        label: context.l10n.emailAddress,
-        controller: _emailController,
-        hintText: context.l10n.emailHint,
-        icon: Icons.email_outlined,
-        keyboardType: TextInputType.emailAddress,
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.emailAddress,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            onChanged: _onEmailChanged,
+            decoration: InputDecoration(
+              hintText: context.l10n.emailHint,
+              hintStyle: TextStyle(color: context.colors.inputHintColor, fontSize: 14),
+              prefixIcon: Icon(Icons.email_outlined, color: context.colors.textTertiary, size: 20),
+              suffixIcon: _checkingEmail
+                  ? const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: SizedBox(
+                        width: 16, height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppStyles.primaryColor),
+                      ),
+                    )
+                  : _emailError != null
+                      ? const Icon(Icons.error_outline, color: Colors.red, size: 20)
+                      : null,
+              filled: true,
+              fillColor: context.colors.cardBackgroundColor,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: context.colors.borderColor),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _emailError != null ? Colors.red : context.colors.borderColor,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _emailError != null ? Colors.red : AppStyles.primaryColor,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+          if (_emailError != null) ...[
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: Text(
+                _emailError!,
+                style: const TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
+        ],
       ),
       const SizedBox(height: 16),
 

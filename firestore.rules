@@ -122,6 +122,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // ── routes ───────────────────────────────────────────────────────────────
+    // • Any signed-in user can read routes (needed to fetch the price when
+    //   a driver selects origin/destination on the create-ride screen).
+    // • Only admins can create, update, or delete route pricing documents.
+
+    match /routes/{routeId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
     // ── chats ────────────────────────────────────────────────────────────────
     // • Only participants of a chat may read or write it.
     // • Admins may read any chat (moderation).

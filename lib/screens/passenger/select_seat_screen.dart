@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -26,6 +27,10 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   double? _pickupLat;
   double? _pickupLng;
 
+  // seatIndex (1-4) → gender of whoever booked it (assigned in booking order)
+  Map<int, String> _seatGenders = {};
+  StreamSubscription<List<BookingModel>>? _bookingSub;
+
   String _mapError(String? code) {
     switch (code) {
       case 'already_booked':
@@ -43,9 +48,26 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<BookingProvider>().initFromRide(widget.ride);
+      final provider = context.read<BookingProvider>();
+      provider.initFromRide(widget.ride);
+      _bookingSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
+        if (!mounted) return;
+        final sorted = [...bookings]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        final map = <int, String>{};
+        for (int i = 0; i < sorted.length && i < 4; i++) {
+          map[i + 1] = sorted[i].passengerGender;
+        }
+        provider.updateOccupiedSeats(sorted.length, widget.ride.totalSeats);
+        setState(() => _seatGenders = map);
+      });
     });
     _fetchLocation();
+  }
+
+  @override
+  void dispose() {
+    _bookingSub?.cancel();
+    super.dispose();
   }
 
   Future<void> _fetchLocation() async {
@@ -371,6 +393,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       iconColor = const Color(0xFFBDBDBD);
     }
 
+    final gender = state == 2 ? (_seatGenders[index] ?? '') : '';
+    final genderIcon = gender.toLowerCase() == 'female' || gender.toLowerCase() == 'أنثى'
+        ? Icons.female
+        : gender.toLowerCase() == 'male' || gender.toLowerCase() == 'ذكر'
+            ? Icons.male
+            : Icons.person;
+
     return GestureDetector(
       onTap: () => provider.toggleSeat(index),
       child: Container(
@@ -382,7 +411,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           border:
               state == 0 ? Border.all(color: const Color(0xFFE0E0E0)) : null,
         ),
-        child: Center(child: Icon(Icons.person, color: iconColor, size: 24)),
+        child: Center(child: Icon(genderIcon, color: iconColor, size: 24)),
       ),
     );
   }
