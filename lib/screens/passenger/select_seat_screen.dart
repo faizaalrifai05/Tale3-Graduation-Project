@@ -26,6 +26,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   String? _errorMessage;
   double? _pickupLat;
   double? _pickupLng;
+  bool _isFetchingLocation = true;
+  bool _locationDenied = false;
 
   // seatIndex (1-4) → gender of whoever booked it (assigned in booking order)
   Map<int, String> _seatGenders = {};
@@ -53,11 +55,16 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       _bookingSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
         if (!mounted) return;
         final sorted = [...bookings]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        // Expand multi-seat bookings: one passenger booking 2 seats fills 2 slots
         final map = <int, String>{};
-        for (int i = 0; i < sorted.length && i < 4; i++) {
-          map[i + 1] = sorted[i].passengerGender;
+        int seatIndex = 1;
+        for (final booking in sorted) {
+          for (int s = 0; s < booking.seatsBooked && seatIndex <= 4; s++) {
+            map[seatIndex++] = booking.passengerGender;
+          }
         }
-        provider.updateOccupiedSeats(sorted.length, widget.ride.totalSeats);
+        final totalBooked = sorted.fold<int>(0, (acc, b) => acc + b.seatsBooked);
+        provider.updateOccupiedSeats(totalBooked, widget.ride.totalSeats);
         setState(() => _seatGenders = map);
       });
     });
@@ -71,13 +78,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   }
 
   Future<void> _fetchLocation() async {
+    if (mounted) setState(() { _isFetchingLocation = true; _locationDenied = false; });
     try {
       var perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) return;
+          perm == LocationPermission.deniedForever) {
+        if (!mounted) return;
+        setState(() { _isFetchingLocation = false; _locationDenied = true; });
+        return;
+      }
       final pos = await Geolocator.getCurrentPosition(
         locationSettings:
             const LocationSettings(accuracy: LocationAccuracy.low),
@@ -86,8 +98,12 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       setState(() {
         _pickupLat = pos.latitude;
         _pickupLng = pos.longitude;
+        _isFetchingLocation = false;
       });
-    } catch (_) {}
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _isFetchingLocation = false; _locationDenied = true; });
+    }
   }
 
   Future<void> _confirm() async {
@@ -284,6 +300,55 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           ),
                         ],
                       ),
+                      // Location status
+                      if (_isFetchingLocation) ...[
+                        const SizedBox(height: 12),
+                        Row(
+                          children: const [
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Color(0xFF8B1A2B)),
+                            ),
+                            SizedBox(width: 8),
+                            Text(
+                              'Getting your location…',
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFF757575)),
+                            ),
+                          ],
+                        ),
+                      ] else if (_locationDenied) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF0F0),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFCDD2)),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.location_off_rounded,
+                                  color: Color(0xFFB71C1C), size: 18),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Location access is required to book. Please enable it in your device settings.',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFFB71C1C),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Container(
@@ -321,7 +386,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: (_isConfirming ||
-                                  bookingProvider.selectedCount == 0)
+                                  bookingProvider.selectedCount == 0 ||
+                                  _isFetchingLocation ||
+                                  _locationDenied)
                               ? null
                               : () {
                                   setState(() => _errorMessage = null);

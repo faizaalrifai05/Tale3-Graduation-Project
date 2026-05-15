@@ -180,7 +180,7 @@ class BookingProvider extends ChangeNotifier {
             snap.docs.isEmpty ? null : BookingModel.fromDoc(snap.docs.first));
   }
 
-  /// Stream of confirmed bookings for a specific ride (driver view).
+  /// Stream of confirmed bookings for a specific ride (passenger seat view).
   Stream<List<BookingModel>> rideBookingsStream(String rideId) {
     return _db
         .collection('bookings')
@@ -189,6 +189,33 @@ class BookingProvider extends ChangeNotifier {
         .snapshots()
         .map((snap) {
           final bookings = snap.docs.map(BookingModel.fromDoc).toList();
+          bookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return bookings;
+        });
+  }
+
+  /// Live stream of confirmed bookings for a ride — driver only.
+  /// Includes driverId filter so Firestore security rules are satisfied.
+  Stream<List<BookingModel>> driverRideBookingsStream(String rideId) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return const Stream.empty();
+    return _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'confirmed')
+        .snapshots()
+        .map((snap) {
+          final bookings = snap.docs
+              .map((doc) {
+                try {
+                  return BookingModel.fromDoc(doc);
+                } catch (_) {
+                  return null;
+                }
+              })
+              .whereType<BookingModel>()
+              .toList();
           bookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
           return bookings;
         });

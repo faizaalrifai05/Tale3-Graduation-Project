@@ -84,7 +84,12 @@ service cloud.firestore {
             && request.resource.data.bookedSeats > resource.data.bookedSeats
             && resource.data.status == 'active'
             && (resource.data.get('totalSeats', 0) == 0
-                || resource.data.bookedSeats < resource.data.get('totalSeats', 0)));
+                || resource.data.bookedSeats < resource.data.get('totalSeats', 0)))
+        // Passengers may decrement bookedSeats when cancelling their booking.
+        || (isPassenger()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedSeats'])
+            && request.resource.data.bookedSeats < resource.data.bookedSeats
+            && request.resource.data.bookedSeats >= 0);
 
       allow delete: if isAdmin();
     }
@@ -107,7 +112,7 @@ service cloud.firestore {
         && request.resource.data.status == 'confirmed';
 
       // Passenger may cancel only their own confirmed booking.
-      // Driver may cancel all bookings on their own ride.
+      // Driver may cancel or complete all bookings on their own ride.
       allow update: if isAdmin()
         || (isPassenger()
             && resource.data.passengerId == request.auth.uid
@@ -117,7 +122,7 @@ service cloud.firestore {
         || (isDriver()
             && resource.data.driverId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-            && request.resource.data.status == 'cancelled');
+            && request.resource.data.status in ['cancelled', 'completed']);
 
       allow delete: if isAdmin();
     }

@@ -126,11 +126,12 @@ class MapsService {
   }) async {
     if (pickups.isEmpty) return null;
     try {
-      LatLng toCoord(String city) =>
-          cityCoords(city) ?? const LatLng(31.9539, 35.9106);
-
-      final originCoord = toCoord(origin);
-      final destCoord = toCoord(destination);
+      final originCoord = cityCoords(origin);
+      final destCoord = cityCoords(destination);
+      if (originCoord == null || destCoord == null) {
+        debugPrint('MapsService: unknown city — origin="$origin" destination="$destination"');
+        return null;
+      }
 
       // Build waypoints string: "optimize:true|lat,lng|lat,lng|..."
       final waypointParts = pickups

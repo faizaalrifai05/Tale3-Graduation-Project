@@ -287,6 +287,10 @@ class RideProvider extends ChangeNotifier {
 
   Stream<List<RideModel>> get availableRidesStream {
     final uid = _auth.currentUser?.uid;
+    final now = DateTime.now();
+    final todayStr = '${now.year}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
     return _db
         .collection('rides')
         .where('status', isEqualTo: 'active')
@@ -294,7 +298,10 @@ class RideProvider extends ChangeNotifier {
         .map((snap) {
           final rides = snap.docs
               .map(RideModel.fromDoc)
-              .where((r) => r.driverId != uid && !r.isFull)
+              .where((r) =>
+                  r.driverId != uid &&
+                  !r.isFull &&
+                  r.date.compareTo(todayStr) >= 0)
               .toList();
           rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return rides;
