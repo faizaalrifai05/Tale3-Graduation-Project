@@ -65,19 +65,23 @@ class MyTripsScreen extends StatelessWidget {
                 }
 
                 final upcoming = all.where((b) {
+                  if (b.status == 'pending') return true;
                   if (b.status != 'confirmed') return false;
                   final d = parseDate(b.date);
                   return d == null || !d.isBefore(today);
                 }).toList();
 
                 final past = all.where((b) {
+                  if (b.status == 'completed') return true;
                   if (b.status != 'confirmed') return false;
                   final d = parseDate(b.date);
                   return d != null && d.isBefore(today);
                 }).toList();
 
-                final cancelled =
-                    all.where((b) => b.status == 'cancelled').toList();
+                final cancelled = all
+                    .where((b) =>
+                        b.status == 'cancelled' || b.status == 'rejected')
+                    .toList();
 
                 return TabBarView(
                   physics: const BouncingScrollPhysics(),
@@ -136,10 +140,40 @@ class _BookingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCancelled = booking.status == 'cancelled';
+    final status = booking.status;
+    final isPending = status == 'pending';
+    final isRejected = status == 'rejected';
+    final isCancelled = status == 'cancelled';
+    final isCompleted = status == 'completed';
+    final isDim = isCancelled || isRejected;
+
+    Color badgeBg;
+    Color badgeText;
+    String badgeLabel;
+    if (isPending) {
+      badgeBg = const Color(0xFFFFF3E0);
+      badgeText = const Color(0xFFF57F17);
+      badgeLabel = 'Pending';
+    } else if (isRejected) {
+      badgeBg = const Color(0xFFFFEBEE);
+      badgeText = const Color(0xFFB71C1C);
+      badgeLabel = 'Rejected';
+    } else if (isCancelled) {
+      badgeBg = const Color(0xFFF5F5F5);
+      badgeText = AppStyles.textTertiary;
+      badgeLabel = context.l10n.cancelled;
+    } else if (isCompleted) {
+      badgeBg = const Color(0xFFE8F5E9);
+      badgeText = const Color(0xFF2E7D32);
+      badgeLabel = 'Completed';
+    } else {
+      badgeBg = AppStyles.highlightBackgroundColor;
+      badgeText = AppStyles.primaryColor;
+      badgeLabel = context.l10n.confirmed;
+    }
 
     return GestureDetector(
-      onTap: isCancelled
+      onTap: (isDim && !isCompleted)
           ? null
           : () {
               Navigator.of(context).push(MaterialPageRoute(
@@ -170,19 +204,15 @@ class _BookingCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isCancelled
-                        ? const Color(0xFFF5F5F5)
-                        : AppStyles.highlightBackgroundColor,
+                    color: badgeBg,
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    isCancelled ? context.l10n.cancelled : context.l10n.confirmed,
+                    badgeLabel,
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
-                      color: isCancelled
-                          ? AppStyles.textTertiary
-                          : AppStyles.primaryColor,
+                      color: badgeText,
                     ),
                   ),
                 ),
@@ -191,9 +221,7 @@ class _BookingCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: isCancelled
-                        ? AppStyles.textTertiary
-                        : AppStyles.primaryColor,
+                    color: isDim ? AppStyles.textTertiary : AppStyles.primaryColor,
                   ),
                 ),
               ],

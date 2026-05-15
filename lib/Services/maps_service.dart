@@ -67,6 +67,29 @@ class MapsService {
 
   static double _rad(double deg) => deg * math.pi / 180;
 
+  /// Perpendicular distance (km) from [pickup] to the straight line between
+  /// the origin and destination city centres.  Returns 0 if either city is
+  /// not in the lookup table.
+  static double detourKm(LatLng pickup, String origin, String destination) {
+    final a = cityCoords(origin);
+    final b = cityCoords(destination);
+    if (a == null || b == null) return 0;
+    return _pointToSegmentKm(pickup, a, b);
+  }
+
+  /// Minimum distance (km) from point [p] to the segment [a]→[b].
+  static double _pointToSegmentKm(LatLng p, LatLng a, LatLng b) {
+    final dx = b.longitude - a.longitude;
+    final dy = b.latitude - a.latitude;
+    if (dx == 0 && dy == 0) return distanceKm(p, a);
+    final t = ((p.longitude - a.longitude) * dx +
+            (p.latitude - a.latitude) * dy) /
+        (dx * dx + dy * dy);
+    final tc = t.clamp(0.0, 1.0);
+    return distanceKm(
+        p, LatLng(a.latitude + tc * dy, a.longitude + tc * dx));
+  }
+
   /// Returns decoded polyline points for the route between two addresses.
   static Future<List<LatLng>> getRoute(String origin, String destination) async {
     try {

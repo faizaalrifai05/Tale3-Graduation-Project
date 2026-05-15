@@ -297,6 +297,9 @@ class AuthProvider extends ChangeNotifier {
   /// Returns null on success, error message on failure.
   Future<String?> signInWithGoogle(UserRole role) async {
     try {
+      // Sign out first so the account-picker dialog always appears,
+      // even when a Google account was previously cached on this device.
+      await _googleSignIn.signOut();
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return 'Sign-in cancelled.';
 

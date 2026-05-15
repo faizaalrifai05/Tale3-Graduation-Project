@@ -248,18 +248,31 @@ class RideProvider extends ChangeNotifier {
   // ── Cancel ride ──────────────────────────────────────────────────────────
 
   Future<void> cancelRide(String rideId) async {
-    final bookingsSnap = await _db
+    final uid = _auth.currentUser?.uid;
+    // Cancel both confirmed and pending bookings for this ride.
+    final confirmedSnap = await _db
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
         .where('status', isEqualTo: 'confirmed')
+        .get();
+    final pendingSnap = await _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
         .get();
 
     final batch = _db.batch();
     batch.update(_db.collection('rides').doc(rideId), {'status': 'cancelled'});
-    for (final doc in bookingsSnap.docs) {
+    for (final doc in [...confirmedSnap.docs, ...pendingSnap.docs]) {
       batch.update(doc.reference, {'status': 'cancelled'});
     }
     await batch.commit();
+  }
+
+  Future<void> startRide(String rideId) async {
+    await _db.collection('rides').doc(rideId).update({'status': 'live'});
   }
 
   Future<void> announceArrival(String rideId) async {
@@ -268,9 +281,11 @@ class RideProvider extends ChangeNotifier {
 
   /// Marks a ride and all its confirmed bookings as 'completed'.
   Future<void> completeRide(String rideId) async {
+    final uid = _auth.currentUser?.uid;
     final bookingsSnap = await _db
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
         .where('status', isEqualTo: 'confirmed')
         .get();
 
@@ -317,6 +332,20 @@ class RideProvider extends ChangeNotifier {
     } catch (_) {
       return null;
     }
+  }
+
+  /// Emits the driver's currently live ride, or null if none.
+  Stream<RideModel?> get liveRideStream {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(null);
+    return _db
+        .collection('rides')
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'live')
+        .limit(1)
+        .snapshots()
+        .map((snap) =>
+            snap.docs.isEmpty ? null : RideModel.fromDoc(snap.docs.first));
   }
 
   Stream<List<RideModel>> get myRidesStream {

@@ -73,19 +73,10 @@ service cloud.firestore {
         && request.resource.data.bookedSeats == 0
         && request.resource.data.status == 'active';
 
-      // Driver may update their own ride (e.g. cancel it).
+      // Driver may update their own ride (e.g. cancel it, accept a booking).
+      // Passengers may only decrement bookedSeats (when cancelling a confirmed booking).
       allow update: if isAdmin()
         || (isDriver() && resource.data.driverId == request.auth.uid)
-        // Passengers may only increment bookedSeats by a positive amount
-        // when the ride is still active. Allow when totalSeats == 0 (missing
-        // field on legacy rides) so the app-side transaction handles capacity.
-        || (isPassenger()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedSeats'])
-            && request.resource.data.bookedSeats > resource.data.bookedSeats
-            && resource.data.status == 'active'
-            && (resource.data.get('totalSeats', 0) == 0
-                || resource.data.bookedSeats < resource.data.get('totalSeats', 0)))
-        // Passengers may decrement bookedSeats when cancelling their booking.
         || (isPassenger()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedSeats'])
             && request.resource.data.bookedSeats < resource.data.bookedSeats
@@ -107,24 +98,50 @@ service cloud.firestore {
             || resource.data.driverId == request.auth.uid
            ));
 
+      // Passengers create booking requests in 'pending' state.
       allow create: if isPassenger()
         && request.resource.data.passengerId == request.auth.uid
-        && request.resource.data.status == 'confirmed';
+        && request.resource.data.status == 'pending';
 
-      // Passenger may cancel only their own confirmed booking.
-      // Driver may cancel or complete all bookings on their own ride.
+      // Passenger may cancel their own pending or confirmed booking.
+      // Driver may accept (pending→confirmed), reject (pending→rejected),
+      //   cancel or complete (confirmed→cancelled/completed) their own ride's bookings.
       allow update: if isAdmin()
         || (isPassenger()
             && resource.data.passengerId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
             && request.resource.data.status == 'cancelled'
-            && resource.data.status == 'confirmed')
+            && resource.data.status in ['pending', 'confirmed'])
         || (isDriver()
             && resource.data.driverId == request.auth.uid
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
-            && request.resource.data.status in ['cancelled', 'completed']);
+            && (
+              (resource.data.status == 'pending'
+                && request.resource.data.status in ['confirmed', 'rejected'])
+              || (resource.data.status == 'confirmed'
+                && request.resource.data.status in ['cancelled', 'completed'])
+            ));
 
       allow delete: if isAdmin();
+    }
+
+    // ── ratings (passenger rates driver) ────────────────────────────────────
+    // • Any signed-in user can read ratings (driver profiles show average).
+    // • Only the passenger who made the booking can create a rating.
+
+    match /ratings/{ratingId} {
+      allow read: if isSignedIn();
+      allow create: if isPassenger()
+        && request.resource.data.passengerId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // ── passengerRatings (driver rates passenger) ────────────────────────────
+    match /passengerRatings/{ratingId} {
+      allow read: if isSignedIn();
+      allow create: if isDriver()
+        && request.resource.data.driverId == request.auth.uid;
+      allow update, delete: if isAdmin();
     }
 
     // ── routes ───────────────────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
-import 'package:testtale3/services/maps_service.dart';
+import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/theme/app_styles.dart';
 
 enum _SortMode { newest, priceLow, priceHigh, time }
@@ -473,7 +473,7 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Location access denied. The 5 km distance filter is disabled — all rides are shown.',
+                        'Location access denied. Distance to ride origin will not be shown.',
                         style: const TextStyle(
                             fontSize: 12, color: Color(0xFFF57F17)),
                       ),
@@ -565,7 +565,6 @@ class _RideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dist = _distanceKm;
-    final tooFar = dist != null && dist > 5.0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -656,37 +655,31 @@ class _RideCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  // Distance badge
+                  // Distance badge (informational only)
                   if (dist != null) ...[
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: tooFar
-                            ? const Color(0xFFFFF3E0)
-                            : const Color(0xFFE8F5E9),
+                        color: const Color(0xFFE8F5E9),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.near_me_rounded,
                             size: 10,
-                            color: tooFar
-                                ? const Color(0xFFE65100)
-                                : const Color(0xFF2E7D32),
+                            color: Color(0xFF2E7D32),
                           ),
                           const SizedBox(width: 3),
                           Text(
                             '${dist.toStringAsFixed(1)} km',
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: tooFar
-                                  ? const Color(0xFFE65100)
-                                  : const Color(0xFF2E7D32),
+                              color: Color(0xFF2E7D32),
                             ),
                           ),
                         ],
@@ -717,35 +710,6 @@ class _RideCard extends StatelessWidget {
             ),
           if (ride.acEnabled || ride.noSmoking || ride.luggageEnabled || ride.petsAllowed)
             const SizedBox(height: 12),
-
-          // Out-of-range warning
-          if (tooFar) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.location_off_rounded,
-                      size: 14, color: Color(0xFFE65100)),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      'Pickup point is ${dist.toStringAsFixed(1)} km away — must be within 5 km to book',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFFE65100),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
 
           Divider(height: 1, color: context.colors.borderColor),
           const SizedBox(height: 12),
@@ -780,16 +744,13 @@ class _RideCard extends StatelessWidget {
                 height: 36,
                 width: 80,
                 child: ElevatedButton(
-                  onPressed: tooFar
-                      ? null
-                      : () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                                builder: (_) => RideDetailsScreen(ride: ride)),
-                          ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => RideDetailsScreen(ride: ride)),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppStyles.darkMaroon,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: context.colors.borderColor,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
                     padding: EdgeInsets.zero,

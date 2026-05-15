@@ -19,6 +19,8 @@ class BookingModel {
   final DateTime createdAt;
   final double? pickupLat;
   final double? pickupLng;
+  final double? dropoffLat;
+  final double? dropoffLng;
   final String passengerGender;
 
   const BookingModel({
@@ -40,6 +42,8 @@ class BookingModel {
     required this.createdAt,
     this.pickupLat,
     this.pickupLng,
+    this.dropoffLat,
+    this.dropoffLng,
     this.passengerGender = '',
   });
 
@@ -64,6 +68,8 @@ class BookingModel {
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       pickupLat: _toDouble(d['pickupLat']),
       pickupLng: _toDouble(d['pickupLng']),
+      dropoffLat: _toDouble(d['dropoffLat']),
+      dropoffLng: _toDouble(d['dropoffLng']),
       passengerGender: d['passengerGender'] as String? ?? '',
     );
   }
@@ -93,6 +99,8 @@ class BookingModel {
         'createdAt': FieldValue.serverTimestamp(),
         if (pickupLat != null) 'pickupLat': pickupLat,
         if (pickupLng != null) 'pickupLng': pickupLng,
+        if (dropoffLat != null) 'dropoffLat': dropoffLat,
+        if (dropoffLng != null) 'dropoffLng': dropoffLng,
         'passengerGender': passengerGender,
       };
 }

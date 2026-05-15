@@ -70,6 +70,58 @@ class RatingProvider extends ChangeNotifier {
         });
   }
 
+  /// Driver rates a passenger after a completed ride.
+  Future<String?> submitPassengerRating({
+    required String passengerId,
+    required String passengerName,
+    required String rideId,
+    required String bookingId,
+    required int stars,
+    String comment = '',
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) return 'Not logged in.';
+    try {
+      final existing = await _db
+          .collection('passengerRatings')
+          .where('bookingId', isEqualTo: bookingId)
+          .where('driverId', isEqualTo: user.uid)
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) return 'already_rated';
+
+      final ref = _db.collection('passengerRatings').doc();
+      await ref.set({
+        'id': ref.id,
+        'driverId': user.uid,
+        'driverName': user.name,
+        'passengerId': passengerId,
+        'passengerName': passengerName,
+        'rideId': rideId,
+        'bookingId': bookingId,
+        'stars': stars,
+        'comment': comment,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      return null;
+    } catch (_) {
+      return 'Failed to submit rating. Please try again.';
+    }
+  }
+
+  /// Stream that emits true if the driver has already rated this passenger booking.
+  Stream<bool> hasRatedPassenger(String bookingId) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(false);
+    return _db
+        .collection('passengerRatings')
+        .where('bookingId', isEqualTo: bookingId)
+        .where('driverId', isEqualTo: uid)
+        .limit(1)
+        .snapshots()
+        .map((snap) => snap.docs.isNotEmpty);
+  }
+
   /// Stream that emits true if the current user has already rated this booking.
   Stream<bool> hasRatedBooking(String bookingId) {
     final uid = _auth.currentUser?.uid;

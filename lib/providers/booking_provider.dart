@@ -85,25 +85,29 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Writes the booking to Firestore inside a transaction that checks seat
-  /// availability. Returns the created [BookingModel] or null on failure.
+  /// Writes a pending booking request to Firestore.
+  /// Does NOT reserve seats — the driver must accept first.
+  /// Returns the created [BookingModel] or null on failure.
   Future<BookingModel?> confirmBooking({
     double? pickupLat,
     double? pickupLng,
+    double? dropoffLat,
+    double? dropoffLng,
   }) async {
     final ride = _currentRide;
     final user = _auth.currentUser;
     if (ride == null || user == null || selectedCount == 0) return null;
 
     final seats = selectedCount;
-
     _confirmError = null;
+
     try {
+      // Block if there's already a pending or confirmed booking for this ride.
       final existing = await _db
           .collection('bookings')
           .where('rideId', isEqualTo: ride.id)
           .where('passengerId', isEqualTo: user.uid)
-          .where('status', isEqualTo: 'confirmed')
+          .where('status', whereIn: ['pending', 'confirmed'])
           .limit(1)
           .get();
       if (existing.docs.isNotEmpty) {
@@ -112,60 +116,99 @@ class BookingProvider extends ChangeNotifier {
         return null;
       }
 
-      BookingModel? result;
-      final rideRef = _db.collection('rides').doc(ride.id);
+      // Check fresh seat capacity (confirmed bookings only).
+      final rideDoc = await _db.collection('rides').doc(ride.id).get();
+      final latestBooked = (rideDoc.data()?['bookedSeats'] as num?)?.toInt() ?? 0;
+      final latestTotal = (rideDoc.data()?['totalSeats'] as num?)?.toInt() ?? 0;
+      if (latestTotal > 0 && latestBooked + seats > latestTotal) {
+        _confirmError = 'not_enough_seats';
+        notifyListeners();
+        return null;
+      }
+
       final bookingRef = _db.collection('bookings').doc();
+      final booking = BookingModel(
+        id: bookingRef.id,
+        rideId: ride.id,
+        passengerId: user.uid,
+        passengerName: user.name,
+        passengerGender: user.gender,
+        driverId: ride.driverId,
+        driverName: ride.driverName,
+        carInfo: ride.carFullInfo,
+        plateNumber: ride.plateNumber,
+        origin: ride.origin,
+        destination: ride.destination,
+        date: ride.date,
+        time: ride.time,
+        seatsBooked: seats,
+        totalPrice: totalPrice,
+        status: 'pending',
+        createdAt: DateTime.now(),
+        pickupLat: pickupLat,
+        pickupLng: pickupLng,
+        dropoffLat: dropoffLat,
+        dropoffLng: dropoffLng,
+      );
 
-      await _db.runTransaction((tx) async {
-        final rideSnap = await tx.get(rideRef);
-        final booked = (rideSnap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
-        final total = (rideSnap.data()!['totalSeats'] as num?)?.toInt() ?? 0;
-        if (total > 0 && booked + seats > total) {
-          throw Exception('not_enough_seats');
-        }
-
-        final booking = BookingModel(
-          id: bookingRef.id,
-          rideId: ride.id,
-          passengerId: user.uid,
-          passengerName: user.name,
-          passengerGender: user.gender,
-          driverId: ride.driverId,
-          driverName: ride.driverName,
-          carInfo: ride.carFullInfo,
-          plateNumber: ride.plateNumber,
-          origin: ride.origin,
-          destination: ride.destination,
-          date: ride.date,
-          time: ride.time,
-          seatsBooked: seats,
-          totalPrice: totalPrice,
-          status: 'confirmed',
-          createdAt: DateTime.now(),
-          pickupLat: pickupLat,
-          pickupLng: pickupLng,
-        );
-
-        tx.set(bookingRef, booking.toMap());
-        tx.update(rideRef, {'bookedSeats': FieldValue.increment(seats)});
-        result = booking;
-      });
-
-      return result;
+      await bookingRef.set(booking.toMap());
+      return booking;
     } catch (e) {
       final raw = e.toString();
-      _confirmError = raw.contains('not_enough_seats')
-          ? 'not_enough_seats'
-          : raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')
-              ? 'permission_denied'
-              : 'booking_failed';
+      _confirmError = raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')
+          ? 'permission_denied'
+          : 'booking_failed';
       notifyListeners();
       return null;
     }
   }
 
-  /// Stream that emits the current user's confirmed booking for [rideId],
-  /// or null if they haven't booked it (or cancelled).
+  /// Driver accepts a pending booking — marks it confirmed and reserves seats.
+  /// Returns true on success, false if seats are full or an error occurs.
+  Future<bool> acceptBooking(BookingModel booking) async {
+    final rideRef = _db.collection('rides').doc(booking.rideId);
+    final bookingRef = _db.collection('bookings').doc(booking.id);
+    try {
+      await _db.runTransaction((tx) async {
+        final rideSnap = await tx.get(rideRef);
+        final booked = (rideSnap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
+        final total = (rideSnap.data()!['totalSeats'] as num?)?.toInt() ?? 0;
+        if (total > 0 && booked + booking.seatsBooked > total) {
+          throw Exception('not_enough_seats');
+        }
+        tx.update(bookingRef, {'status': 'confirmed'});
+        tx.update(rideRef, {'bookedSeats': FieldValue.increment(booking.seatsBooked)});
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Driver rejects a pending booking request.
+  Future<void> rejectBooking(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).update({'status': 'rejected'});
+  }
+
+  /// Live stream of pending booking requests for a specific ride (driver only).
+  Stream<List<BookingModel>> pendingBookingsStream(String rideId) {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return const Stream.empty();
+    return _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) {
+          final list = snap.docs.map(BookingModel.fromDoc).toList();
+          list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return list;
+        });
+  }
+
+  /// Stream that emits the current user's active (pending or confirmed)
+  /// booking for [rideId], or null if none exists.
   Stream<BookingModel?> existingBookingStream(String rideId) {
     final uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.value(null);
@@ -173,7 +216,7 @@ class BookingProvider extends ChangeNotifier {
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
         .where('passengerId', isEqualTo: uid)
-        .where('status', isEqualTo: 'confirmed')
+        .where('status', whereIn: ['pending', 'confirmed'])
         .limit(1)
         .snapshots()
         .map((snap) =>
@@ -259,16 +302,31 @@ class BookingProvider extends ChangeNotifier {
         });
   }
 
-  /// Cancels a booking in Firestore and decrements the ride's booked seat count.
+  /// Cancels a booking. Only decrements bookedSeats if the booking was
+  /// already confirmed (pending requests never reserved a seat).
+  /// If the ride document is missing (deleted/cancelled by driver) the
+  /// booking is still cancelled — seat count adjustment is skipped.
   Future<void> cancelBooking(BookingModel booking) async {
     final bookingRef = _db.collection('bookings').doc(booking.id);
-    final rideRef = _db.collection('rides').doc(booking.rideId);
-
-    await _db.runTransaction((tx) async {
-      tx.update(bookingRef, {'status': 'cancelled'});
-      tx.update(rideRef,
-          {'bookedSeats': FieldValue.increment(-booking.seatsBooked)});
-    });
+    if (booking.status == 'confirmed') {
+      final rideRef = _db.collection('rides').doc(booking.rideId);
+      try {
+        await _db.runTransaction((tx) async {
+          final rideSnap = await tx.get(rideRef);
+          tx.update(bookingRef, {'status': 'cancelled'});
+          if (rideSnap.exists) {
+            tx.update(rideRef,
+                {'bookedSeats': FieldValue.increment(-booking.seatsBooked)});
+          }
+        });
+      } catch (_) {
+        // Transaction failed (e.g. permission denied on ride) —
+        // still cancel the booking on its own so the user is unblocked.
+        await bookingRef.update({'status': 'cancelled'});
+      }
+    } else {
+      await bookingRef.update({'status': 'cancelled'});
+    }
   }
 
   /// Stream of total earnings for a driver.

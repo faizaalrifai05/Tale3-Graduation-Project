@@ -1,11 +1,14 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
+import 'package:testtale3/screens/passenger/location_picker_screen.dart';
+import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
@@ -24,14 +27,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
   bool _isConfirming = false;
   String? _errorMessage;
-  double? _pickupLat;
-  double? _pickupLng;
-  bool _isFetchingLocation = true;
-  bool _locationDenied = false;
 
-  // seatIndex (1-4) → gender of whoever booked it (assigned in booking order)
-  Map<int, String> _seatGenders = {};
-  StreamSubscription<List<BookingModel>>? _bookingSub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
 
   String _mapError(String? code) {
     switch (code) {
@@ -52,67 +49,67 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<BookingProvider>();
       provider.initFromRide(widget.ride);
-      _bookingSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
-        if (!mounted) return;
-        final sorted = [...bookings]..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-        // Expand multi-seat bookings: one passenger booking 2 seats fills 2 slots
-        final map = <int, String>{};
-        int seatIndex = 1;
-        for (final booking in sorted) {
-          for (int s = 0; s < booking.seatsBooked && seatIndex <= 4; s++) {
-            map[seatIndex++] = booking.passengerGender;
-          }
-        }
-        final totalBooked = sorted.fold<int>(0, (acc, b) => acc + b.seatsBooked);
-        provider.updateOccupiedSeats(totalBooked, widget.ride.totalSeats);
-        setState(() => _seatGenders = map);
+      _rideSub = FirebaseFirestore.instance
+          .collection('rides')
+          .doc(widget.ride.id)
+          .snapshots()
+          .listen((snap) {
+        if (!mounted || !snap.exists) return;
+        final booked = (snap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
+        final total = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
+        provider.updateOccupiedSeats(booked, total);
       });
     });
-    _fetchLocation();
   }
 
   @override
   void dispose() {
-    _bookingSub?.cancel();
+    _rideSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _fetchLocation() async {
-    if (mounted) setState(() { _isFetchingLocation = true; _locationDenied = false; });
-    try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        if (!mounted) return;
-        setState(() { _isFetchingLocation = false; _locationDenied = true; });
-        return;
-      }
-      final pos = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.low),
-      );
-      if (!mounted) return;
-      setState(() {
-        _pickupLat = pos.latitude;
-        _pickupLng = pos.longitude;
-        _isFetchingLocation = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() { _isFetchingLocation = false; _locationDenied = true; });
-    }
-  }
+  Future<void> _startConfirmFlow() async {
+    // Step 1 — passenger picks their pickup pin in the origin city
+    final origin = MapsService.cityCoords(widget.ride.origin)
+        ?? const LatLng(31.9539, 35.9106);
+    final LatLng? pickup = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          title: 'Set Pickup Location',
+          instruction: 'Drag map to your pickup point',
+          initialPosition: origin,
+          confirmLabel: 'Confirm Pickup →',
+        ),
+      ),
+    );
+    if (pickup == null || !mounted) return;
 
-  Future<void> _confirm() async {
-    setState(() => _isConfirming = true);
+    // Step 2 — passenger picks their drop-off pin in the destination city
+    final dest = MapsService.cityCoords(widget.ride.destination)
+        ?? const LatLng(31.9539, 35.9106);
+    final LatLng? dropoff = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          title: 'Set Drop-off Location',
+          instruction: 'Drag map to your drop-off point',
+          initialPosition: dest,
+          confirmLabel: 'Confirm Booking',
+          pinColor: const Color(0xFF2E7D32),
+        ),
+      ),
+    );
+    if (dropoff == null || !mounted) return;
+
+    // Step 3 — write booking to Firestore with both coordinates
+    setState(() { _isConfirming = true; _errorMessage = null; });
     final BookingModel? booking =
         await context.read<BookingProvider>().confirmBooking(
-              pickupLat: _pickupLat,
-              pickupLng: _pickupLng,
+              pickupLat: pickup.latitude,
+              pickupLng: pickup.longitude,
+              dropoffLat: dropoff.latitude,
+              dropoffLng: dropoff.longitude,
             );
+    if (!mounted) return;
     setState(() => _isConfirming = false);
 
     if (booking == null) {
@@ -122,9 +119,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     }
 
     Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => BookingStatusScreen(booking: booking),
-      ),
+      MaterialPageRoute(builder: (_) => BookingStatusScreen(booking: booking)),
     );
   }
 
@@ -300,55 +295,6 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           ),
                         ],
                       ),
-                      // Location status
-                      if (_isFetchingLocation) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: const [
-                            SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Color(0xFF8B1A2B)),
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Getting your location…',
-                              style: TextStyle(
-                                  fontSize: 12, color: Color(0xFF757575)),
-                            ),
-                          ],
-                        ),
-                      ] else if (_locationDenied) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F0),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFFFCDD2)),
-                          ),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.location_off_rounded,
-                                  color: Color(0xFFB71C1C), size: 18),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Location access is required to book. Please enable it in your device settings.',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFFB71C1C),
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
                       if (_errorMessage != null) ...[
                         const SizedBox(height: 12),
                         Container(
@@ -386,14 +332,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                         height: 52,
                         child: ElevatedButton(
                           onPressed: (_isConfirming ||
-                                  bookingProvider.selectedCount == 0 ||
-                                  _isFetchingLocation ||
-                                  _locationDenied)
+                                  bookingProvider.selectedCount == 0)
                               ? null
-                              : () {
-                                  setState(() => _errorMessage = null);
-                                  _confirm();
-                                },
+                              : _startConfirmFlow,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _darkMaroon,
                             foregroundColor: Colors.white,
@@ -460,12 +401,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       iconColor = const Color(0xFFBDBDBD);
     }
 
-    final gender = state == 2 ? (_seatGenders[index] ?? '') : '';
-    final genderIcon = gender.toLowerCase() == 'female' || gender.toLowerCase() == 'أنثى'
-        ? Icons.female
-        : gender.toLowerCase() == 'male' || gender.toLowerCase() == 'ذكر'
-            ? Icons.male
-            : Icons.person;
+    const genderIcon = Icons.person;
 
     return GestureDetector(
       onTap: () => provider.toggleSeat(index),

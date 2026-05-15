@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
@@ -9,7 +11,7 @@ import 'package:testtale3/providers/ride_provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:testtale3/screens/driver/driver_ride_live_screen.dart';
 import 'package:testtale3/screens/shared/conversation_screen.dart';
-import 'package:testtale3/services/maps_service.dart';
+import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
@@ -25,6 +27,33 @@ class DriverRideDetailsScreen extends StatefulWidget {
 
 class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
   bool _cancelling = false;
+  RideModel? _liveRide;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
+
+  RideModel? get _ride => _liveRide ?? widget.ride;
+
+  @override
+  void initState() {
+    super.initState();
+    _liveRide = widget.ride;
+    final rideId = widget.ride?.id;
+    if (rideId != null) {
+      _rideSub = FirebaseFirestore.instance
+          .collection('rides')
+          .doc(rideId)
+          .snapshots()
+          .listen((snap) {
+        if (!mounted || !snap.exists) return;
+        setState(() => _liveRide = RideModel.fromDoc(snap));
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _rideSub?.cancel();
+    super.dispose();
+  }
 
   Future<void> _confirmCancel(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -55,7 +84,7 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
     if (confirmed != true) return;
     setState(() => _cancelling = true);
     try {
-      await context.read<RideProvider>().cancelRide(widget.ride!.id);
+      await context.read<RideProvider>().cancelRide(_ride!.id);
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _cancelling = false);
@@ -63,7 +92,7 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
   }
 
   void _showShareSheet(BuildContext context) {
-    final r = widget.ride;
+    final r = _ride;
     final shareText = r != null
         ? 'Check out this ride on Tale3!\n🚗 ${r.origin} → ${r.destination} • ${r.date} at ${r.time}\nBook now on Tale3 — the trusted carpool app.'
         : 'Check out this ride on Tale3!\nBook now on Tale3 — the trusted carpool app.';
@@ -173,11 +202,11 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                 child: Column(
                   children: [
                     // ── Map placeholder ──────────────────────────────────────
-                    _MapSection(origin: widget.ride?.origin, destination: widget.ride?.destination),
+                    _MapSection(origin: _ride?.origin, destination: _ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Route timeline ───────────────────────────────────────
-                    _RouteSection(origin: widget.ride?.origin, destination: widget.ride?.destination),
+                    _RouteSection(origin: _ride?.origin, destination: _ride?.destination),
                     const SizedBox(height: 8),
 
                     // ── Info cards (date / seats / price) ────────────────────
@@ -188,27 +217,31 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                         children: [
                           _buildInfoCard(context, Icons.calendar_today_rounded,
                               context.l10n.dateAndTime.toUpperCase(),
-                              '${widget.ride?.date ?? '-'}\n${widget.ride?.time ?? '-'}'),
+                              '${_ride?.date ?? '-'}\n${_ride?.time ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.event_seat_rounded,
                               context.l10n.seatsLeft.toUpperCase(),
-                              '${widget.ride?.availableSeats ?? '-'} / ${widget.ride?.totalSeats ?? '-'}'),
+                              '${_ride?.availableSeats ?? '-'} / ${_ride?.totalSeats ?? '-'}'),
                           const SizedBox(width: 12),
                           _buildInfoCard(context, Icons.payments_outlined,
                               context.l10n.price.toUpperCase(),
-                              '${widget.ride?.pricePerSeat ?? '-'} JOD',
+                              '${_ride?.pricePerSeat ?? '-'} JOD',
                               isPrice: true),
                         ],
                       ),
                     ),
                     const SizedBox(height: 8),
 
-                    // ── Passengers ───────────────────────────────────────────
-                    _PassengersSection(rideId: widget.ride?.id),
+                    // ── Pending requests ─────────────────────────────────────
+                    _RequestsSection(ride: _ride),
+                    const SizedBox(height: 8),
+
+                    // ── Confirmed passengers ──────────────────────────────────
+                    _PassengersSection(rideId: _ride?.id),
                     const SizedBox(height: 8),
 
                     // ── Rules & preferences ──────────────────────────────────
-                    _RulesSection(ride: widget.ride),
+                    _RulesSection(ride: _ride),
                     const SizedBox(height: 8),
                   ],
                 ),
@@ -231,7 +264,7 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (widget.ride?.status == 'active') ...[
+                  if (_ride?.status == 'active' || _ride?.status == 'live') ...[
                     SizedBox(
                       width: double.infinity,
                       height: 52,
@@ -240,21 +273,28 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => DriverRideLiveScreen(
-                                rideId: widget.ride!.id,
-                                origin: widget.ride!.origin,
-                                destination: widget.ride!.destination,
-                                driverName: widget.ride!.driverName,
+                                rideId: _ride!.id,
+                                origin: _ride!.origin,
+                                destination: _ride!.destination,
+                                driverName: _ride!.driverName,
                               ),
                             ),
                           );
                         },
-                        icon: const Icon(Icons.play_circle_outline_rounded, size: 22),
+                        icon: Icon(
+                          _ride?.status == 'live'
+                              ? Icons.directions_car_rounded
+                              : Icons.play_circle_outline_rounded,
+                          size: 22,
+                        ),
                         label: Text(
-                          context.l10n.startRide,
+                          _ride?.status == 'live' ? 'Resume Ride' : context.l10n.startRide,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppStyles.darkMaroon,
+                          backgroundColor: _ride?.status == 'live'
+                              ? AppStyles.successColor
+                              : AppStyles.darkMaroon,
                           foregroundColor: AppStyles.onPrimary,
                           shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12)),
@@ -262,32 +302,33 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: _cancelling ? null : () => _confirmCancel(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Colors.red, width: 1.5),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                    if (_ride?.status == 'active') ...[
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: _cancelling ? null : () => _confirmCancel(context),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red, width: 1.5),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                          ),
+                          child: _cancelling
+                              ? const SizedBox(
+                                  height: 20, width: 20,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.red),
+                                )
+                              : Text(
+                                  context.l10n.cancelRide,
+                                  style: const TextStyle(
+                                      fontSize: 16, fontWeight: FontWeight.w600),
+                                ),
                         ),
-                        child: _cancelling
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                    strokeWidth: 2, color: Colors.red),
-                              )
-                            : Text(
-                                context.l10n.cancelRide,
-                                style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w600),
-                              ),
                       ),
-                    ),
+                    ],
                   ] else
                     Container(
                       width: double.infinity,
@@ -298,13 +339,13 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        widget.ride?.status == 'cancelled'
+                        _ride?.status == 'cancelled'
                             ? 'Ride Cancelled'
                             : 'Ride Completed',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: widget.ride?.status == 'cancelled'
+                          color: _ride?.status == 'cancelled'
                               ? Colors.red
                               : AppStyles.successDarkText,
                         ),
@@ -602,6 +643,258 @@ class _RouteSection extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  REQUESTS SECTION — pending bookings the driver can accept or reject
+// ─────────────────────────────────────────────────────────────────────────────
+class _RequestsSection extends StatefulWidget {
+  final RideModel? ride;
+  const _RequestsSection({this.ride});
+
+  @override
+  State<_RequestsSection> createState() => _RequestsSectionState();
+}
+
+class _RequestsSectionState extends State<_RequestsSection> {
+  final Set<String> _processing = {};
+
+  Future<void> _accept(BuildContext context, BookingModel booking) async {
+    setState(() => _processing.add(booking.id));
+    final ok = await context.read<BookingProvider>().acceptBooking(booking);
+    if (!mounted) return;
+    setState(() => _processing.remove(booking.id));
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No seats left — cannot accept this request.')),
+      );
+    }
+  }
+
+  Future<void> _reject(BuildContext context, BookingModel booking) async {
+    setState(() => _processing.add(booking.id));
+    await context.read<BookingProvider>().rejectBooking(booking.id);
+    if (mounted) setState(() => _processing.remove(booking.id));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ride = widget.ride;
+    if (ride == null) return const SizedBox.shrink();
+
+    return StreamBuilder<List<BookingModel>>(
+      stream: context.read<BookingProvider>().pendingBookingsStream(ride.id),
+      builder: (context, snapshot) {
+        final requests = snapshot.data ?? [];
+        if (requests.isEmpty) return const SizedBox.shrink();
+
+        return Container(
+          color: context.colors.surfaceColor,
+          padding: const EdgeInsets.all(20),
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'BOOKING REQUESTS',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textTertiary,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF3E0),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${requests.length} pending',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFF57F17),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ...requests.map((b) => _RequestRow(
+                    booking: b,
+                    ride: ride,
+                    isProcessing: _processing.contains(b.id),
+                    onAccept: () => _accept(context, b),
+                    onReject: () => _reject(context, b),
+                  )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _RequestRow extends StatelessWidget {
+  final BookingModel booking;
+  final RideModel ride;
+  final bool isProcessing;
+  final VoidCallback onAccept;
+  final VoidCallback onReject;
+
+  const _RequestRow({
+    required this.booking,
+    required this.ride,
+    required this.isProcessing,
+    required this.onAccept,
+    required this.onReject,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final detour = booking.pickupLat != null && booking.pickupLng != null
+        ? MapsService.detourKm(
+            LatLng(booking.pickupLat!, booking.pickupLng!),
+            ride.origin,
+            ride.destination,
+          )
+        : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFDE7),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFFE082)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: context.colors.highlightBackgroundColor,
+                child: Text(
+                  booking.passengerName.isNotEmpty
+                      ? booking.passengerName[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppStyles.primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      booking.passengerName,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''}  •  ${booking.totalPrice} JOD',
+                      style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              // Detour badge
+              if (detour != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: detour > 5
+                        ? const Color(0xFFFFEBEE)
+                        : const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.alt_route_rounded,
+                        size: 12,
+                        color: detour > 5
+                            ? const Color(0xFFB71C1C)
+                            : const Color(0xFF2E7D32),
+                      ),
+                      Text(
+                        '+${detour.toStringAsFixed(1)} km',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: detour > 5
+                              ? const Color(0xFFB71C1C)
+                              : const Color(0xFF2E7D32),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'No pin',
+                    style: TextStyle(fontSize: 10, color: Color(0xFF9E9E9E)),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isProcessing)
+            const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)))
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: onReject,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFB71C1C),
+                      side: const BorderSide(color: Color(0xFFB71C1C)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                    child: const Text('Reject', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: onAccept,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      elevation: 0,
+                    ),
+                    child: const Text('Accept', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  PASSENGERS SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 class _PassengersSection extends StatelessWidget {
@@ -613,7 +906,7 @@ class _PassengersSection extends StatelessWidget {
     if (rideId == null) return const SizedBox.shrink();
 
     return StreamBuilder<List<BookingModel>>(
-      stream: context.read<BookingProvider>().rideBookingsStream(rideId!),
+      stream: context.read<BookingProvider>().driverRideBookingsStream(rideId!),
       builder: (context, snapshot) {
         final bookings = snapshot.data ?? [];
         return Container(

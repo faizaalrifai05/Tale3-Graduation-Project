@@ -9,6 +9,7 @@ import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
 import 'package:testtale3/widgets/permission_dialog.dart';
+import 'package:testtale3/screens/shared/route_map_widget.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -253,23 +254,10 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(16),
-                            child: SizedBox(
-                              height: 160,
-                              width: double.infinity,
-                              child: Stack(
-                                children: [
-                                  // Placeholder map image
-                                  Container(
-                                    color: const Color(0xFFE0F7FA),
-                                    child: Center(
-                                      child: Icon(Icons.map, size: 64, color: Colors.blue[200]),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          RouteMapWidget(
+                            origin: ride.origin,
+                            destination: ride.destination,
+                            height: 160,
                           ),
                           const SizedBox(height: 20),
                           Row(

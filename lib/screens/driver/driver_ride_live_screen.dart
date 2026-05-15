@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
@@ -8,6 +9,8 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/providers/rating_provider.dart';
+import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
@@ -38,6 +41,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
   bool _arrived = false;
   bool _announcing = false;
   bool _completing = false;
+  String? _actionError;
 
   OptimizedRoute? _optimizedRoute;
   List<LatLng> _fallbackRoutePoints = [];
@@ -67,6 +71,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RideProvider>().startRide(widget.rideId);
       _subscribeToBookings();
       _startLocationTracking();
     });
@@ -188,7 +193,43 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
       if (_followDriver && _mapController != null) {
         _mapController!.animateCamera(CameraUpdate.newLatLngZoom(newPos, 15));
       }
+      _checkAutoArrival(newPos);
     });
+  }
+
+  /// Automatically triggers _announceArrival when the driver is within
+  /// 200 m of the first (or nearest) passenger pickup point.
+  void _checkAutoArrival(LatLng driverPos) {
+    if (_arrived || _announcing) return;
+
+    // 1. First pickup in optimised order that has GPS coordinates.
+    LatLng? target;
+    for (final b in _orderedPassengers) {
+      if (b.pickupLat != null && b.pickupLng != null) {
+        target = LatLng(b.pickupLat!, b.pickupLng!);
+        break;
+      }
+    }
+
+    // 2. Fall back to any confirmed booking with GPS (unoptimised state).
+    if (target == null) {
+      for (final b in _bookings) {
+        if (b.pickupLat != null && b.pickupLng != null) {
+          target = LatLng(b.pickupLat!, b.pickupLng!);
+          break;
+        }
+      }
+    }
+
+    // 3. Last resort: origin city centre (no passenger set a pin).
+    target ??= MapsService.cityCoords(widget.origin);
+    if (target == null) return;
+
+    final distKm = MapsService.distanceKm(driverPos, target);
+    if (distKm <= 0.2) {
+      // Within 200 m — announce arrival automatically.
+      _announceArrival();
+    }
   }
 
   @override
@@ -200,16 +241,14 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
   }
 
   Future<void> _announceArrival() async {
-    setState(() => _announcing = true);
+    setState(() { _announcing = true; _actionError = null; });
     try {
       await context.read<RideProvider>().announceArrival(widget.rideId);
-      setState(() => _arrived = true);
+      if (mounted) setState(() => _arrived = true);
     } catch (_) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send arrival notification. Try again.')),
-      );
+      if (mounted) setState(() => _actionError = 'Failed to send arrival notification. Please try again.');
     } finally {
-      setState(() => _announcing = false);
+      if (mounted) setState(() => _announcing = false);
     }
   }
 
@@ -259,6 +298,19 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
           markerId: MarkerId('stop_$i'),
           position: LatLng(withGps[i].pickupLat!, withGps[i].pickupLng!),
           infoWindow: InfoWindow(title: withGps[i].passengerName),
+        ));
+      }
+    }
+
+    // Drop-off markers in green — one per passenger
+    for (int i = 0; i < _bookings.length; i++) {
+      final b = _bookings[i];
+      if (b.dropoffLat != null && b.dropoffLng != null) {
+        markers.add(Marker(
+          markerId: MarkerId('dropoff_$i'),
+          position: LatLng(b.dropoffLat!, b.dropoffLng!),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+          infoWindow: InfoWindow(title: '↓ ${b.passengerName}'),
         ));
       }
     }
@@ -436,6 +488,24 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
         ),
       ),
     );
+  }
+
+  Future<void> _showPassengerRatingSheet() async {
+    final passengers = List<BookingModel>.from(_bookings);
+    if (passengers.isEmpty || !mounted) return;
+
+    for (final booking in passengers) {
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (ctx) => _PassengerRatingSheet(
+          booking: booking,
+          ratingProvider: context.read<RatingProvider>(),
+        ),
+      );
+    }
   }
 
   @override
@@ -678,6 +748,37 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
 
               const SizedBox(height: 32),
 
+              // Inline error message
+              if (_actionError != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF0F0),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFCDD2)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.error_outline_rounded,
+                          color: Color(0xFFB71C1C), size: 18),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _actionError!,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFFB71C1C),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
               // "I've Arrived" button — hidden once tapped
               if (!_arrived)
                 SizedBox(
@@ -763,23 +864,27 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
                             ),
                           );
                           if (confirm != true) return;
-                          setState(() => _completing = true);
+                          setState(() { _completing = true; _actionError = null; });
                           try {
                             await context
                                 .read<RideProvider>()
                                 .completeRide(widget.rideId);
+                            if (!mounted) return;
+                            // Show passenger rating sheet before going home
+                            await _showPassengerRatingSheet();
                             if (mounted) {
-                              Navigator.of(context)
-                                  .popUntil((route) => route.isFirst);
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                    builder: (_) => const DriverHomeScreen()),
+                                (route) => false,
+                              );
                             }
                           } catch (_) {
                             if (mounted) {
-                              setState(() => _completing = false);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text(
-                                        'Could not complete ride. Try again.')),
-                              );
+                              setState(() {
+                                _completing = false;
+                                _actionError = 'Could not complete the ride. Please try again.';
+                              });
                             }
                           }
                         },
@@ -808,8 +913,11 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
                 width: double.infinity,
                 height: 52,
                 child: OutlinedButton(
-                  onPressed: () =>
-                      Navigator.of(context).popUntil((route) => route.isFirst),
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (_) => const DriverHomeScreen()),
+                    (route) => false,
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: context.colors.textPrimary,
                     backgroundColor: context.colors.cardBackgroundColor,
@@ -897,20 +1005,62 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
                     ],
                   )
                 else
-                  Text(
-                    b.passengerGender,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: context.colors.textSecondary,
-                    ),
+                  Row(
+                    children: [
+                      const Icon(Icons.circle,
+                          size: 8, color: Color(0xFF8B1A2B)),
+                      const SizedBox(width: 4),
+                      const Text('Pickup set',
+                          style: TextStyle(
+                              fontSize: 12, color: Color(0xFF8B1A2B),
+                              fontWeight: FontWeight.w500)),
+                      if (b.dropoffLat != null) ...[
+                        const SizedBox(width: 10),
+                        const Icon(Icons.circle,
+                            size: 8, color: Color(0xFF2E7D32)),
+                        const SizedBox(width: 4),
+                        const Text('Drop-off set',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFF2E7D32),
+                                fontWeight: FontWeight.w500)),
+                      ],
+                    ],
                   ),
               ],
             ),
           ),
-          // Stop badge + seat count
+          // Navigate button + stop badge + seat count
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
+              if (hasGps)
+                GestureDetector(
+                  onTap: () async {
+                    final uri = Uri.parse(
+                      'https://www.google.com/maps/dir/?api=1'
+                      '&destination=${b.pickupLat},${b.pickupLng}'
+                      '&travelmode=driving',
+                    );
+                    if (await canLaunchUrl(uri)) await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    margin: const EdgeInsets.only(bottom: 6),
+                    decoration: BoxDecoration(
+                      color: AppStyles.primaryColor.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppStyles.primaryColor.withValues(alpha: 0.4)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.navigation_rounded, size: 12, color: AppStyles.primaryColor),
+                        const SizedBox(width: 4),
+                        Text('Navigate', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppStyles.primaryColor)),
+                      ],
+                    ),
+                  ),
+                ),
               if (_isOptimized && stopIndex >= 0)
                 Container(
                   padding:
@@ -934,6 +1084,134 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen>
                 style: TextStyle(
                   fontSize: 12,
                   color: context.colors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PASSENGER RATING SHEET — shown to driver after completing a ride
+// ─────────────────────────────────────────────────────────────────────────────
+class _PassengerRatingSheet extends StatefulWidget {
+  final BookingModel booking;
+  final RatingProvider ratingProvider;
+  const _PassengerRatingSheet({required this.booking, required this.ratingProvider});
+
+  @override
+  State<_PassengerRatingSheet> createState() => _PassengerRatingSheetState();
+}
+
+class _PassengerRatingSheetState extends State<_PassengerRatingSheet> {
+  int _stars = 5;
+  bool _submitting = false;
+
+  Future<void> _submit() async {
+    setState(() => _submitting = true);
+    await widget.ratingProvider.submitPassengerRating(
+      passengerId: widget.booking.passengerId,
+      passengerName: widget.booking.passengerName,
+      rideId: widget.booking.rideId,
+      bookingId: widget.booking.id,
+      stars: _stars,
+    );
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFemale = widget.booking.passengerGender.toLowerCase() == 'female' ||
+        widget.booking.passengerGender.toLowerCase() == 'أنثى';
+    return Container(
+      decoration: BoxDecoration(
+        color: context.colors.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: context.colors.borderColor,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 20),
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: isFemale
+                ? const Color(0xFFF48FB1)
+                : const Color(0xFF90CAF9),
+            child: Icon(
+              isFemale ? Icons.female : Icons.male,
+              color: Colors.white, size: 28,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            widget.booking.passengerName,
+            style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w800,
+              color: context.colors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Rate this passenger',
+            style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(5, (i) => GestureDetector(
+              onTap: () => setState(() => _stars = i + 1),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Icon(
+                  i < _stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                  color: AppStyles.goldStar,
+                  size: 44,
+                ),
+              ),
+            )),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: context.colors.textSecondary,
+                    side: BorderSide(color: context.colors.borderColor),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                  child: const Text('Skip', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _submitting ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppStyles.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    elevation: 0,
+                  ),
+                  child: _submitting
+                      ? const SizedBox(width: 20, height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : const Text('Submit', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
               ),
             ],

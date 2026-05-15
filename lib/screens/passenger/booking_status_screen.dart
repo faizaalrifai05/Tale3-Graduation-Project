@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
@@ -5,6 +7,7 @@ import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/screens/passenger/cancel_trip_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
+import 'package:testtale3/screens/passenger/passenger_live_ride_screen.dart';
 import 'package:testtale3/screens/passenger/rate_driver_screen.dart';
 import 'package:testtale3/screens/shared/conversation_screen.dart';
 import 'package:testtale3/screens/shared/route_map_widget.dart';
@@ -12,15 +15,77 @@ import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
-class BookingStatusScreen extends StatelessWidget {
+class BookingStatusScreen extends StatefulWidget {
   final BookingModel booking;
   const BookingStatusScreen({super.key, required this.booking});
 
+  @override
+  State<BookingStatusScreen> createState() => _BookingStatusScreenState();
+}
+
+class _BookingStatusScreenState extends State<BookingStatusScreen> {
   static const Color _primaryColor = Color(0xFF8B1A2B);
+
+  late BookingModel _booking;
+  String _rideStatus = 'active';
+  bool _ratingShown = false;
+
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _bookingSub;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _booking = widget.booking;
+
+    _bookingSub = FirebaseFirestore.instance
+        .collection('bookings')
+        .doc(widget.booking.id)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted || !snap.exists) return;
+      final updated = BookingModel.fromDoc(snap);
+      final wasConfirmed = _booking.status == 'confirmed';
+      setState(() => _booking = updated);
+      if (wasConfirmed && updated.status == 'completed' && !_ratingShown) {
+        _ratingShown = true;
+        _showRatingPrompt();
+      }
+    });
+
+    _rideSub = FirebaseFirestore.instance
+        .collection('rides')
+        .doc(widget.booking.rideId)
+        .snapshots()
+        .listen((snap) {
+      if (!mounted || !snap.exists) return;
+      final status = snap.data()?['status'] as String? ?? 'active';
+      setState(() => _rideStatus = status);
+    });
+  }
+
+  @override
+  void dispose() {
+    _bookingSub?.cancel();
+    _rideSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _showRatingPrompt() async {
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RateDriverScreen(booking: _booking)),
+    );
+  }
+
+  bool get _isPending => _booking.status == 'pending';
+  bool get _isRejected => _booking.status == 'rejected';
+  bool get _isCompleted => _booking.status == 'completed';
 
   bool get _isPast {
     try {
-      final d = DateTime.parse(booking.date);
+      final d = DateTime.parse(_booking.date);
       final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
       return d.isBefore(today);
     } catch (_) {
@@ -30,6 +95,8 @@ class BookingStatusScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isRideLive = _rideStatus == 'live' && _booking.status == 'confirmed';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -56,30 +123,110 @@ class BookingStatusScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // Success icon
+              // Live ride banner
+              if (isRideLive) ...[
+                GestureDetector(
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => PassengerLiveRideScreen(booking: _booking),
+                  )),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    margin: const EdgeInsets.only(bottom: 24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B1A2B), Color(0xFFB71C1C)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 10, height: 10,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        const Expanded(
+                          child: Text(
+                            'Your ride is LIVE — tap to track',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+
+              // Status icon
               Container(
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: _primaryColor.withValues(alpha: 0.1),
+                  color: (_isPending
+                          ? const Color(0xFFF57F17)
+                          : _isRejected
+                              ? const Color(0xFFB71C1C)
+                              : _isCompleted
+                                  ? const Color(0xFF2E7D32)
+                                  : isRideLive
+                                      ? const Color(0xFFE53935)
+                                      : _primaryColor)
+                      .withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
                   child: Container(
                     width: 50,
                     height: 50,
-                    decoration: const BoxDecoration(
-                      color: _primaryColor,
+                    decoration: BoxDecoration(
+                      color: _isPending
+                          ? const Color(0xFFF57F17)
+                          : _isRejected
+                              ? const Color(0xFFB71C1C)
+                              : _isCompleted
+                                  ? const Color(0xFF2E7D32)
+                                  : isRideLive
+                                      ? const Color(0xFFE53935)
+                                      : _primaryColor,
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.check, color: Colors.white, size: 30),
+                    child: Icon(
+                      _isPending
+                          ? Icons.hourglass_top_rounded
+                          : _isRejected
+                              ? Icons.close_rounded
+                              : _isCompleted
+                                  ? Icons.flag_rounded
+                                  : isRideLive
+                                      ? Icons.directions_car_rounded
+                                      : Icons.check,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
               Text(
-                context.l10n.bookingConfirmed,
+                _isPending
+                    ? 'Awaiting Driver Approval'
+                    : _isRejected
+                        ? 'Request Rejected'
+                        : _isCompleted
+                            ? 'Ride Completed'
+                            : isRideLive
+                                ? 'Your Ride is Live!'
+                                : context.l10n.bookingConfirmed,
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -88,7 +235,15 @@ class BookingStatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                context.l10n.bookingConfirmedDesc,
+                _isPending
+                    ? 'Your request has been sent. The driver will review and confirm shortly.'
+                    : _isRejected
+                        ? 'The driver could not accommodate your pickup location. You can search for another ride.'
+                        : _isCompleted
+                            ? 'Thanks for travelling with Tale3! Don\'t forget to rate your driver.'
+                            : isRideLive
+                                ? 'Your driver has started the ride. Tap the banner above to track it.'
+                                : context.l10n.bookingConfirmedDesc,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -121,27 +276,26 @@ class BookingStatusScreen extends StatelessWidget {
                     const SizedBox(height: 16),
                     _detailRow(
                       Icons.location_on,
-                      '${booking.origin} → ${booking.destination}',
+                      '${_booking.origin} → ${_booking.destination}',
                     ),
                     const Divider(height: 24),
                     _detailRow(
                       Icons.calendar_today,
-                      '${booking.date}  •  ${booking.time}',
+                      '${_booking.date}  •  ${_booking.time}',
                     ),
                     const Divider(height: 24),
                     _detailRow(
                       Icons.directions_car,
-                      '${booking.carInfo}\nPlate: ${booking.plateNumber}',
+                      '${_booking.carInfo}\nPlate: ${_booking.plateNumber}',
                     ),
                     const Divider(height: 24),
                     Row(
                       children: [
-                        const Icon(Icons.event_seat,
-                            color: _primaryColor, size: 20),
+                        const Icon(Icons.event_seat, color: _primaryColor, size: 20),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            '${booking.seatsBooked} Seat${booking.seatsBooked > 1 ? 's' : ''}',
+                            '${_booking.seatsBooked} Seat${_booking.seatsBooked > 1 ? 's' : ''}',
                             style: const TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
@@ -150,14 +304,13 @@ class BookingStatusScreen extends StatelessWidget {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
                             color: const Color(0xFFFDF2F4),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            '${booking.totalPrice} JOD',
+                            '${_booking.totalPrice} JOD',
                             style: const TextStyle(
                               fontWeight: FontWeight.w700,
                               color: _primaryColor,
@@ -174,19 +327,19 @@ class BookingStatusScreen extends StatelessWidget {
 
               // Route map
               RouteMapWidget(
-                origin: booking.origin,
-                destination: booking.destination,
+                origin: _booking.origin,
+                destination: _booking.destination,
                 height: 180,
               ),
 
               const SizedBox(height: 24),
 
-              // Rate driver — shown only for completed rides
-              if (booking.status == 'completed')
+              // Rate driver — shown for completed rides
+              if (_isCompleted)
                 StreamBuilder<bool>(
                   stream: context
                       .read<RatingProvider>()
-                      .hasRatedBooking(booking.id),
+                      .hasRatedBooking(_booking.id),
                   builder: (context, snap) {
                     final alreadyRated = snap.data ?? false;
                     if (alreadyRated) {
@@ -221,8 +374,7 @@ class BookingStatusScreen extends StatelessWidget {
                       child: ElevatedButton.icon(
                         onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) =>
-                                RateDriverScreen(booking: booking),
+                            builder: (_) => RateDriverScreen(booking: _booking),
                           ),
                         ),
                         icon: const Icon(Icons.star_rounded, size: 20),
@@ -240,7 +392,31 @@ class BookingStatusScreen extends StatelessWidget {
                     );
                   },
                 ),
-              if (booking.status == 'completed') const SizedBox(height: 8),
+              if (_isCompleted) const SizedBox(height: 8),
+
+              // Track Live Ride button
+              if (isRideLive) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => PassengerLiveRideScreen(booking: _booking),
+                    )),
+                    icon: const Icon(Icons.my_location_rounded, size: 20),
+                    label: const Text('Track Live Ride',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE53935),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
 
               const SizedBox(height: 8),
 
@@ -279,8 +455,8 @@ class BookingStatusScreen extends StatelessWidget {
                   onPressed: () {
                     Navigator.of(context).push(MaterialPageRoute(
                       builder: (_) => ConversationScreen(
-                        otherUserId: booking.driverId,
-                        otherUserName: booking.driverName,
+                        otherUserId: _booking.driverId,
+                        otherUserName: _booking.driverName,
                       ),
                     ));
                   },
@@ -298,7 +474,7 @@ class BookingStatusScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              if (!_isPast) ...[
+              if (!_isPast && !_isRejected && !_isCompleted) ...[
                 const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
@@ -306,7 +482,7 @@ class BookingStatusScreen extends StatelessWidget {
                   child: OutlinedButton(
                     onPressed: () {
                       Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => CancelTripScreen(booking: booking),
+                        builder: (_) => CancelTripScreen(booking: _booking),
                       ));
                     },
                     style: OutlinedButton.styleFrom(
@@ -317,7 +493,7 @@ class BookingStatusScreen extends StatelessWidget {
                       ),
                     ),
                     child: Text(
-                      context.l10n.cancelRide,
+                      _isPending ? 'Withdraw Request' : context.l10n.cancelRide,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
                   ),
