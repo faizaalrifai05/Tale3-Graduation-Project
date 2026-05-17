@@ -65,8 +65,7 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
-      // 🔴 Listen to user document in real-time
-      // Handles: block while in app, verification approval, profile changes
+      // Listen to user document in real-time
       _userSubscription?.cancel();
       _userSubscription = _db
           .collection('users')
@@ -78,7 +77,6 @@ class AuthProvider extends ChangeNotifier {
         final blocked = data['isBlocked'] as bool? ?? false;
 
         if (blocked) {
-          // User got blocked while inside the app — sign out immediately
           _wasBlocked = true;
           await _auth.signOut();
           _currentUser = null;
@@ -86,7 +84,6 @@ class AuthProvider extends ChangeNotifier {
           return;
         }
 
-        // Update local user data with latest Firestore data in real-time
         _currentUser = UserModel(
           uid: doc.id,
           name: data['name'] ?? '',
@@ -108,6 +105,10 @@ class AuthProvider extends ChangeNotifier {
           ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
           createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
           gender: data['gender'] as String? ?? '',
+          creditCardNumber: data['creditCardNumber'] as String? ?? '',
+          creditCardHolder: data['creditCardHolder'] as String? ?? '',
+          creditCardExpiry: data['creditCardExpiry'] as String? ?? '',
+          creditCardCvc: data['creditCardCvc'] as String? ?? '',
         );
         notifyListeners();
       });
@@ -177,6 +178,11 @@ class AuthProvider extends ChangeNotifier {
           averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
           ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
           createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          gender: data['gender'] as String? ?? '',
+          creditCardNumber: data['creditCardNumber'] as String? ?? '',
+          creditCardHolder: data['creditCardHolder'] as String? ?? '',
+          creditCardExpiry: data['creditCardExpiry'] as String? ?? '',
+          creditCardCvc: data['creditCardCvc'] as String? ?? '',
         );
 
         // Block check on initial fetch
@@ -202,7 +208,6 @@ class AuthProvider extends ChangeNotifier {
         password: password,
       );
 
-      // Require email verification for email/password accounts.
       if (!cred.user!.emailVerified) {
         await _auth.signOut();
         return 'email_not_verified';
@@ -210,14 +215,12 @@ class AuthProvider extends ChangeNotifier {
 
       final doc = await _db.collection('users').doc(cred.user!.uid).get();
       if (doc.exists) {
-        // Check if blocked
         final blocked = doc.data()!['isBlocked'] as bool? ?? false;
         if (blocked) {
           await _auth.signOut();
           return 'Your account has been blocked. Please contact support.';
         }
 
-        // Check role matches
         final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != expectedRole) {
           await _auth.signOut();
@@ -250,12 +253,10 @@ class AuthProvider extends ChangeNotifier {
       );
       await cred.user!.updateDisplayName(name);
 
-      // Send email verification — non-critical, don't fail if it errors.
       try {
         await cred.user!.sendEmailVerification();
       } catch (_) {}
 
-      // Set current user immediately so navigation isn't blocked
       _currentUser = UserModel(
         uid: cred.user!.uid,
         name: name,
@@ -297,8 +298,6 @@ class AuthProvider extends ChangeNotifier {
   /// Returns null on success, error message on failure.
   Future<String?> signInWithGoogle(UserRole role) async {
     try {
-      // Sign out first so the account-picker dialog always appears,
-      // even when a Google account was previously cached on this device.
       await _googleSignIn.signOut();
       final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return 'Sign-in cancelled.';
@@ -313,7 +312,6 @@ class AuthProvider extends ChangeNotifier {
 
       final doc = await _db.collection('users').doc(uid).get();
       if (doc.exists) {
-        // Check if blocked
         final blocked = doc.data()!['isBlocked'] as bool? ?? false;
         if (blocked) {
           await _auth.signOut();
@@ -321,7 +319,6 @@ class AuthProvider extends ChangeNotifier {
           return 'Your account has been blocked. Please contact support.';
         }
 
-        // Check role matches
         final storedRole = _roleFromString(doc.data()!['role'] as String?);
         if (storedRole != role) {
           await _auth.signOut();
@@ -330,7 +327,6 @@ class AuthProvider extends ChangeNotifier {
           return 'This Google account is already registered as a $roleName.';
         }
       } else {
-        // New Google user — create Firestore record
         await _db.collection('users').doc(uid).set({
           'name': userCred.user!.displayName ?? '',
           'email': userCred.user!.email ?? '',
@@ -351,7 +347,6 @@ class AuthProvider extends ChangeNotifier {
       return _friendlyError(e.code);
     } catch (e) {
       final msg = e.toString();
-      // ApiException 10 / 12500 = SHA-1 not registered in Firebase Console
       if (msg.contains('10:') || msg.contains('12500') || msg.contains('DEVELOPER_ERROR')) {
         return 'Google Sign-In is not configured for this device. Please contact support.';
       }
@@ -361,9 +356,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Sets verificationStatus to pending in Firestore without uploading images.
-  /// Firebase Storage is not required — driver appears in admin verification
-  /// queue immediately after submitting.
-  /// Returns null on success, error message on failure.
   Future<String?> submitIdVerification({
     required File frontImage,
     required File backImage,
@@ -372,9 +364,6 @@ class AuthProvider extends ChangeNotifier {
     if (firebaseUser == null) return 'Not logged in.';
     final uid = firebaseUser.uid;
     try {
-      // Ensure the Firestore user document exists before writing.
-      // registerWithEmail() should have created it, but create it here
-      // as a fallback in case of a timing issue or a rules denial.
       final userDoc = await _db.collection('users').doc(uid).get();
       if (!userDoc.exists) {
         await _db.collection('users').doc(uid).set({
@@ -393,7 +382,6 @@ class AuthProvider extends ChangeNotifier {
         });
       }
 
-      // Set verification status to pending — no Storage needed
       await _db.collection('users').doc(uid).update({
         'verificationStatus': 'pending',
         'idFrontUrl': '',
@@ -470,6 +458,29 @@ class AuthProvider extends ChangeNotifier {
     }).catchError((_) {});
   }
 
+  /// Saves credit card details to Firestore (driver only).
+  Future<void> saveCreditCard({
+    required String cardNumber,
+    required String cardHolder,
+    required String expiry,
+    String cvc = '',
+  }) async {
+    if (_currentUser == null) return;
+    _currentUser = _currentUser!.copyWith(
+      creditCardNumber: cardNumber,
+      creditCardHolder: cardHolder,
+      creditCardExpiry: expiry,
+      creditCardCvc: cvc,
+    );
+    notifyListeners();
+    _db.collection('users').doc(_currentUser!.uid).update({
+      'creditCardNumber': cardNumber,
+      'creditCardHolder': cardHolder,
+      'creditCardExpiry': expiry,
+      'creditCardCvc': cvc,
+    }).catchError((_) {});
+  }
+
   /// Changes the user's password. Requires current password to reauthenticate.
   /// Returns null on success, error message on failure.
   Future<String?> changePassword({
@@ -529,29 +540,22 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Returns true if the email is already registered, false if not.
-  /// Returns null when the result cannot be determined (e.g. Email Enumeration
-  /// Protection is enabled on this Firebase project, or a network error).
   Future<bool?> checkEmailInUse(String email) async {
     try {
-      // Attempt a sign-in with a guaranteed-invalid password.
-      // Firebase returns different error codes depending on whether the account
-      // exists, which lets us infer registration status without a deprecated API.
       await _auth.signInWithEmailAndPassword(
         email: email,
         password: '\x00__invalid_check__',
       );
-      // Should never reach here, but treat it as "exists" if it somehow does.
       await _auth.signOut();
       return true;
     } on FirebaseAuthException catch (e) {
       switch (e.code) {
         case 'wrong-password':
         case 'invalid-password':
-          return true;  // Account exists, password is just wrong
+          return true;
         case 'user-not-found':
-          return false; // No account with this email
+          return false;
         case 'invalid-credential':
-          // Email Enumeration Protection is on — can't tell either way.
           return null;
         default:
           return null;
@@ -562,8 +566,6 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Sends or resends the email verification link.
-  /// Pass [email] + [password] when the user is not currently signed in
-  /// (e.g. from the login screen after a failed login due to unverified email).
   Future<String?> sendVerificationEmail({String? email, String? password}) async {
     try {
       if (_auth.currentUser != null) {
@@ -575,9 +577,6 @@ class AuthProvider extends ChangeNotifier {
         return 'Could not send verification email. Please try again later.';
       }
 
-      // Temporarily sign in to send the verification email.
-      // The _isSendingVerificationEmail flag prevents the auth-state listener
-      // from treating this as a real sign-in and updating the app state.
       _isSendingVerificationEmail = true;
       try {
         final cred = await _auth.signInWithEmailAndPassword(

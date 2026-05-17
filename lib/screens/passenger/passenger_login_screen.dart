@@ -5,6 +5,7 @@ import 'package:testtale3/utils/validators.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
+import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_registration_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -53,8 +54,12 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
       if (error != null) {
         setState(() => _errorMessage = error);
       } else {
-        Navigator.of(context).pushReplacement(
+        // pushAndRemoveUntil clears the entire back stack so pressing
+        // back cannot return to the login/welcome/guidelines screens.
+        context.read<NavigationProvider>().resetTabs();
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const PassengerHomeScreen()),
+          (route) => false,
         );
       }
     } finally {
@@ -97,8 +102,12 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
       if (error != null) {
         setState(() => _errorMessage = error);
       } else {
-        Navigator.of(context).pushReplacement(
+        // pushAndRemoveUntil clears the entire back stack so pressing
+        // back cannot return to the login/welcome/guidelines screens.
+        context.read<NavigationProvider>().resetTabs();
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const PassengerHomeScreen()),
+          (route) => false,
         );
       }
     } finally {
@@ -379,8 +388,6 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 32),
-
-                
                 const SizedBox(height: 24),
               ],
             ),
@@ -406,20 +413,17 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
           borderSide: BorderSide(color: context.colors.borderColor)),
       focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: AppStyles.primaryColor, width: 1.5)),
+          borderSide: BorderSide(color: AppStyles.primaryColor, width: 1.5)),
       errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: AppStyles.errorColor)),
       focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              BorderSide(color: AppStyles.errorColor, width: 1.5)),
+          borderSide: BorderSide(color: AppStyles.errorColor, width: 1.5)),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
-
 }
 
 class _GoogleLogo extends StatelessWidget {

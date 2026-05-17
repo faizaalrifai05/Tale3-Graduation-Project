@@ -472,34 +472,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 8),
-                                // Gold Driver badge
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0x33FFFFFF),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.3)),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.workspace_premium,
-                                          color: AppStyles.goldStar, size: 12),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        context.l10n.goldDriver,
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppStyles.goldStar,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+
                               ],
                             ),
                           ),

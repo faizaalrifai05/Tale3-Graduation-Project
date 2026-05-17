@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
-import 'package:testtale3/screens/shared/email_verification_screen.dart';
+import 'package:testtale3/screens/driver/driver_credit_card_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVehicleDetailsScreen extends StatefulWidget {
@@ -108,12 +108,17 @@ class _DriverVehicleDetailsScreenState
         debugPrint('Verification submission error: $verifyError');
       }
 
-      // Navigate to email verification screen
+      // Navigate to credit card screen (step 4 of 5)
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => EmailVerificationScreen(
+          builder: (_) => DriverCreditCardScreen(
+            name: widget.name,
             email: widget.email,
-            role: UserRole.driver,
+            password: widget.password,
+            phone: widget.phone,
+            gender: widget.gender,
+            frontIdImage: widget.frontIdImage,
+            backIdImage: widget.backIdImage,
           ),
         ),
       );
@@ -163,7 +168,7 @@ class _DriverVehicleDetailsScreenState
                       ),
                     ),
                     Text(
-                      '${context.l10n.step} 3 ${context.l10n.ofWord} 4',
+                      '${context.l10n.step} 3 ${context.l10n.ofWord} 5',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -174,7 +179,7 @@ class _DriverVehicleDetailsScreenState
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: 0.75,
+                  value: 0.6,
                   backgroundColor: context.colors.neutralLight,
                   valueColor: const AlwaysStoppedAnimation<Color>(
                       AppStyles.primaryColor),
@@ -298,13 +303,30 @@ class _DriverVehicleDetailsScreenState
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: _plateController,
-                  textCapitalization: TextCapitalization.characters,
-                  validator: (v) => (v == null || v.trim().isEmpty)
-                      ? context.l10n.plateRequired
-                      : null,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    // Allow digits and dot/dash separator only
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.\-]')),
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) {
+                      return context.l10n.plateRequired;
+                    }
+                    final cleaned = v.trim();
+                    // Jordanian plate: digits · dot or dash · digits
+                    // e.g. 58-11772 or 12.34567 or 70-23456
+                    final valid = RegExp(
+                      r'^[0-9]{1,4}[.\-][0-9]{1,6}$',
+                    ).hasMatch(cleaned);
+                    if (!valid) {
+                      return 'Enter a valid plate (e.g. 58-11772 or 12.34567)';
+                    }
+                    return null;
+                  },
                   autovalidateMode: AutovalidateMode.onUserInteraction,
                   decoration: _inputDecoration(
-                      hint: context.l10n.plateHint,
+                      hint: '58-11772',
                       icon: Icons.credit_card_outlined),
                 ),
                 const SizedBox(height: 48),

@@ -23,9 +23,15 @@ class UserModel {
   // Driver rating
   final double averageRating;
   final int ratingCount;
+  // Gender
+  final String gender;
   // Account creation date
   final DateTime? createdAt;
-  final String gender;
+  // Credit card (driver only — for platform revenue collection)
+  final String creditCardNumber;
+  final String creditCardHolder;
+  final String creditCardExpiry;
+  final String creditCardCvc;
 
   const UserModel({
     required this.uid,
@@ -45,8 +51,12 @@ class UserModel {
     this.isBlocked = false,
     this.averageRating = 0.0,
     this.ratingCount = 0,
-    this.createdAt,
     this.gender = '',
+    this.createdAt,
+    this.creditCardNumber = '',
+    this.creditCardHolder = '',
+    this.creditCardExpiry = '',
+    this.creditCardCvc = '',
   });
 
   bool get isVerified => verificationStatus == VerificationStatus.verified;
@@ -82,8 +92,12 @@ class UserModel {
     bool? isBlocked,
     double? averageRating,
     int? ratingCount,
-    DateTime? createdAt,
     String? gender,
+    DateTime? createdAt,
+    String? creditCardNumber,
+    String? creditCardHolder,
+    String? creditCardExpiry,
+    String? creditCardCvc,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -103,8 +117,12 @@ class UserModel {
       isBlocked: isBlocked ?? this.isBlocked,
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,
-      createdAt: createdAt ?? this.createdAt,
       gender: gender ?? this.gender,
+      createdAt: createdAt ?? this.createdAt,
+      creditCardNumber: creditCardNumber ?? this.creditCardNumber,
+      creditCardHolder: creditCardHolder ?? this.creditCardHolder,
+      creditCardExpiry: creditCardExpiry ?? this.creditCardExpiry,
+      creditCardCvc: creditCardCvc ?? this.creditCardCvc,
     );
   }
 }

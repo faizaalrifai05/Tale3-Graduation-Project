@@ -26,7 +26,13 @@ class FCMService {
       sound: true,
     );
 
-    debugPrint('FCM Token: ${await _messaging.getToken()}');
+   // debugPrint('FCM Token: ${await _messaging.getToken()}');
+   try {
+  final token = await _messaging.getToken();
+  debugPrint('FCM Token: $token');
+} catch (e) {
+  debugPrint('FCM getToken error: $e');
+}
 
     // Foreground: show an in-app SnackBar banner
     FirebaseMessaging.onMessage.listen((message) {
