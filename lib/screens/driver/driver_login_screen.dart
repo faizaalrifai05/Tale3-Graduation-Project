@@ -5,6 +5,7 @@ import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/screens/password_reset_screen.dart';
 import 'package:testtale3/screens/driver/driver_registration_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -53,8 +54,12 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       if (error != null) {
         setState(() => _errorMessage = error);
       } else {
-        Navigator.of(context).pushReplacement(
+        // pushAndRemoveUntil clears the entire back stack so pressing
+        // back cannot return to the login/welcome/guidelines screens.
+        context.read<NavigationProvider>().resetTabs();
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+          (route) => false,
         );
       }
     } finally {
@@ -97,8 +102,12 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       if (error != null) {
         setState(() => _errorMessage = error);
       } else {
-        Navigator.of(context).pushReplacement(
+        // pushAndRemoveUntil clears the entire back stack so pressing
+        // back cannot return to the login/welcome/guidelines screens.
+        context.read<NavigationProvider>().resetTabs();
+        Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+          (route) => false,
         );
       }
     } finally {
@@ -396,8 +405,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 32),
-
-                
                 const SizedBox(height: 24),
               ],
             ),
@@ -425,8 +432,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: AppStyles.primaryColor, width: 1.5),
+        borderSide: BorderSide(color: AppStyles.primaryColor, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -434,14 +440,12 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: AppStyles.errorColor, width: 1.5),
+        borderSide: BorderSide(color: AppStyles.errorColor, width: 1.5),
       ),
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
-
 }
 
 class _GoogleLogo extends StatelessWidget {
@@ -470,16 +474,11 @@ class _GoogleLogoPainter extends CustomPainter {
       canvas.drawArc(rect, start, sweep, false, paint);
     }
 
-    // Blue (right, top-right, part of bottom)
     drawArc(AppStyles.googleBlue, startAngle, 1.75);
-    // Green (bottom-right)
     drawArc(AppStyles.googleGreen, startAngle + 1.75, 1.05);
-    // Yellow (bottom-left)
     drawArc(AppStyles.googleYellow, startAngle + 2.8, 0.85);
-    // Red (top-left)
     drawArc(AppStyles.googleRed, startAngle + 3.65, 0.92);
 
-    // Horizontal bar of the G
     final barPaint = Paint()
       ..color = AppStyles.googleBlue
       ..strokeWidth = size.width * 0.18

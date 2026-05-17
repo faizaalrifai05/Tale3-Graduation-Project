@@ -1,19 +1,26 @@
+import 'dart:convert';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
 import '../../providers/ride_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/rating_provider.dart';
 import '../../models/ride_model.dart';
 import '../../models/booking_model.dart';
+import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
+import 'package:testtale3/screens/passenger/location_picker_screen.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
@@ -48,19 +55,14 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         barrierDismissible: false,
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
+              borderRadius: BorderRadius.circular(20)),
           title: const Row(
             children: [
               Icon(Icons.block_rounded, color: Colors.red, size: 26),
               SizedBox(width: 10),
-              Text(
-                'Account Blocked',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              Text('Account Blocked',
+                  style: TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.w700)),
             ],
           ),
           content: const Text(
@@ -75,18 +77,13 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                 Navigator.pop(context);
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (_) => const CommunityGuidelinesScreen(),
-                  ),
+                      builder: (_) => const CommunityGuidelinesScreen()),
                   (route) => false,
                 );
               },
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
+              child: const Text('OK',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.red)),
             ),
           ],
         ),
@@ -97,45 +94,51 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final navProvider = context.watch<NavigationProvider>();
+    final isOnHomeTab = navProvider.passengerTabIndex == 0;
 
-    return Scaffold(
-      backgroundColor: context.colors.backgroundColor,
-      body: IndexedStack(
-        index: navProvider.passengerTabIndex,
-        children: const [
-          _HomeTab(),
-          MyTripsScreen(),
-          PassengerChatScreen(),
-          PassengerProfileScreen(),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: navProvider.passengerTabIndex,
-        onTap: (index) {
-          context.read<NavigationProvider>().setPassengerTab(index);
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: const Icon(Icons.home),
-            label: context.l10n.home.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.history_outlined),
-            activeIcon: const Icon(Icons.history),
-            label: context.l10n.myTrips.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.chat_bubble_outline),
-            activeIcon: const Icon(Icons.chat_bubble),
-            label: context.l10n.chat.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
-            label: context.l10n.profile.toUpperCase(),
-          ),
-        ],
+    return PopScope(
+      canPop: isOnHomeTab,
+      onPopInvoked: (didPop) {
+        if (!didPop) navProvider.setPassengerTab(0);
+      },
+      child: Scaffold(
+        backgroundColor: context.colors.backgroundColor,
+        body: IndexedStack(
+          index: navProvider.passengerTabIndex,
+          children: const [
+            _HomeTab(),
+            MyTripsScreen(),
+            PassengerChatScreen(),
+            PassengerProfileScreen(),
+          ],
+        ),
+        bottomNavigationBar: AppBottomNavBar(
+          currentIndex: navProvider.passengerTabIndex,
+          onTap: (index) =>
+              context.read<NavigationProvider>().setPassengerTab(index),
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: context.l10n.home.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.history_outlined),
+              activeIcon: const Icon(Icons.history),
+              label: context.l10n.myTrips.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.chat_bubble_outline),
+              activeIcon: const Icon(Icons.chat_bubble),
+              label: context.l10n.chat.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: context.l10n.profile.toUpperCase(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -151,16 +154,158 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  final _originController = TextEditingController();
-  final _destinationController = TextEditingController();
+  // Picked locations
+  LatLng? _pickupLatLng;
+  LatLng? _destinationLatLng;
+  // Human-readable city/area names
+  String? _pickupLabel;
+  String? _destinationLabel;
+
   DateTime? _selectedDate;
   int _seats = 1;
+  bool _locating = false;
 
-  @override
-  void dispose() {
-    _originController.dispose();
-    _destinationController.dispose();
-    super.dispose();
+  // Default camera position: Amman city center
+  static const LatLng _amman = LatLng(31.9539, 35.9106);
+
+  // ── Get device location for initial camera position ───────────────────
+  Future<LatLng> _devicePosition() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.deniedForever ||
+          perm == LocationPermission.denied) {
+        return _amman;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium);
+      return LatLng(pos.latitude, pos.longitude);
+    } catch (_) {
+      return _amman;
+    }
+  }
+
+  // ── Reverse geocode a LatLng → city/area name ─────────────────────────
+  // First tries to match against MapsService known cities (fast, offline).
+  // Falls back to Google Geocoding API for exact area/neighbourhood name.
+  Future<String> _reverseGeocode(LatLng point) async {
+    // 1. Try nearest known Jordanian city (within 15 km)
+    const cities = {
+      'Amman':    LatLng(31.9539, 35.9106),
+      'Zarqa':    LatLng(32.0728, 36.0878),
+      'Irbid':    LatLng(32.5556, 35.8500),
+      'Aqaba':    LatLng(29.5269, 35.0065),
+      'Madaba':   LatLng(31.7167, 35.8000),
+      'Jerash':   LatLng(32.2833, 35.9000),
+      'Ajloun':   LatLng(32.3333, 35.7500),
+      'Karak':    LatLng(31.1833, 35.7000),
+      'Mafraq':   LatLng(32.3417, 36.2042),
+      'Salt':     LatLng(32.0333, 35.7167),
+      'Russeifa': LatLng(32.0417, 36.0583),
+      'Ramtha':   LatLng(32.5667, 36.0000),
+      'Tafilah':  LatLng(30.8333, 35.6000),
+      'Maan':     LatLng(30.2000, 35.7333),
+      'Petra':    LatLng(30.3217, 35.4789),
+      'Azraq':    LatLng(31.8417, 36.8167),
+    };
+
+    String? nearestCity;
+    double nearestDist = double.infinity;
+    for (final entry in cities.entries) {
+      final d = MapsService.distanceKm(point, entry.value);
+      if (d < nearestDist) {
+        nearestDist = d;
+        nearestCity = entry.key;
+      }
+    }
+    if (nearestDist <= 15 && nearestCity != null) return nearestCity;
+
+    // 2. Fall back to Google Geocoding API for sub-city areas
+    try {
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/geocode/json'
+        '?latlng=${point.latitude},${point.longitude}'
+        '&key=${MapsService.apiKey}'
+        '&language=en'
+        '&result_type=locality|sublocality|administrative_area_level_2',
+      );
+      final res = await http.get(url);
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        if (data['status'] == 'OK') {
+          final results = data['results'] as List;
+          if (results.isNotEmpty) {
+            final components =
+                (results.first['address_components'] as List)
+                    .map((c) => c as Map<String, dynamic>)
+                    .toList();
+            // Prefer locality → sublocality → administrative_area_level_2
+            for (final type in [
+              'locality',
+              'sublocality',
+              'administrative_area_level_2'
+            ]) {
+              final match = components.firstWhere(
+                (c) => (c['types'] as List).contains(type),
+                orElse: () => {},
+              );
+              if (match.isNotEmpty) {
+                return match['long_name'] as String;
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 3. Last resort — return coordinates string
+    return '${point.latitude.toStringAsFixed(4)}, '
+        '${point.longitude.toStringAsFixed(4)}';
+  }
+
+  // ── Open LocationPickerScreen and handle result ───────────────────────
+  Future<void> _openPicker({required bool isPickup}) async {
+    setState(() => _locating = true);
+    final initial = await _devicePosition();
+    setState(() => _locating = false);
+    if (!mounted) return;
+
+    final result = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          title: isPickup ? 'Select Pickup Location' : 'Select Destination',
+          instruction: isPickup
+              ? 'Drag map to your pickup spot'
+              : 'Drag map to your destination',
+          initialPosition: isPickup
+              ? (_pickupLatLng ?? initial)
+              : (_destinationLatLng ?? initial),
+          confirmLabel:
+              isPickup ? 'Confirm Pickup' : 'Confirm Destination',
+          pinColor: isPickup
+              ? AppStyles.primaryColor
+              : AppStyles.successColor,
+        ),
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
+    // Reverse geocode in background
+    final label = await _reverseGeocode(result);
+    if (!mounted) return;
+
+    setState(() {
+      if (isPickup) {
+        _pickupLatLng = result;
+        _pickupLabel = label;
+      } else {
+        _destinationLatLng = result;
+        _destinationLabel = label;
+      }
+    });
   }
 
   String _getGreeting(BuildContext context) {
@@ -206,8 +351,8 @@ class _HomeTabState extends State<_HomeTab> {
   void _search() {
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => RideResultsScreen(
-        origin: _originController.text.trim(),
-        destination: _destinationController.text.trim(),
+        origin: _pickupLabel ?? '',
+        destination: _destinationLabel ?? '',
         date: _selectedDate != null ? _dateIso(_selectedDate!) : null,
         seats: _seats,
       ),
@@ -243,7 +388,7 @@ class _HomeTabState extends State<_HomeTab> {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 child: Column(
                   children: [
-                    // Top row: avatar + greeting + notification bell
+                    // Top row
                     Row(
                       children: [
                         Container(
@@ -271,7 +416,8 @@ class _HomeTabState extends State<_HomeTab> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color:
+                                      Colors.white.withValues(alpha: 0.7),
                                   letterSpacing: 1.2,
                                 ),
                               ),
@@ -322,23 +468,66 @@ class _HomeTabState extends State<_HomeTab> {
 
                     const SizedBox(height: 24),
 
-                    // ── Stats row ──
-                    Row(
-                      children: [
-                        _buildStatCard(
-                          icon: Icons.directions_car_rounded,
-                          label: context.l10n.tripsTaken,
-                          value: '24',
-                          iconColor: AppStyles.successColor,
-                        ),
-                        const SizedBox(width: 10),
-                        _buildStatCard(
-                          icon: Icons.star_rounded,
-                          label: context.l10n.myRating,
-                          value: '4.8',
-                          iconColor: AppStyles.goldStar,
-                        ),
-                      ],
+                    // ── Stats row (DYNAMIC) ──────────────────────────
+                    StreamBuilder<List<BookingModel>>(
+                      stream: context
+                          .read<BookingProvider>()
+                          .myBookingsStream,
+                      builder: (ctx, bookingSnap) {
+                        final allBookings = bookingSnap.data ?? [];
+                        final completedCount = allBookings
+                            .where((b) => b.status == 'completed')
+                            .length;
+                        final uid = context
+                                .read<app_auth.AuthProvider>()
+                                .currentUser
+                                ?.uid ??
+                            '';
+
+                        return StreamBuilder<
+                            List<Map<String, dynamic>>>(
+                          stream: context
+                              .read<RatingProvider>()
+                              .passengerRatingsStream(uid),
+                          builder: (ctx2, ratingSnap) {
+                            final ratings = ratingSnap.data ?? [];
+                            final avg = ratings.isEmpty
+                                ? null
+                                : ratings
+                                        .map((r) =>
+                                            (r['stars'] as num?)
+                                                ?.toDouble() ??
+                                            0.0)
+                                        .reduce((a, b) => a + b) /
+                                    ratings.length;
+
+                            return Row(
+                              children: [
+                                _buildStatCard(
+                                  icon: Icons.directions_car_rounded,
+                                  label: context.l10n.tripsTaken,
+                                  value: '$completedCount',
+                                  iconColor: AppStyles.successColor,
+                                ),
+                                const SizedBox(width: 10),
+                                _buildStatCard(
+                                  icon: avg == null
+                                      ? Icons.star_border_rounded
+                                      : Icons.star_rounded,
+                                  label: context.l10n.myRating,
+                                  value: avg == null
+                                      ? '—'
+                                      : avg.toStringAsFixed(1),
+                                  iconColor: avg == null
+                                      ? Colors.white
+                                          .withValues(alpha: 0.4)
+                                      : AppStyles.goldStar,
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -376,54 +565,42 @@ class _HomeTabState extends State<_HomeTab> {
                       ),
                       const SizedBox(height: 16),
 
-                      // Origin + Destination
-                      Container(
-                        decoration: BoxDecoration(
-                          color: context.colors.cardBackgroundColor,
-                          borderRadius: BorderRadius.circular(12),
+                      // ── Pickup location button ──────────────────────
+                      _buildLocationButton(
+                        icon: Icons.radio_button_checked,
+                        iconColor: AppStyles.primaryColor,
+                        label: _pickupLabel ?? 'Select pickup location',
+                        isSet: _pickupLabel != null,
+                        isLoading: _locating,
+                        onTap: () => _openPicker(isPickup: true),
+                      ),
+                      const SizedBox(height: 1),
+
+                      // Connecting line between the two buttons
+                      Padding(
+                        padding: const EdgeInsets.only(left: 22),
+                        child: Container(
+                          width: 2,
+                          height: 12,
+                          color: context.colors.borderColor,
                         ),
-                        child: Column(
-                          children: [
-                            TextField(
-                              controller: _originController,
-                              decoration: InputDecoration(
-                                hintText: context.l10n.chooseFromMap,
-                                hintStyle: TextStyle(
-                                    color: context.colors.textSecondary,
-                                    fontWeight: FontWeight.w500),
-                                prefixIcon: Icon(Icons.radio_button_checked,
-                                    color: AppStyles.primaryColor, size: 20),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 16),
-                              ),
-                            ),
-                            Divider(
-                                height: 1,
-                                indent: 48,
-                                color: context.colors.borderColor),
-                            TextField(
-                              controller: _destinationController,
-                              decoration: InputDecoration(
-                                hintText: context.l10n.selectDestination,
-                                hintStyle: TextStyle(
-                                    color: context.colors.textTertiary),
-                                prefixIcon: Icon(Icons.location_on,
-                                    color: AppStyles.primaryColor, size: 20),
-                                border: InputBorder.none,
-                                contentPadding: const EdgeInsets.symmetric(
-                                    vertical: 16),
-                              ),
-                            ),
-                          ],
-                        ),
+                      ),
+                      const SizedBox(height: 1),
+
+                      // ── Destination button ──────────────────────────
+                      _buildLocationButton(
+                        icon: Icons.location_on,
+                        iconColor: AppStyles.successColor,
+                        label: _destinationLabel ?? 'Select destination',
+                        isSet: _destinationLabel != null,
+                        isLoading: false,
+                        onTap: () => _openPicker(isPickup: false),
                       ),
                       const SizedBox(height: 12),
 
                       // Date + Seats row
                       Row(
                         children: [
-                          // Date picker
                           Expanded(
                             child: GestureDetector(
                               onTap: _pickDate,
@@ -455,8 +632,6 @@ class _HomeTabState extends State<_HomeTab> {
                             ),
                           ),
                           const SizedBox(width: 12),
-
-                          // Seats counter
                           Expanded(
                             child: Container(
                               height: 52,
@@ -465,7 +640,8 @@ class _HomeTabState extends State<_HomeTab> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.center,
                                 children: [
                                   GestureDetector(
                                     onTap: () {
@@ -474,19 +650,18 @@ class _HomeTabState extends State<_HomeTab> {
                                     },
                                     child: Icon(Icons.remove,
                                         size: 16,
-                                        color: context.colors.textTertiary),
+                                        color:
+                                            context.colors.textTertiary),
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 12),
-                                    child: Text(
-                                      '$_seats',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 16,
-                                        color: context.colors.textPrimary,
-                                      ),
-                                    ),
+                                    child: Text('$_seats',
+                                        style: TextStyle(
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 16,
+                                            color: context
+                                                .colors.textPrimary)),
                                   ),
                                   GestureDetector(
                                     onTap: () {
@@ -495,7 +670,8 @@ class _HomeTabState extends State<_HomeTab> {
                                     },
                                     child: Icon(Icons.add,
                                         size: 16,
-                                        color: context.colors.textTertiary),
+                                        color:
+                                            context.colors.textTertiary),
                                   ),
                                 ],
                               ),
@@ -512,11 +688,10 @@ class _HomeTabState extends State<_HomeTab> {
                         child: ElevatedButton.icon(
                           onPressed: _search,
                           icon: const Icon(Icons.search, size: 20),
-                          label: Text(
-                            context.l10n.searchRides,
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
+                          label: Text(context.l10n.searchRides,
+                              style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppStyles.darkMaroon,
                             foregroundColor: AppStyles.onPrimary,
@@ -535,7 +710,7 @@ class _HomeTabState extends State<_HomeTab> {
 
           const SizedBox(height: 4),
 
-          // ── Recommended for you (live) ─────────────────────────────────
+          // Recommended for you
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -573,38 +748,37 @@ class _HomeTabState extends State<_HomeTab> {
             builder: (context, bookingSnap) {
               final pastBookings = bookingSnap.data ?? [];
               return StreamBuilder<List<RideModel>>(
-                stream: context.read<RideProvider>().availableRidesStream,
+                stream:
+                    context.read<RideProvider>().availableRidesStream,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
+                        child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: CircularProgressIndicator()));
                   }
                   if (snapshot.hasError) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 8),
-                      child: Text(
-                        'Error: ${snapshot.error}',
-                        style: const TextStyle(color: Colors.red, fontSize: 12),
-                      ),
+                      child: Text('Error: ${snapshot.error}',
+                          style: const TextStyle(
+                              color: Colors.red, fontSize: 12)),
                     );
                   }
-                  final rides = _rankRides(snapshot.data ?? [], pastBookings)
-                      .take(3)
-                      .toList();
+                  final rides =
+                      _rankRides(snapshot.data ?? [], pastBookings)
+                          .take(3)
+                          .toList();
                   if (rides.isEmpty) {
                     return Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 8),
-                      child: Text(
-                        context.l10n.noRidesAvailable,
-                        style: TextStyle(
-                            color: context.colors.textSecondary, fontSize: 14),
-                      ),
+                      child: Text(context.l10n.noRidesAvailable,
+                          style: TextStyle(
+                              color: context.colors.textSecondary,
+                              fontSize: 14)),
                     );
                   }
                   return Column(
@@ -652,31 +826,61 @@ class _HomeTabState extends State<_HomeTab> {
     );
   }
 
-  static List<RideModel> _rankRides(
-      List<RideModel> rides, List<BookingModel> past) {
-    if (past.isEmpty) return rides;
-
-    final destFreq = <String, int>{};
-    final originFreq = <String, int>{};
-    final knownDrivers = <String>{};
-
-    for (final b in past) {
-      destFreq[b.destination] = (destFreq[b.destination] ?? 0) + 1;
-      originFreq[b.origin] = (originFreq[b.origin] ?? 0) + 1;
-      knownDrivers.add(b.driverId);
-    }
-
-    int score(RideModel r) =>
-        (destFreq[r.destination] ?? 0) * 3 +
-        (originFreq[r.origin] ?? 0) * 2 +
-        (knownDrivers.contains(r.driverId) ? 1 : 0);
-
-    return [...rides]..sort((a, b) {
-        final diff = score(b) - score(a);
-        return diff != 0 ? diff : b.createdAt.compareTo(a.createdAt);
-      });
+  // ── Location button ─────────────────────────────────────────────────────
+  Widget _buildLocationButton({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required bool isSet,
+    required bool isLoading,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: isLoading ? null : onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          color: context.colors.cardBackgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSet
+                ? iconColor.withValues(alpha: 0.4)
+                : context.colors.borderColor,
+          ),
+        ),
+        child: Row(
+          children: [
+            isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: iconColor))
+                : Icon(icon, color: iconColor, size: 20),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight:
+                      isSet ? FontWeight.w600 : FontWeight.w400,
+                  color: isSet
+                      ? context.colors.textPrimary
+                      : context.colors.textSecondary,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(Icons.map_outlined,
+                size: 18, color: context.colors.textTertiary),
+          ],
+        ),
+      ),
+    );
   }
 
+  // ── Stat card ───────────────────────────────────────────────────────────
   static Widget _buildStatCard({
     required IconData icon,
     required String label,
@@ -685,47 +889,62 @@ class _HomeTabState extends State<_HomeTab> {
   }) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        padding:
+            const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+          border:
+              Border.all(color: Colors.white.withValues(alpha: 0.1)),
         ),
         child: Column(
           children: [
             Icon(icon, color: iconColor, size: 22),
             const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppStyles.onPrimary,
-              ),
-            ),
+            Text(value,
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppStyles.onPrimary)),
             const SizedBox(height: 2),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: Colors.white.withValues(alpha: 0.6),
-                letterSpacing: 0.5,
-              ),
-            ),
+            Text(label,
+                style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.6),
+                    letterSpacing: 0.5)),
           ],
         ),
       ),
     );
   }
 
+  static List<RideModel> _rankRides(
+      List<RideModel> rides, List<BookingModel> past) {
+    if (past.isEmpty) return rides;
+    final destFreq = <String, int>{};
+    final originFreq = <String, int>{};
+    final knownDrivers = <String>{};
+    for (final b in past) {
+      destFreq[b.destination] = (destFreq[b.destination] ?? 0) + 1;
+      originFreq[b.origin] = (originFreq[b.origin] ?? 0) + 1;
+      knownDrivers.add(b.driverId);
+    }
+    int score(RideModel r) =>
+        (destFreq[r.destination] ?? 0) * 3 +
+        (originFreq[r.origin] ?? 0) * 2 +
+        (knownDrivers.contains(r.driverId) ? 1 : 0);
+    return [...rides]..sort((a, b) {
+        final diff = score(b) - score(a);
+        return diff != 0 ? diff : b.createdAt.compareTo(a.createdAt);
+      });
+  }
+
   Widget _buildDestinationCard(BuildContext context, String city) {
     return GestureDetector(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => RideResultsScreen(destination: city),
-        ),
-      ),
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => RideResultsScreen(destination: city),
+      )),
       child: Container(
         width: 100,
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -742,8 +961,7 @@ class _HomeTabState extends State<_HomeTab> {
                 'assets/images/${city.toLowerCase()}_city.png',
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: context.colors.cardBackgroundColor,
-                ),
+                    color: context.colors.cardBackgroundColor),
               ),
             ),
             Container(
@@ -760,15 +978,12 @@ class _HomeTabState extends State<_HomeTab> {
               bottom: 12,
               left: 0,
               right: 0,
-              child: Text(
-                city,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppStyles.onPrimary,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 14,
-                ),
-              ),
+              child: Text(city,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: AppStyles.onPrimary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14)),
             ),
           ],
         ),
@@ -777,7 +992,7 @@ class _HomeTabState extends State<_HomeTab> {
   }
 }
 
-// ── Live ride card (home feed) ───────────────────────────────────────────────
+// ── Live ride card ───────────────────────────────────────────────────────────
 class _LiveRideCard extends StatelessWidget {
   final RideModel ride;
   const _LiveRideCard({required this.ride});
@@ -806,10 +1021,9 @@ class _LiveRideCard extends StatelessWidget {
                     ? ride.driverName[0].toUpperCase()
                     : 'D',
                 style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppStyles.primaryColor,
-                ),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppStyles.primaryColor),
               ),
             ),
             const SizedBox(width: 14),
@@ -819,14 +1033,11 @@ class _LiveRideCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        ride.driverName,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: context.colors.textPrimary,
-                        ),
-                      ),
+                      Text(ride.driverName,
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: context.colors.textPrimary)),
                       const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -838,20 +1049,18 @@ class _LiveRideCard extends StatelessWidget {
                         child: Text(
                           '${ride.origin} → ${ride.destination}',
                           style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppStyles.primaryColor,
-                          ),
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: AppStyles.primaryColor),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    '${ride.date}  ·  ${ride.time}',
-                    style: TextStyle(
-                        fontSize: 12, color: context.colors.textSecondary),
-                  ),
+                  Text('${ride.date}  ·  ${ride.time}',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.textSecondary)),
                   const SizedBox(height: 4),
                   Row(
                     children: [
@@ -859,25 +1068,20 @@ class _LiveRideCard extends StatelessWidget {
                           size: 13, color: context.colors.textTertiary),
                       const SizedBox(width: 4),
                       Text(
-                        '${ride.availableSeats} ${context.l10n.seatsLeft}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: context.colors.textSecondary,
-                        ),
-                      ),
+                          '${ride.availableSeats} ${context.l10n.seatsLeft}',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: context.colors.textSecondary)),
                     ],
                   ),
                 ],
               ),
             ),
-            Text(
-              '${ride.pricePerSeat} JOD',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppStyles.primaryColor,
-              ),
-            ),
+            Text('${ride.pricePerSeat} JOD',
+                style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppStyles.primaryColor)),
           ],
         ),
       ),

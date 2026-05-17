@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/community_guidelines_screen.dart';
+import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 
@@ -49,6 +50,9 @@ class _SplashScreenState extends State<SplashScreen>
       } else {
         destination = const CommunityGuidelinesScreen();
       }
+
+      // Reset to home tab before navigating
+      context.read<NavigationProvider>().resetTabs();
 
       // Navigate first
       Navigator.of(context).pushReplacement(

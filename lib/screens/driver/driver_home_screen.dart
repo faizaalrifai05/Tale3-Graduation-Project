@@ -58,10 +58,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               SizedBox(width: 10),
               Text(
                 'Account Blocked',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ],
           ),
@@ -77,18 +74,13 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 Navigator.pop(context);
                 Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(
-                    builder: (_) => const CommunityGuidelinesScreen(),
-                  ),
+                      builder: (_) => const CommunityGuidelinesScreen()),
                   (route) => false,
                 );
               },
-              child: const Text(
-                'OK',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
+              child: const Text('OK',
+                  style: TextStyle(
+                      fontWeight: FontWeight.w600, color: Colors.red)),
             ),
           ],
         ),
@@ -99,45 +91,56 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final navProvider = context.watch<NavigationProvider>();
+    final isOnHomeTab = navProvider.driverTabIndex == 0;
 
-    return Scaffold(
-      backgroundColor: context.colors.backgroundColor,
-      body: IndexedStack(
-        index: navProvider.driverTabIndex,
-        children: const [
-          _DriverHomeTab(),
-          PickupScheduleScreen(),
-          DriverChatScreen(),
-          DriverProfileScreen(),
-        ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: navProvider.driverTabIndex,
-        onTap: (index) {
-          context.read<NavigationProvider>().setDriverTab(index);
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: const Icon(Icons.home),
-            label: context.l10n.home.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.directions_car_outlined),
-            activeIcon: const Icon(Icons.directions_car),
-            label: context.l10n.myRides.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.chat_bubble_outline),
-            activeIcon: const Icon(Icons.chat_bubble),
-            label: context.l10n.chat.toUpperCase(),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
-            label: context.l10n.profile.toUpperCase(),
-          ),
-        ],
+    // PopScope behaviour:
+    // • On tab 0 (Home)  → canPop = true  → back exits the app normally
+    // • On any other tab → canPop = false → we intercept and jump to tab 0
+    return PopScope(
+      canPop: isOnHomeTab,
+      onPopInvoked: (didPop) {
+        if (!didPop) {
+          navProvider.setDriverTab(0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: context.colors.backgroundColor,
+        body: IndexedStack(
+          index: navProvider.driverTabIndex,
+          children: const [
+            _DriverHomeTab(),
+            PickupScheduleScreen(),
+            DriverChatScreen(),
+            DriverProfileScreen(),
+          ],
+        ),
+        bottomNavigationBar: AppBottomNavBar(
+          currentIndex: navProvider.driverTabIndex,
+          onTap: (index) =>
+              context.read<NavigationProvider>().setDriverTab(index),
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: context.l10n.home.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.directions_car_outlined),
+              activeIcon: const Icon(Icons.directions_car),
+              label: context.l10n.myRides.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.chat_bubble_outline),
+              activeIcon: const Icon(Icons.chat_bubble),
+              label: context.l10n.chat.toUpperCase(),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: context.l10n.profile.toUpperCase(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -155,9 +158,6 @@ class _DriverHomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ═══════════════════════════════════════════════════════
-          //  GRADIENT HERO HEADER
-          // ═══════════════════════════════════════════════════════
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -203,7 +203,8 @@ class _DriverHomeTab extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.18),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                  color: Colors.white.withValues(alpha: 0.3)),
+                                  color:
+                                      Colors.white.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               children: [
@@ -243,7 +244,7 @@ class _DriverHomeTab extends StatelessWidget {
                       },
                     ),
 
-                    // Top row: avatar + greeting + notification
+                    // Top row
                     Row(
                       children: [
                         Container(
@@ -271,7 +272,8 @@ class _DriverHomeTab extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.7),
+                                  color:
+                                      Colors.white.withValues(alpha: 0.7),
                                   letterSpacing: 1.2,
                                 ),
                               ),
@@ -287,7 +289,6 @@ class _DriverHomeTab extends StatelessWidget {
                             ],
                           ),
                         ),
-                        // Notification bell
                         Container(
                           width: 40,
                           height: 40,
@@ -323,10 +324,9 @@ class _DriverHomeTab extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // ── Stats row ──
+                    // Stats row
                     Row(
                       children: [
-                        // ── DYNAMIC earnings stat card ─────────────────
                         StreamBuilder<int>(
                           stream: context
                               .read<BookingProvider>()
@@ -347,7 +347,6 @@ class _DriverHomeTab extends StatelessWidget {
                           },
                         ),
                         const SizedBox(width: 10),
-                        // ── DYNAMIC reviews stat card ──────────────────
                         StreamBuilder<List<RatingModel>>(
                           stream: context
                               .read<RatingProvider>()
@@ -386,9 +385,7 @@ class _DriverHomeTab extends StatelessWidget {
             ),
           ),
 
-          // ═══════════════════════════════════════════════════════
-          //  CREATE RIDE BUTTON (overlapping card)
-          // ═══════════════════════════════════════════════════════
+          // Create ride button
           Transform.translate(
             offset: const Offset(0, -16),
             child: Padding(
@@ -398,19 +395,20 @@ class _DriverHomeTab extends StatelessWidget {
                 elevation: 4,
                 shadowColor: AppStyles.primaryColor.withValues(alpha: 0.3),
                 child: InkWell(
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                          builder: (_) => const DriverCreateRideScreen()),
-                    );
-                  },
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const DriverCreateRideScreen()),
+                  ),
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [AppStyles.primaryColor, AppStyles.darkMaroon],
+                        colors: [
+                          AppStyles.primaryColor,
+                          AppStyles.darkMaroon
+                        ],
                       ),
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -436,9 +434,7 @@ class _DriverHomeTab extends StatelessWidget {
             ),
           ),
 
-          // ═══════════════════════════════════════════════════════
-          //  RECENT RIDES (live from Firestore)
-          // ═══════════════════════════════════════════════════════
+          // Active rides
           StreamBuilder<List<RideModel>>(
             stream: context.read<RideProvider>().myRidesStream,
             builder: (context, snapshot) {
@@ -472,15 +468,16 @@ class _DriverHomeTab extends StatelessWidget {
                           GestureDetector(
                             onTap: () => Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    DriverRideDetailsScreen(ride: activeRide),
+                                builder: (_) => DriverRideDetailsScreen(
+                                    ride: activeRide),
                               ),
                             ),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: context.colors.highlightBackgroundColor,
+                                color:
+                                    context.colors.highlightBackgroundColor,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
@@ -498,11 +495,9 @@ class _DriverHomeTab extends StatelessWidget {
                   const SizedBox(height: 12),
                   if (snapshot.connectionState == ConnectionState.waiting)
                     const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: CircularProgressIndicator(),
-                      ),
-                    )
+                        child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: CircularProgressIndicator()))
                   else if (activeRide == null)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -546,8 +541,6 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-
   String _getGreeting(BuildContext context) {
     final hour = DateTime.now().hour;
     if (hour < 12) return context.l10n.goodMorning;
@@ -570,30 +563,25 @@ class _DriverHomeTab extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+            border:
+                Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
               Icon(icon, color: iconColor, size: 22),
               const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppStyles.onPrimary,
-                ),
-              ),
+              Text(value,
+                  style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppStyles.onPrimary)),
               const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.6),
-                  letterSpacing: 0.5,
-                ),
-              ),
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.6),
+                      letterSpacing: 0.5)),
             ],
           ),
         ),
@@ -601,7 +589,6 @@ class _DriverHomeTab extends StatelessWidget {
     );
   }
 
-  // ── Reviews bottom sheet — fully dynamic from Firestore ─────────────────
   static void _showReviewsSheet(BuildContext context) {
     final driverUid =
         context.read<app_auth.AuthProvider>().currentUser?.uid ?? '';
@@ -612,124 +599,106 @@ class _DriverHomeTab extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (sheetCtx) {
-        // Use outer context for all theme/l10n/provider access.
-        // Use sheetCtx ONLY for MediaQuery so the height is correct.
-        return Container(
-          height: MediaQuery.of(sheetCtx).size.height * 0.75,
-          decoration: BoxDecoration(
-            color: context.colors.surfaceColor,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: StreamBuilder<List<RatingModel>>(
-            stream: stream,
-            builder: (_, snap) {
-              final reviews = snap.data ?? [];
-              final avg = reviews.isEmpty
-                  ? null
-                  : reviews.map((r) => r.stars).reduce((a, b) => a + b) /
-                      reviews.length;
+      builder: (sheetCtx) => Container(
+        height: MediaQuery.of(sheetCtx).size.height * 0.75,
+        decoration: BoxDecoration(
+          color: context.colors.surfaceColor,
+          borderRadius:
+              const BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: StreamBuilder<List<RatingModel>>(
+          stream: stream,
+          builder: (_, snap) {
+            final reviews = snap.data ?? [];
+            final avg = reviews.isEmpty
+                ? null
+                : reviews.map((r) => r.stars).reduce((a, b) => a + b) /
+                    reviews.length;
 
-              return Column(
-                children: [
-                  // Handle bar
-                  Container(
-                    margin: const EdgeInsets.only(top: 12),
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.colors.borderColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+            return Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: context.colors.borderColor,
+                    borderRadius: BorderRadius.circular(2),
                   ),
-
-                  // Header row
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                    child: Row(
-                      children: [
-                        Text(
-                          context.l10n.myReviews,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                  child: Row(
+                    children: [
+                      Text(context.l10n.myReviews,
                           style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: context.colors.textPrimary,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: context.colors.textPrimary)),
+                      const Spacer(),
+                      if (avg != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color:
+                                context.colors.highlightBackgroundColor,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.star_rounded,
+                                  color: AppStyles.goldStar, size: 16),
+                              const SizedBox(width: 4),
+                              Text(avg.toStringAsFixed(1),
+                                  style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppStyles.primaryColor)),
+                            ],
                           ),
                         ),
-                        const Spacer(),
-                        // Average badge — only shown when there are reviews
-                        if (avg != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: context.colors.highlightBackgroundColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.star_rounded,
-                                    color: AppStyles.goldStar, size: 16),
-                                const SizedBox(width: 4),
-                                Text(
-                                  avg.toStringAsFixed(1),
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppStyles.primaryColor,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                      ],
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      reviews.isEmpty
+                          ? 'No reviews yet'
+                          : '${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'} from passengers',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: context.colors.textSecondary),
                     ),
                   ),
-
-                  // Subtitle
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        reviews.isEmpty
-                            ? 'No reviews yet'
-                            : '${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'} from passengers',
-                        style: TextStyle(
-                            fontSize: 13,
-                            color: context.colors.textSecondary),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Divider(height: 1),
-
-                  // Body — empty state or list
-                  Expanded(
-                    child: reviews.isEmpty
-                        ? _buildEmptyReviews(context)
-                        : ListView.separated(
-                            physics: const BouncingScrollPhysics(),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 20, vertical: 16),
-                            itemCount: reviews.length,
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 28),
-                            itemBuilder: (_, i) =>
-                                _buildReviewItem(context, reviews[i]),
-                          ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
+                ),
+                const SizedBox(height: 12),
+                const Divider(height: 1),
+                Expanded(
+                  child: reviews.isEmpty
+                      ? _buildEmptyReviews(context)
+                      : ListView.separated(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 16),
+                          itemCount: reviews.length,
+                          separatorBuilder: (_, __) =>
+                              const Divider(height: 28),
+                          itemBuilder: (_, i) =>
+                              _buildReviewItem(context, reviews[i]),
+                        ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
-  // Empty state widget shown when driver has no reviews yet
   static Widget _buildEmptyReviews(BuildContext context) {
     return Center(
       child: Padding(
@@ -737,37 +706,28 @@ class _DriverHomeTab extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.star_border_rounded,
-              size: 64,
-              color: context.colors.textTertiary.withValues(alpha: 0.4),
-            ),
+            Icon(Icons.star_border_rounded,
+                size: 64,
+                color: context.colors.textTertiary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
-            Text(
-              'No reviews yet',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: context.colors.textSecondary,
-              ),
-            ),
+            Text('No reviews yet',
+                style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textSecondary)),
             const SizedBox(height: 8),
-            Text(
-              'Complete trips and passengers will leave\nreviews here.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: context.colors.textTertiary,
-                height: 1.5,
-              ),
-            ),
+            Text('Complete trips and passengers will leave\nreviews here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textTertiary,
+                    height: 1.5)),
           ],
         ),
       ),
     );
   }
 
-  // Single review item built from real RatingModel data
   static Widget _buildReviewItem(BuildContext context, RatingModel r) {
     final now = DateTime.now();
     final diff = now.difference(r.createdAt);
@@ -784,7 +744,6 @@ class _DriverHomeTab extends StatelessWidget {
       dateStr =
           '${r.createdAt.day}/${r.createdAt.month}/${r.createdAt.year}';
     }
-
     final displayName =
         r.passengerName.isNotEmpty ? r.passengerName : 'Passenger';
     final initial = displayName[0].toUpperCase();
@@ -797,61 +756,47 @@ class _DriverHomeTab extends StatelessWidget {
             CircleAvatar(
               radius: 18,
               backgroundColor: context.colors.highlightBackgroundColor,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: AppStyles.primaryColor,
-                ),
-              ),
+              child: Text(initial,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppStyles.primaryColor)),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    displayName,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textPrimary,
-                    ),
-                  ),
-                  Text(
-                    dateStr,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: context.colors.textTertiary,
-                    ),
-                  ),
+                  Text(displayName,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textPrimary)),
+                  Text(dateStr,
+                      style: TextStyle(
+                          fontSize: 11,
+                          color: context.colors.textTertiary)),
                 ],
               ),
             ),
             Row(
               mainAxisSize: MainAxisSize.min,
-              children: List.generate(5, (si) {
-                return Icon(
-                  si < r.stars
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
-                  color: AppStyles.goldStar,
-                  size: 16,
-                );
-              }),
+              children: List.generate(5, (si) => Icon(
+                    si < r.stars
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    color: AppStyles.goldStar,
+                    size: 16,
+                  )),
             ),
           ],
         ),
         if (r.comment.trim().isNotEmpty) ...[
           const SizedBox(height: 10),
-          Text(
-            r.comment,
-            style: TextStyle(
-              fontSize: 13,
-              height: 1.5,
-              color: context.colors.textSecondary,
-            ),
-          ),
+          Text(r.comment,
+              style: TextStyle(
+                  fontSize: 13,
+                  height: 1.5,
+                  color: context.colors.textSecondary)),
         ],
       ],
     );
@@ -871,7 +816,7 @@ class _DriverHomeTab extends StatelessWidget {
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 16,
-              offset: const Offset(0, 4)),
+              offset: const Offset(0, 4))
         ],
       ),
       child: Column(
@@ -890,8 +835,8 @@ class _DriverHomeTab extends StatelessWidget {
                         color: AppStyles.primaryColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                            color:
-                                AppStyles.primaryColor.withValues(alpha: 0.3),
+                            color: AppStyles.primaryColor
+                                .withValues(alpha: 0.3),
                             width: 3),
                       ),
                     ),
@@ -903,9 +848,8 @@ class _DriverHomeTab extends StatelessWidget {
                       width: 10,
                       height: 10,
                       decoration: const BoxDecoration(
-                        color: AppStyles.successColor,
-                        shape: BoxShape.circle,
-                      ),
+                          color: AppStyles.successColor,
+                          shape: BoxShape.circle),
                     ),
                   ],
                 ),
@@ -915,45 +859,36 @@ class _DriverHomeTab extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      ride.origin,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: context.colors.textPrimary),
-                    ),
+                    Text(ride.origin,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: context.colors.textPrimary)),
                     const SizedBox(height: 22),
-                    Text(
-                      ride.destination,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: context.colors.textPrimary),
-                    ),
+                    Text(ride.destination,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                            color: context.colors.textPrimary)),
                   ],
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: context.colors.highlightBackgroundColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text(
-                  '${ride.pricePerSeat} JOD',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: AppStyles.primaryColor,
-                  ),
-                ),
+                child: Text('${ride.pricePerSeat} JOD',
+                    style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: AppStyles.primaryColor)),
               ),
             ],
           ),
-
           const SizedBox(height: 16),
-
           Row(
             children: [
               _infoChip(context, Icons.calendar_today_rounded,
@@ -965,11 +900,9 @@ class _DriverHomeTab extends StatelessWidget {
                   '${ride.bookedSeats} / ${ride.totalSeats} ${context.l10n.seats}'),
             ],
           ),
-
           const SizedBox(height: 16),
           const Divider(height: 1),
           const SizedBox(height: 14),
-
           Row(
             children: [
               if (bookedCount > 0)
@@ -979,7 +912,8 @@ class _DriverHomeTab extends StatelessWidget {
                   child: Stack(
                     children: List.generate(
                       bookedCount.clamp(1, 3),
-                      (i) => _stackedAvatar(context, i * 20.0, '${i + 1}'),
+                      (i) => _stackedAvatar(
+                          context, i * 20.0, '${i + 1}'),
                     ),
                   ),
                 )
@@ -988,18 +922,15 @@ class _DriverHomeTab extends StatelessWidget {
                     size: 24, color: context.colors.textTertiary),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  '$bookedCount ${context.l10n.passengers}',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: context.colors.textSecondary,
-                  ),
-                ),
+                child: Text('$bookedCount ${context.l10n.passengers}',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: context.colors.textSecondary)),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppStyles.successLightBg,
                   borderRadius: BorderRadius.circular(8),
@@ -1010,14 +941,11 @@ class _DriverHomeTab extends StatelessWidget {
                     const Icon(Icons.check_circle,
                         color: AppStyles.successColor, size: 14),
                     const SizedBox(width: 4),
-                    Text(
-                      context.l10n.onTrack,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppStyles.successDarkText,
-                      ),
-                    ),
+                    Text(context.l10n.onTrack,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppStyles.successDarkText)),
                   ],
                 ),
               ),
@@ -1042,14 +970,12 @@ class _DriverHomeTab extends StatelessWidget {
             Icon(icon, size: 14, color: context.colors.textTertiary),
             const SizedBox(width: 6),
             Flexible(
-              child: Text(
-                text,
-                style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    color: context.colors.textSecondary),
-                overflow: TextOverflow.ellipsis,
-              ),
+              child: Text(text,
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: context.colors.textSecondary),
+                  overflow: TextOverflow.ellipsis),
             ),
           ],
         ),
@@ -1064,19 +990,17 @@ class _DriverHomeTab extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: context.colors.surfaceColor, width: 2),
+          border:
+              Border.all(color: context.colors.surfaceColor, width: 2),
         ),
         child: CircleAvatar(
           radius: 14,
           backgroundColor: context.colors.highlightBackgroundColor,
-          child: Text(
-            letter,
-            style: const TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: AppStyles.primaryColor,
-            ),
-          ),
+          child: Text(letter,
+              style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppStyles.primaryColor)),
         ),
       ),
     );
@@ -1099,9 +1023,8 @@ class _LiveDotState extends State<_LiveDot>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1),
-    )..repeat(reverse: true);
+        vsync: this, duration: const Duration(seconds: 1))
+      ..repeat(reverse: true);
   }
 
   @override
@@ -1118,9 +1041,7 @@ class _LiveDotState extends State<_LiveDot>
         width: 8,
         height: 8,
         decoration: const BoxDecoration(
-          color: AppStyles.successColor,
-          shape: BoxShape.circle,
-        ),
+            color: AppStyles.successColor, shape: BoxShape.circle),
       ),
     );
   }

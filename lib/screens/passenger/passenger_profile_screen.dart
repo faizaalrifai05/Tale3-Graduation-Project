@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:testtale3/screens/settings_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/auth_provider.dart';
+import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/providers/rating_provider.dart';
+import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_saved_places_screen.dart';
 import 'dart:io';
@@ -13,7 +16,8 @@ class PassengerProfileScreen extends StatefulWidget {
   const PassengerProfileScreen({super.key});
 
   @override
-  State<PassengerProfileScreen> createState() => _PassengerProfileScreenState();
+  State<PassengerProfileScreen> createState() =>
+      _PassengerProfileScreenState();
 }
 
 class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
@@ -43,12 +47,11 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage(ImageSource source, StateSetter setSheetState) async {
+  Future<void> _pickImage(
+      ImageSource source, StateSetter setSheetState) async {
     final pickedFile = await ImagePicker().pickImage(source: source);
     if (pickedFile != null) {
-      setState(() {
-        _profileImage = File(pickedFile.path);
-      });
+      setState(() => _profileImage = File(pickedFile.path));
       setSheetState(() {});
     }
   }
@@ -59,31 +62,31 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.camera_alt, color: AppStyles.primaryColor),
-                title: Text(context.l10n.takeAPhoto),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.camera, setSheetState);
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.photo_library, color: AppStyles.primaryColor),
-                title: Text(context.l10n.chooseFromGallery),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _pickImage(ImageSource.gallery, setSheetState);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading:
+                  Icon(Icons.camera_alt, color: AppStyles.primaryColor),
+              title: Text(context.l10n.takeAPhoto),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.camera, setSheetState);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library,
+                  color: AppStyles.primaryColor),
+              title: Text(context.l10n.chooseFromGallery),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickImage(ImageSource.gallery, setSheetState);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -98,160 +101,155 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) {
-        return StatefulBuilder(builder: (BuildContext context, StateSetter setSheetState) {
+      builder: (ctx) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setSheetState) {
           return Padding(
             padding: EdgeInsets.only(
               left: 24,
               right: 24,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 12),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: context.colors.borderColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  context.l10n.editProfile,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: context.colors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Divider(),
-                const SizedBox(height: 20),
-
-                // Profile photo picker
-                GestureDetector(
-                  onTap: () => _showImagePickerOptions(setSheetState),
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 90,
-                        height: 90,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                              color: AppStyles.primaryColor, width: 2),
-                        ),
-                        child: _profileImage != null
-                            ? ClipOval(
-                                child: Image.file(
-                                  _profileImage!,
-                                  width: 90,
-                                  height: 90,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : CircleAvatar(
-                                backgroundColor: context.colors.borderColor,
-                                child: Icon(Icons.person,
-                                    color: AppStyles.onPrimary, size: 48),
-                              ),
-                      ),
-                      Positioned(
-                        bottom: 0,
-                        right: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(7),
-                          decoration: BoxDecoration(
-                            color: AppStyles.primaryColor,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(Icons.camera_alt,
-                              color: AppStyles.onPrimary, size: 14),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  context.l10n.tapToChangePhoto,
-                  style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
-                ),
-                const SizedBox(height: 24),
-
-                _buildSheetField(
-                  controller: _nameController,
-                  label: context.l10n.fullName.toUpperCase(),
-                  hint: context.l10n.yourFullName,
-                  icon: Icons.person_outline,
-                ),
-                const SizedBox(height: 16),
-                _buildSheetField(
-                  controller: _phoneController,
-                  label: context.l10n.phoneNumber.toUpperCase(),
-                  hint: context.l10n.phoneHint,
-                  icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 28),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      final name = _nameController.text.trim();
-                      final phone = _phoneController.text.trim();
-                      setState(() {
-                        _displayName = name;
-                        _phoneNumber = phone;
-                      });
-                      context.read<AuthProvider>().updateProfile(
-                            name: name, phone: phone);
-                      Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.check_circle_outline,
-                                  color: AppStyles.onPrimary, size: 20),
-                              SizedBox(width: 12),
-                              Text(context.l10n.profileUpdated,
-                                  style: TextStyle(
-                                      fontWeight: FontWeight.w500)),
-                            ],
-                          ),
-                          backgroundColor: AppStyles.successDarkText,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
-                          margin: const EdgeInsets.all(16),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppStyles.darkMaroon,
-                      foregroundColor: AppStyles.onPrimary,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Text(context.l10n.saveChanges,
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
+              bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
             ),
-          ),
-        );
-        });
-      },
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 12),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.colors.borderColor,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(context.l10n.editProfile,
+                      style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: context.colors.textPrimary)),
+                  const SizedBox(height: 4),
+                  const Divider(),
+                  const SizedBox(height: 20),
+
+                  GestureDetector(
+                    onTap: () => _showImagePickerOptions(setSheetState),
+                    child: Stack(
+                      children: [
+                        Container(
+                          width: 90,
+                          height: 90,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: AppStyles.primaryColor, width: 2),
+                          ),
+                          child: _profileImage != null
+                              ? ClipOval(
+                                  child: Image.file(_profileImage!,
+                                      width: 90,
+                                      height: 90,
+                                      fit: BoxFit.cover))
+                              : CircleAvatar(
+                                  backgroundColor:
+                                      context.colors.borderColor,
+                                  child: Icon(Icons.person,
+                                      color: AppStyles.onPrimary,
+                                      size: 48)),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: AppStyles.primaryColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(Icons.camera_alt,
+                                color: AppStyles.onPrimary, size: 14),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(context.l10n.tapToChangePhoto,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.textTertiary)),
+                  const SizedBox(height: 24),
+
+                  _buildSheetField(
+                    controller: _nameController,
+                    label: context.l10n.fullName.toUpperCase(),
+                    hint: context.l10n.yourFullName,
+                    icon: Icons.person_outline,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildSheetField(
+                    controller: _phoneController,
+                    label: context.l10n.phoneNumber.toUpperCase(),
+                    hint: context.l10n.phoneHint,
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 28),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        final name = _nameController.text.trim();
+                        final phone = _phoneController.text.trim();
+                        setState(() {
+                          _displayName = name;
+                          _phoneNumber = phone;
+                        });
+                        context
+                            .read<AuthProvider>()
+                            .updateProfile(name: name, phone: phone);
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                Icon(Icons.check_circle_outline,
+                                    color: AppStyles.onPrimary, size: 20),
+                                const SizedBox(width: 12),
+                                Text(context.l10n.profileUpdated,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w500)),
+                              ],
+                            ),
+                            backgroundColor: AppStyles.successDarkText,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            margin: const EdgeInsets.all(16),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppStyles.darkMaroon,
+                        foregroundColor: AppStyles.onPrimary,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(context.l10n.saveChanges,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -265,24 +263,22 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            color: context.colors.textTertiary,
-            letterSpacing: 1,
-          ),
-        ),
+        Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: context.colors.textTertiary,
+                letterSpacing: 1)),
         const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: keyboardType,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle:
-                TextStyle(color: context.colors.inputHintColor, fontSize: 14),
-            prefixIcon: Icon(icon, color: context.colors.inputHintColor, size: 20),
+            hintStyle: TextStyle(
+                color: context.colors.inputHintColor, fontSize: 14),
+            prefixIcon: Icon(icon,
+                color: context.colors.inputHintColor, size: 20),
             filled: true,
             fillColor: context.colors.inputFillColor,
             border: OutlineInputBorder(
@@ -302,14 +298,21 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     final authUser = context.watch<AuthProvider>().currentUser;
     final shownName = _displayName.isNotEmpty
         ? _displayName
-        : (authUser?.name.isNotEmpty == true ? authUser!.name : context.l10n.yourName);
+        : (authUser?.name.isNotEmpty == true
+            ? authUser!.name
+            : context.l10n.yourName);
     final displayPhone = _phoneNumber.isNotEmpty
         ? _phoneNumber
-        : (authUser?.phone.isNotEmpty == true ? authUser!.phone : context.l10n.addPhoneNumber);
+        : (authUser?.phone.isNotEmpty == true
+            ? authUser!.phone
+            : context.l10n.addPhoneNumber);
+
+    // ── Years on platform from createdAt ─────────────────────────────────
+    final years = authUser?.yearsOnPlatform ?? 0;
+    final yearsDisplay = years == 0 ? '< 1' : '$years';
 
     return Stack(
       children: [
-        // Background
         Container(color: context.colors.backgroundColor),
 
         Column(
@@ -325,7 +328,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.only(
+                borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(32),
                   bottomRight: Radius.circular(32),
                 ),
@@ -336,40 +339,34 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 20, 50),
                   child: Column(
                     children: [
-                      // Top Row: Title & Actions
+                      // Top Row
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text(
-                            context.l10n.myProfile,
-                            style: TextStyle(
-                              color: AppStyles.onPrimary,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                          Text(context.l10n.myProfile,
+                              style: TextStyle(
+                                  color: AppStyles.onPrimary,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w800)),
                           Row(
                             children: [
                               TextButton.icon(
                                 onPressed: _openEditSheet,
                                 icon: Icon(Icons.edit_outlined,
                                     size: 16, color: AppStyles.onPrimary),
-                                label: Text(
-                                  context.l10n.edit,
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppStyles.onPrimary,
-                                  ),
-                                ),
+                                label: Text(context.l10n.edit,
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppStyles.onPrimary)),
                               ),
                               IconButton(
                                 icon: Icon(Icons.settings_outlined,
                                     color: AppStyles.onPrimary),
-                                onPressed: () {
-                                  Navigator.of(context).push(MaterialPageRoute(
-                                      builder: (_) => const SettingsScreen()));
-                                },
+                                onPressed: () => Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                        builder: (_) =>
+                                            const SettingsScreen())),
                               ),
                             ],
                           ),
@@ -380,7 +377,6 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                       // Avatar & Name Row
                       Row(
                         children: [
-                          // Avatar
                           GestureDetector(
                             onTap: _openEditSheet,
                             child: Stack(
@@ -391,24 +387,24 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.5),
+                                        color: Colors.white
+                                            .withValues(alpha: 0.5),
                                         width: 3),
                                   ),
                                   child: _profileImage != null
                                       ? ClipOval(
-                                          child: Image.file(
-                                            _profileImage!,
-                                            width: 80,
-                                            height: 80,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        )
-                                      : Padding(
+                                          child: Image.file(_profileImage!,
+                                              width: 80,
+                                              height: 80,
+                                              fit: BoxFit.cover))
+                                      : const Padding(
                                           padding: EdgeInsets.all(2),
                                           child: CircleAvatar(
-                                            backgroundColor: Color(0x33FFFFFF),
+                                            backgroundColor:
+                                                Color(0x33FFFFFF),
                                             child: Icon(Icons.person,
-                                                color: AppStyles.onPrimary, size: 42),
+                                                color: AppStyles.onPrimary,
+                                                size: 42),
                                           ),
                                         ),
                                 ),
@@ -425,7 +421,8 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                           width: 2),
                                     ),
                                     child: Icon(Icons.camera_alt,
-                                        color: AppStyles.onPrimary, size: 12),
+                                        color: AppStyles.onPrimary,
+                                        size: 12),
                                   ),
                                 ),
                               ],
@@ -433,33 +430,31 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                           ),
                           const SizedBox(width: 20),
 
-                          // Name & Info
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  shownName.isEmpty ? context.l10n.passengerName : shownName,
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppStyles.onPrimary,
-                                  ),
+                                  shownName.isEmpty
+                                      ? context.l10n.passengerName
+                                      : shownName,
+                                  style: const TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800,
+                                      color: AppStyles.onPrimary),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     Icon(Icons.phone_outlined,
-                                        size: 14, color: AppStyles.onPrimary),
+                                        size: 14,
+                                        color: AppStyles.onPrimary),
                                     const SizedBox(width: 6),
-                                    Text(
-                                      displayPhone,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppStyles.onPrimary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
+                                    Text(displayPhone,
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppStyles.onPrimary,
+                                            fontWeight: FontWeight.w500)),
                                   ],
                                 ),
                               ],
@@ -472,7 +467,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                 ),
               ),
             ),
-            
+
             // ════════════════════════════════════════════════════════
             // REMAINING CONTENT (Scrollable)
             // ════════════════════════════════════════════════════════
@@ -480,20 +475,21 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 60), // Space for overlapping card
+                  padding: const EdgeInsets.only(top: 60),
                   child: Column(
                     children: [
-                      // ── Quick Links ──────────────────────────────────
+                      // Quick Links
                       _buildSection(
                         title: context.l10n.quickLinks,
-                        child: _buildLinkTile(
-                            Icons.favorite_border_rounded, context.l10n.savedPlaces),
+                        child: _buildLinkTile(Icons.favorite_border_rounded,
+                            context.l10n.savedPlaces),
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Logout ───────────────────────────────────────
+                      // Logout
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 24),
                         child: SizedBox(
                           width: double.infinity,
                           height: 52,
@@ -503,14 +499,16 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16)),
+                                      borderRadius:
+                                          BorderRadius.circular(16)),
                                   title: Text(context.l10n.logOut,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                           fontSize: 18,
                                           fontWeight: FontWeight.w700)),
                                   content: Text(
                                       context.l10n.logOutConfirm,
-                                      style: TextStyle(fontSize: 14)),
+                                      style:
+                                          const TextStyle(fontSize: 14)),
                                   actions: [
                                     TextButton(
                                       onPressed: () =>
@@ -538,21 +536,19 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
                                 context.read<AuthProvider>().logout();
                                 Navigator.of(context).pushAndRemoveUntil(
                                   MaterialPageRoute(
-                                      builder: (_) => const WelcomeScreen()),
+                                      builder: (_) =>
+                                          const WelcomeScreen()),
                                   (route) => false,
                                 );
                               }
                             },
                             icon: Icon(Icons.logout,
                                 color: AppStyles.primaryColor),
-                            label: Text(
-                              context.l10n.logOut,
-                              style: TextStyle(
-                                color: AppStyles.primaryColor,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            label: Text(context.l10n.logOut,
+                                style: TextStyle(
+                                    color: AppStyles.primaryColor,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600)),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
                                   color: AppStyles.primaryColor),
@@ -572,11 +568,10 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
         ),
 
         // ════════════════════════════════════════════════════════
-        // OVERLAPPING STATS CARD
-        // (Positioned absolutely over the gradient edge)
+        // OVERLAPPING STATS CARD — fully dynamic
         // ════════════════════════════════════════════════════════
         Positioned(
-          top: 200, // Roughly where the gradient ends
+          top: 200,
           left: 20,
           right: 20,
           child: Material(
@@ -585,27 +580,71 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             shadowColor: AppStyles.primaryColor.withValues(alpha: 0.15),
             color: context.colors.surfaceColor,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Row(
-                children: [
-                  _buildStatCard(
-                      icon: Icons.star_rounded,
-                      iconColor: AppStyles.goldStar,
-                      value: '4.8',
-                      label: context.l10n.rating),
-                  Container(width: 1, height: 40, color: context.colors.dividerColor),
-                  _buildStatCard(
-                      icon: Icons.directions_car_rounded,
-                      iconColor: AppStyles.primaryColor,
-                      value: '42',
-                      label: context.l10n.trips),
-                  Container(width: 1, height: 40, color: context.colors.dividerColor),
-                  _buildStatCard(
-                      icon: Icons.calendar_today_rounded,
-                      iconColor: AppStyles.successColor,
-                      value: '2',
-                      label: context.l10n.years),
-                ],
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 20, vertical: 16),
+              child: StreamBuilder<List<BookingModel>>(
+                stream: context.read<BookingProvider>().myBookingsStream,
+                builder: (ctx, bookingSnap) {
+                  final allBookings = bookingSnap.data ?? [];
+                  final completedCount = allBookings
+                      .where((b) => b.status == 'completed')
+                      .length;
+                  final uid = authUser?.uid ?? '';
+
+                  return StreamBuilder<List<Map<String, dynamic>>>(
+                    stream: context
+                        .read<RatingProvider>()
+                        .passengerRatingsStream(uid),
+                    builder: (ctx2, ratingSnap) {
+                      final ratings = ratingSnap.data ?? [];
+                      final avg = ratings.isEmpty
+                          ? null
+                          : ratings
+                                  .map((r) =>
+                                      (r['stars'] as num?)?.toDouble() ??
+                                      0.0)
+                                  .reduce((a, b) => a + b) /
+                              ratings.length;
+
+                      return Row(
+                        children: [
+                          // Rating — avg from passengerRatings
+                          _buildStatCard(
+                              icon: avg == null
+                                  ? Icons.star_border_rounded
+                                  : Icons.star_rounded,
+                              iconColor: avg == null
+                                  ? context.colors.textTertiary
+                                  : AppStyles.goldStar,
+                              value: avg == null
+                                  ? '—'
+                                  : avg.toStringAsFixed(1),
+                              label: context.l10n.rating),
+                          Container(
+                              width: 1,
+                              height: 40,
+                              color: context.colors.dividerColor),
+                          // Trips — real completed count
+                          _buildStatCard(
+                              icon: Icons.directions_car_rounded,
+                              iconColor: AppStyles.primaryColor,
+                              value: '$completedCount',
+                              label: context.l10n.trips),
+                          Container(
+                              width: 1,
+                              height: 40,
+                              color: context.colors.dividerColor),
+                          // Years — from createdAt
+                          _buildStatCard(
+                              icon: Icons.calendar_today_rounded,
+                              iconColor: AppStyles.successColor,
+                              value: yearsDisplay,
+                              label: context.l10n.years),
+                        ],
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ),
@@ -614,7 +653,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
     );
   }
 
-  // ── Helpers ────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────
 
   Widget _buildSection({required String title, required Widget child}) {
     return Container(
@@ -623,15 +662,12 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: context.colors.textTertiary,
-              letterSpacing: 0.8,
-            ),
-          ),
+          Text(title,
+              style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: context.colors.textTertiary,
+                  letterSpacing: 0.8)),
           const SizedBox(height: 14),
           child,
         ],
@@ -653,25 +689,19 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
             children: [
               Icon(icon, color: iconColor, size: 18),
               const SizedBox(width: 4),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: context.colors.textPrimary,
-                ),
-              ),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: context.colors.textPrimary)),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: context.colors.textTertiary,
-            ),
-          ),
+          Text(label,
+              style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textTertiary)),
         ],
       ),
     );
@@ -688,21 +718,15 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
         ),
         child: Icon(icon, color: AppStyles.primaryColor, size: 20),
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: context.colors.textPrimary,
-        ),
-      ),
+      title: Text(title,
+          style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: context.colors.textPrimary)),
       trailing:
           Icon(Icons.chevron_right, color: context.colors.textTertiary),
-      onTap: () {
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PassengerSavedPlacesScreen()),
-        );
-      },
+      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => const PassengerSavedPlacesScreen())),
     );
   }
 }

@@ -126,8 +126,7 @@ class RideProvider extends ChangeNotifier {
           .get();
 
       if (snap.docs.isNotEmpty) {
-        _adminPrice =
-            (snap.docs.first.data()['basePrice'] as num).toInt();
+        _adminPrice = (snap.docs.first.data()['basePrice'] as num).toInt();
         _price = _adminPrice!;
       } else {
         // Try reverse direction: destination → origin
@@ -144,8 +143,7 @@ class RideProvider extends ChangeNotifier {
               (reverseSnap.docs.first.data()['basePrice'] as num).toInt();
           _price = _adminPrice!;
         } else {
-          _priceError =
-              'No price set for this route yet. Contact admin.';
+          _priceError = 'No price set for this route yet. Contact admin.';
         }
       }
     } catch (e) {
@@ -279,20 +277,27 @@ class RideProvider extends ChangeNotifier {
     await _db.collection('rides').doc(rideId).update({'driverArrived': true});
   }
 
-  /// Marks a ride and all its confirmed bookings as 'completed'.
+  /// Marks a ride and all its bookings (confirmed + pending) as 'completed'.
   Future<void> completeRide(String rideId) async {
     final uid = _auth.currentUser?.uid;
-    final bookingsSnap = await _db
+    // Fetch both confirmed AND pending bookings so none are missed
+    final confirmedSnap = await _db
         .collection('bookings')
         .where('rideId', isEqualTo: rideId)
         .where('driverId', isEqualTo: uid)
         .where('status', isEqualTo: 'confirmed')
         .get();
+    final pendingSnap = await _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .get();
 
     final batch = _db.batch();
     batch.update(
         _db.collection('rides').doc(rideId), {'status': 'completed'});
-    for (final doc in bookingsSnap.docs) {
+    for (final doc in [...confirmedSnap.docs, ...pendingSnap.docs]) {
       batch.update(doc.reference, {'status': 'completed'});
     }
     await batch.commit();

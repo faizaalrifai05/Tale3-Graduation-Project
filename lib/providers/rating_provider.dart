@@ -26,7 +26,6 @@ class RatingProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return 'Not logged in.';
     try {
-      // Prevent duplicate ratings for the same booking.
       final existing = await _db
           .collection('ratings')
           .where('bookingId', isEqualTo: bookingId)
@@ -48,8 +47,6 @@ class RatingProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       );
       await ref.set(rating.toMap());
-
-      // Update driver's cached average in their user document.
       _updateDriverAverage(driverId);
       return null;
     } catch (e) {
@@ -68,6 +65,18 @@ class RatingProvider extends ChangeNotifier {
           list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           return list;
         });
+  }
+
+  /// Stream of all ratings a passenger has received from drivers.
+  /// Reads from the `passengerRatings` collection.
+  Stream<List<Map<String, dynamic>>> passengerRatingsStream(
+      String passengerId) {
+    if (passengerId.isEmpty) return Stream.value([]);
+    return _db
+        .collection('passengerRatings')
+        .where('passengerId', isEqualTo: passengerId)
+        .snapshots()
+        .map((snap) => snap.docs.map((d) => d.data()).toList());
   }
 
   /// Driver rates a passenger after a completed ride.
