@@ -13,10 +13,14 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    // Reads the caller's role from their Firestore user document.
-    // Cached by Firestore per request — safe to call multiple times.
+    // Safely reads the caller's role. Returns null if the user document
+    // doesn't exist yet (e.g. during initial Google Sign-In) instead of
+    // crashing the rule evaluation with a null-dereference error.
     function callerRole() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+      let uid = request.auth.uid;
+      return exists(/databases/$(database)/documents/users/$(uid))
+        ? get(/databases/$(database)/documents/users/$(uid)).data.role
+        : null;
     }
 
     function isAdmin() {
@@ -96,6 +100,7 @@ service cloud.firestore {
         || (isSignedIn() && (
             resource.data.passengerId == request.auth.uid
             || resource.data.driverId == request.auth.uid
+            || resource.data.status == 'confirmed'
            ));
 
       // Passengers create booking requests in 'pending' state.

@@ -19,6 +19,9 @@ class UserModel {
   final VerificationStatus verificationStatus;
   final String idFrontUrl;
   final String idBackUrl;
+  // Driver car photos
+  final String carFrontUrl;
+  final String carBackUrl;
   final bool isBlocked;
   // Driver rating
   final double averageRating;
@@ -48,6 +51,8 @@ class UserModel {
     this.verificationStatus = VerificationStatus.unsubmitted,
     this.idFrontUrl = '',
     this.idBackUrl = '',
+    this.carFrontUrl = '',
+    this.carBackUrl = '',
     this.isBlocked = false,
     this.averageRating = 0.0,
     this.ratingCount = 0,
@@ -89,6 +94,8 @@ class UserModel {
     VerificationStatus? verificationStatus,
     String? idFrontUrl,
     String? idBackUrl,
+    String? carFrontUrl,
+    String? carBackUrl,
     bool? isBlocked,
     double? averageRating,
     int? ratingCount,
@@ -114,6 +121,8 @@ class UserModel {
       verificationStatus: verificationStatus ?? this.verificationStatus,
       idFrontUrl: idFrontUrl ?? this.idFrontUrl,
       idBackUrl: idBackUrl ?? this.idBackUrl,
+      carFrontUrl: carFrontUrl ?? this.carFrontUrl,
+      carBackUrl: carBackUrl ?? this.carBackUrl,
       isBlocked: isBlocked ?? this.isBlocked,
       averageRating: averageRating ?? this.averageRating,
       ratingCount: ratingCount ?? this.ratingCount,

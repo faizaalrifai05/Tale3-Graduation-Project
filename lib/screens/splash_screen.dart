@@ -6,6 +6,7 @@ import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/screens/driver/driver_car_photos_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -40,7 +41,14 @@ class _SplashScreenState extends State<SplashScreen>
       Widget destination;
       if (auth.isLoggedIn) {
         if (auth.userRole == UserRole.driver) {
-          destination = const DriverHomeScreen();
+          final status = auth.currentUser?.verificationStatus;
+          if (status == VerificationStatus.unsubmitted) {
+            destination = const DriverCarPhotosScreen(
+              name: '', email: '', password: '', phone: '',
+            );
+          } else {
+            destination = const DriverHomeScreen();
+          }
         } else if (auth.userRole == UserRole.admin) {
           // TODO: replace with AdminPanelScreen once created
           destination = const PassengerHomeScreen();

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
-import 'package:testtale3/screens/driver/driver_credit_card_screen.dart';
+import 'package:testtale3/screens/driver/driver_car_photos_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 class DriverVehicleDetailsScreen extends StatefulWidget {
@@ -94,24 +94,10 @@ class _DriverVehicleDetailsScreenState
       );
       if (!mounted) return;
 
-      // Step 3: Submit verification — sets verificationStatus to 'pending'
-      // in Firestore so admin can see the driver in the verification queue.
-      // No Firebase Storage needed — photos are stored locally only.
-      final verifyError = await authProvider.submitIdVerification(
-        frontImage: widget.frontIdImage,
-        backImage: widget.backIdImage,
-      );
-      if (!mounted) return;
-      if (verifyError != null) {
-        // Log the error but don't block navigation
-        // Driver can retry verification from their profile
-        debugPrint('Verification submission error: $verifyError');
-      }
-
-      // Navigate to credit card screen (step 4 of 5)
+      // Navigate to car photos screen (step 4 of 5)
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => DriverCreditCardScreen(
+          builder: (_) => DriverCarPhotosScreen(
             name: widget.name,
             email: widget.email,
             password: widget.password,

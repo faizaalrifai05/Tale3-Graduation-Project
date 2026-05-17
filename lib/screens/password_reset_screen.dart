@@ -108,7 +108,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
         child: Column(
           children: [
             Expanded(
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Column(
                   children: [
@@ -270,7 +270,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                       ),
                     ],
 
-                    const Spacer(),
+                    const SizedBox(height: 32),
 
                     // Login link
                     Row(

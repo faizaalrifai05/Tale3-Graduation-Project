@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
@@ -100,6 +101,8 @@ class AuthProvider extends ChangeNotifier {
               data['verificationStatus'] as String?),
           idFrontUrl: data['idFrontUrl'] ?? '',
           idBackUrl: data['idBackUrl'] ?? '',
+          carFrontUrl: data['carFrontUrl'] ?? '',
+          carBackUrl: data['carBackUrl'] ?? '',
           isBlocked: false,
           averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
           ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
@@ -276,6 +279,8 @@ class AuthProvider extends ChangeNotifier {
           'verificationStatus': 'unsubmitted',
           'idFrontUrl': '',
           'idBackUrl': '',
+          'carFrontUrl': '',
+          'carBackUrl': '',
           'isBlocked': false,
           'averageRating': 0.0,
           'ratingCount': 0,
@@ -332,10 +337,13 @@ class AuthProvider extends ChangeNotifier {
           'email': userCred.user!.email ?? '',
           'role': _roleToString(role),
           'phone': '',
+          'gender': '',
           'photoUrl': userCred.user!.photoURL ?? '',
           'verificationStatus': 'unsubmitted',
           'idFrontUrl': '',
           'idBackUrl': '',
+          'carFrontUrl': '',
+          'carBackUrl': '',
           'isBlocked': false,
           'averageRating': 0.0,
           'ratingCount': 0,
@@ -396,6 +404,58 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('submitIdVerification error: $e');
       return 'Failed to submit verification. Please try again.';
+    }
+  }
+
+  /// Uploads front and back car photos to Firebase Storage and saves URLs to Firestore.
+  Future<String?> submitCarPhotos({
+    required File frontImage,
+    required File backImage,
+  }) async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return 'Not logged in.';
+    final uid = firebaseUser.uid;
+    try {
+      final storage = FirebaseStorage.instance;
+      final frontRef = storage.ref('verification/$uid/car_front.jpg');
+      final backRef = storage.ref('verification/$uid/car_back.jpg');
+      await frontRef.putFile(frontImage);
+      await backRef.putFile(backImage);
+      final frontUrl = await frontRef.getDownloadURL();
+      final backUrl = await backRef.getDownloadURL();
+      await _db.collection('users').doc(uid).update({
+        'carFrontUrl': frontUrl,
+        'carBackUrl': backUrl,
+      });
+      _currentUser = _currentUser?.copyWith(
+        carFrontUrl: frontUrl,
+        carBackUrl: backUrl,
+      );
+      notifyListeners();
+      return null;
+    } catch (e) {
+      debugPrint('submitCarPhotos error: $e');
+      return 'Failed to upload car photos. Please try again.';
+    }
+  }
+
+  /// Sets verificationStatus to pending without requiring image files.
+  /// Used for the registration resume flow when image files are no longer in memory.
+  Future<String?> setVerificationPending() async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) return 'Not logged in.';
+    try {
+      await _db.collection('users').doc(firebaseUser.uid).update({
+        'verificationStatus': 'pending',
+      });
+      _currentUser = _currentUser?.copyWith(
+        verificationStatus: VerificationStatus.pending,
+      );
+      notifyListeners();
+      return null;
+    } catch (e) {
+      debugPrint('setVerificationPending error: $e');
+      return 'Failed to update status. Please try again.';
     }
   }
 

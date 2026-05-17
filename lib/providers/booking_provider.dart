@@ -96,7 +96,18 @@ class BookingProvider extends ChangeNotifier {
   }) async {
     final ride = _currentRide;
     final user = _auth.currentUser;
-    if (ride == null || user == null || selectedCount == 0) return null;
+
+    if (ride == null || selectedCount == 0) {
+      _confirmError = 'booking_failed';
+      notifyListeners();
+      return null;
+    }
+
+    if (user == null) {
+      _confirmError = 'not_logged_in';
+      notifyListeners();
+      return null;
+    }
 
     final seats = selectedCount;
     _confirmError = null;

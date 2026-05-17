@@ -439,7 +439,11 @@ class _DriverHomeTab extends StatelessWidget {
             stream: context.read<RideProvider>().myRidesStream,
             builder: (context, snapshot) {
               final rides = snapshot.data ?? [];
-              final activeRide = rides.isNotEmpty ? rides.first : null;
+              final activeRides = rides
+                  .where((r) => r.status == 'active' || r.status == 'live')
+                  .toList();
+              final activeRide =
+                  activeRides.isNotEmpty ? activeRides.first : null;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

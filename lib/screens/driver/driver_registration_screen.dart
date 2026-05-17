@@ -238,7 +238,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: context.colors.textTertiary)),
-                    Text('${context.l10n.step} 1 / 4',
+                    Text('${context.l10n.step} 1 / 5',
                         style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
@@ -247,7 +247,7 @@ If you have any questions about this Privacy Policy, please contact us through t
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: 0.25,
+                  value: 0.2,
                   backgroundColor: context.colors.neutralLight,
                   valueColor:
                       const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),

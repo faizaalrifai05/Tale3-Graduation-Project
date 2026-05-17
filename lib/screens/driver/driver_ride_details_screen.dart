@@ -752,9 +752,22 @@ class _RequestRow extends StatelessWidget {
     required this.onReject,
   });
 
+  void _viewLocations(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PassengerLocationSheet(
+        booking: booking,
+        ride: ride,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final detour = booking.pickupLat != null && booking.pickupLng != null
+    final hasPickup = booking.pickupLat != null && booking.pickupLng != null;
+    final detour = hasPickup
         ? MapsService.detourKm(
             LatLng(booking.pickupLat!, booking.pickupLng!),
             ride.origin,
@@ -854,6 +867,37 @@ class _RequestRow extends StatelessWidget {
                 ),
             ],
           ),
+          // View locations button (only if passenger set pins)
+          if (hasPickup) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => _viewLocations(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(Icons.map_rounded, size: 14, color: Color(0xFF1565C0)),
+                    SizedBox(width: 6),
+                    Text(
+                      'View pickup & drop-off',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1565C0),
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF1565C0)),
+                  ],
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           if (isProcessing)
             const Center(child: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)))
@@ -890,6 +934,209 @@ class _RequestRow extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PASSENGER LOCATION SHEET — map with pickup + drop-off pins
+// ─────────────────────────────────────────────────────────────────────────────
+class _PassengerLocationSheet extends StatefulWidget {
+  final BookingModel booking;
+  final RideModel ride;
+  const _PassengerLocationSheet({required this.booking, required this.ride});
+
+  @override
+  State<_PassengerLocationSheet> createState() => _PassengerLocationSheetState();
+}
+
+class _PassengerLocationSheetState extends State<_PassengerLocationSheet> {
+  GoogleMapController? _mapController;
+
+  LatLng get _pickup => LatLng(widget.booking.pickupLat!, widget.booking.pickupLng!);
+  LatLng? get _dropoff => widget.booking.dropoffLat != null && widget.booking.dropoffLng != null
+      ? LatLng(widget.booking.dropoffLat!, widget.booking.dropoffLng!)
+      : null;
+
+  @override
+  void dispose() {
+    _mapController?.dispose();
+    super.dispose();
+  }
+
+  void _onMapCreated(GoogleMapController controller) {
+    _mapController = controller;
+    _fitBounds();
+  }
+
+  void _fitBounds() {
+    final drop = _dropoff;
+    if (drop == null) {
+      _mapController?.animateCamera(CameraUpdate.newLatLngZoom(_pickup, 15));
+      return;
+    }
+    final sw = LatLng(
+      _pickup.latitude < drop.latitude ? _pickup.latitude : drop.latitude,
+      _pickup.longitude < drop.longitude ? _pickup.longitude : drop.longitude,
+    );
+    final ne = LatLng(
+      _pickup.latitude > drop.latitude ? _pickup.latitude : drop.latitude,
+      _pickup.longitude > drop.longitude ? _pickup.longitude : drop.longitude,
+    );
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 60),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final drop = _dropoff;
+    final detour = MapsService.detourKm(_pickup, widget.ride.origin, widget.ride.destination);
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.75,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Handle
+          const SizedBox(height: 12),
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: const Color(0xFFF3E5F5),
+                  child: Text(
+                    widget.booking.passengerName.isNotEmpty
+                        ? widget.booking.passengerName[0].toUpperCase()
+                        : '?',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                      color: Color(0xFF8B1A2B),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '${widget.booking.passengerName}\'s locations',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                ),
+                Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: detour > 5 ? const Color(0xFFFFEBEE) : const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.alt_route_rounded, size: 12,
+                            color: detour > 5 ? const Color(0xFFB71C1C) : const Color(0xFF2E7D32)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '+${detour.toStringAsFixed(1)} km detour',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: detour > 5 ? const Color(0xFFB71C1C) : const Color(0xFF2E7D32),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Map
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(target: _pickup, zoom: 13),
+                  onMapCreated: _onMapCreated,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: true,
+                  scrollGesturesEnabled: true,
+                  zoomGesturesEnabled: true,
+                  rotateGesturesEnabled: false,
+                  tiltGesturesEnabled: false,
+                  markers: {
+                    Marker(
+                      markerId: const MarkerId('pickup'),
+                      position: _pickup,
+                      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+                      infoWindow: const InfoWindow(title: 'Passenger Pickup'),
+                    ),
+                    if (drop != null)
+                      Marker(
+                        markerId: const MarkerId('dropoff'),
+                        position: drop,
+                        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+                        infoWindow: const InfoWindow(title: 'Passenger Drop-off'),
+                      ),
+                  },
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Legend
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                _legendDot(const Color(0xFFE53935), 'Pickup'),
+                const SizedBox(width: 20),
+                if (drop != null) _legendDot(const Color(0xFF2E7D32), 'Drop-off'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _legendDot(Color color, String label) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12, height: 12,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 6),
+        Text(label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF424242))),
+      ],
     );
   }
 }

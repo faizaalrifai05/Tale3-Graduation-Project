@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsProvider extends ChangeNotifier {
+  static const _permAskedKey = 'permissions_asked_v1';
+
   // ── Permissions ────────────────────────────────────────────────────────────
   bool _notificationsEnabled = false;
   bool _locationEnabled = false;
@@ -80,29 +83,65 @@ class SettingsProvider extends ChangeNotifier {
     return status.isGranted;
   }
 
-  /// Toggle notification — opens app settings if permanently denied.
+  /// Whether this is the first time the user has been asked for permissions.
+  Future<bool> isFirstTimePermissions() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_permAskedKey) != true;
+  }
+
+  /// Mark permissions as already asked so future launches skip the dialogs.
+  Future<void> markPermissionsAsked() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_permAskedKey, true);
+  }
+
+  /// Toggle notification switch from the settings screen.
+  ///
+  /// OFF → disables in-app (cannot revoke OS permission programmatically).
+  /// ON  → requests permission if not yet granted, or opens app settings
+  ///        if permanently denied.
   Future<void> toggleNotifications(bool value) async {
     if (!value) {
-      await openAppSettings();
+      // User turned OFF — disable in-app usage without touching OS settings.
+      _notificationsEnabled = false;
+      notifyListeners();
       return;
     }
+
+    // User turned ON.
     final status = await Permission.notification.status;
-    if (status.isPermanentlyDenied) {
+    if (status.isGranted) {
+      _notificationsEnabled = true;
+      notifyListeners();
+    } else if (status.isPermanentlyDenied) {
       await openAppSettings();
+      await syncPermissions();
     } else {
       await requestNotifications();
     }
   }
 
-  /// Toggle location — opens app settings if permanently denied.
+  /// Toggle location switch from the settings screen.
+  ///
+  /// OFF → disables in-app (cannot revoke OS permission programmatically).
+  /// ON  → requests permission if not yet granted, or opens app settings
+  ///        if permanently denied.
   Future<void> toggleLocation(bool value) async {
     if (!value) {
-      await openAppSettings();
+      // User turned OFF — disable in-app usage without touching OS settings.
+      _locationEnabled = false;
+      notifyListeners();
       return;
     }
+
+    // User turned ON.
     final status = await Permission.locationWhenInUse.status;
-    if (status.isPermanentlyDenied) {
+    if (status.isGranted) {
+      _locationEnabled = true;
+      notifyListeners();
+    } else if (status.isPermanentlyDenied) {
       await openAppSettings();
+      await syncPermissions();
     } else {
       await requestLocation();
     }

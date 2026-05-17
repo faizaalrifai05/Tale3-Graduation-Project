@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/booking_model.dart';
@@ -33,8 +34,14 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   Future<void> _handleBooking() async {
     var perm = await Geolocator.checkPermission();
 
+    if (perm == LocationPermission.deniedForever) {
+      _showLocationPermanentlyDeniedDialog();
+      return;
+    }
+
     if (perm == LocationPermission.denied) {
-      final allowed = await showPermissionDialog(context, PermissionType.location);
+      final allowed =
+          await showPermissionDialog(context, PermissionType.location);
       if (!mounted) return;
       if (allowed) {
         perm = await Geolocator.requestPermission();
@@ -43,17 +50,63 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
     if (!mounted) return;
 
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
-      setState(() => _locationError = perm == LocationPermission.deniedForever
-          ? 'Location is permanently blocked. Please enable it in your device settings to book a ride.'
-          : 'Location access is required to book a ride.');
+    if (perm == LocationPermission.deniedForever) {
+      _showLocationPermanentlyDeniedDialog();
+      return;
+    }
+
+    if (perm == LocationPermission.denied) {
+      setState(() =>
+          _locationError = 'Location access is required to book a ride.');
       return;
     }
 
     setState(() => _locationError = null);
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => SelectSeatScreen(ride: ride)),
+    );
+  }
+
+  void _showLocationPermanentlyDeniedDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.location_off, color: _primaryColor),
+            SizedBox(width: 10),
+            Text('Location Required',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: const Text(
+          'Location is permanently blocked for this app. Please open device settings and enable it to book a ride.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _primaryColor,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+              elevation: 0,
+            ),
+            child: const Text('Open Settings',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
     );
   }
 

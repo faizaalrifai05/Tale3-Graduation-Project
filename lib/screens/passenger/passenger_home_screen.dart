@@ -1033,25 +1033,31 @@ class _LiveRideCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(ride.driverName,
-                          style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: context.colors.textPrimary)),
+                      Flexible(
+                        child: Text(ride.driverName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: context.colors.textPrimary)),
+                      ),
                       const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: context.colors.highlightBackgroundColor,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          '${ride.origin} → ${ride.destination}',
-                          style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppStyles.primaryColor),
+                      Flexible(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: context.colors.highlightBackgroundColor,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            '${ride.origin} → ${ride.destination}',
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppStyles.primaryColor),
+                          ),
                         ),
                       ),
                     ],

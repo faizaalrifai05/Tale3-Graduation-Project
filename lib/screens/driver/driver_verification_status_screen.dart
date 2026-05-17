@@ -12,10 +12,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final verificationStatus = context
-        .watch<app_auth.AuthProvider>()
-        .currentUser
-        ?.verificationStatus;
+    final user = context.watch<app_auth.AuthProvider>().currentUser;
+    final verificationStatus = user?.verificationStatus;
 
     String idStatusLabel;
     IconData idStatusIcon;
@@ -41,6 +39,15 @@ class DriverVerificationStatusScreen extends StatelessWidget {
         idStatusIcon = Icons.radio_button_unchecked;
         idStatusColor = const Color(0xFF9E9E9E);
     }
+
+    final carUploaded = (user?.carFrontUrl ?? '').isNotEmpty &&
+        (user?.carBackUrl ?? '').isNotEmpty;
+    final vehicleStatusLabel =
+        carUploaded ? idStatusLabel : context.l10n.notSubmitted;
+    final vehicleStatusIcon =
+        carUploaded ? idStatusIcon : Icons.radio_button_unchecked;
+    final vehicleStatusColor =
+        carUploaded ? idStatusColor : const Color(0xFF9E9E9E);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -128,9 +135,9 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               _buildStatusCard(
                 icon: Icons.directions_car_outlined,
                 title: context.l10n.vehicleInspection,
-                status: context.l10n.pendingReview,
-                statusIcon: Icons.access_time_filled,
-                statusColor: const Color(0xFFFF9800),
+                status: vehicleStatusLabel,
+                statusIcon: vehicleStatusIcon,
+                statusColor: vehicleStatusColor,
               ),
               const SizedBox(height: 48),
 

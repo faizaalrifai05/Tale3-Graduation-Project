@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -14,8 +13,6 @@ class DriverCreditCardScreen extends StatefulWidget {
   final String password;
   final String phone;
   final String gender;
-  final File frontIdImage;
-  final File backIdImage;
 
   const DriverCreditCardScreen({
     super.key,
@@ -24,8 +21,6 @@ class DriverCreditCardScreen extends StatefulWidget {
     required this.password,
     required this.phone,
     this.gender = '',
-    required this.frontIdImage,
-    required this.backIdImage,
   });
 
   @override
@@ -134,7 +129,7 @@ class _DriverCreditCardScreenState extends State<DriverCreditCardScreen> {
                       ),
                     ),
                     Text(
-                      '${context.l10n.step} 4 ${context.l10n.ofWord} 5',
+                      '${context.l10n.step} 5 ${context.l10n.ofWord} 5',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -145,7 +140,7 @@ class _DriverCreditCardScreenState extends State<DriverCreditCardScreen> {
                 ),
                 const SizedBox(height: 8),
                 LinearProgressIndicator(
-                  value: 0.8,
+                  value: 1.0,
                   backgroundColor: context.colors.neutralLight,
                   valueColor: const AlwaysStoppedAnimation<Color>(
                       AppStyles.primaryColor),

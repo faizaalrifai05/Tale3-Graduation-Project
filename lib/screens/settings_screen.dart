@@ -17,7 +17,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with WidgetsBindingObserver {
   // Controllers for Personal Information
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -33,7 +34,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _obscureConfirm = true;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-sync permission toggles when the user returns from device settings.
+    if (state == AppLifecycleState.resumed) {
+      context.read<SettingsProvider>().syncPermissions();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();

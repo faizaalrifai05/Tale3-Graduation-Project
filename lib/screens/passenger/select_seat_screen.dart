@@ -27,8 +27,12 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
   bool _isConfirming = false;
   String? _errorMessage;
+  int _totalSeats = 0;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
+  StreamSubscription<List<BookingModel>>? _bookingsSub;
+  // seat index (1-4) → passenger gender string
+  final Map<int, String> _seatGenders = {};
 
   String _mapError(String? code) {
     switch (code) {
@@ -38,6 +42,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         return 'No seats available. Someone may have just booked the last one.';
       case 'permission_denied':
         return 'Booking failed — please make sure you are logged in and try again.';
+      case 'not_logged_in':
+        return 'Your session has expired. Please sign out and sign in again.';
       default:
         return 'Something went wrong. Please try again.';
     }
@@ -46,6 +52,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   @override
   void initState() {
     super.initState();
+    _totalSeats = widget.ride.totalSeats;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<BookingProvider>();
       provider.initFromRide(widget.ride);
@@ -55,9 +62,29 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           .snapshots()
           .listen((snap) {
         if (!mounted || !snap.exists) return;
-        final booked = (snap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
-        final total = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
-        provider.updateOccupiedSeats(booked, total);
+        setState(() {
+          _totalSeats = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
+        });
+      });
+
+      _bookingsSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
+        if (!mounted) return;
+        final newGenders = <int, String>{};
+        int seat = 1;
+        int totalBooked = 0;
+        for (final b in bookings) {
+          totalBooked += b.seatsBooked;
+          for (int i = 0; i < b.seatsBooked; i++) {
+            if (seat <= 4) {
+              newGenders[seat] = b.passengerGender;
+              seat++;
+            }
+          }
+        }
+        provider.updateOccupiedSeats(totalBooked, _totalSeats);
+        setState(() => _seatGenders
+          ..clear()
+          ..addAll(newGenders));
       });
     });
   }
@@ -65,6 +92,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   @override
   void dispose() {
     _rideSub?.cancel();
+    _bookingsSub?.cancel();
     super.dispose();
   }
 
@@ -100,7 +128,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     );
     if (dropoff == null || !mounted) return;
 
-    // Step 3 — write booking to Firestore with both coordinates
+    // Step 3 — show booking summary and wait for passenger confirmation
+    final provider = context.read<BookingProvider>();
+    final confirmed = await _showBookingSummary(context, provider,
+        pickup: pickup, dropoff: dropoff);
+    if (!confirmed || !mounted) return;
+
+    // Step 4 — write booking to Firestore with both coordinates
     setState(() { _isConfirming = true; _errorMessage = null; });
     final BookingModel? booking =
         await context.read<BookingProvider>().confirmBooking(
@@ -120,6 +154,197 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => BookingStatusScreen(booking: booking)),
+    );
+  }
+
+  Future<bool> _showBookingSummary(
+      BuildContext context, BookingProvider provider,
+      {required LatLng pickup, required LatLng dropoff}) async {
+    final ride = widget.ride;
+    final result = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // drag handle
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Booking Summary',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Route row
+              _summaryRow(
+                Icons.route_rounded,
+                'Route',
+                '${ride.origin}  →  ${ride.destination}',
+              ),
+              _summaryRow(
+                Icons.calendar_today_rounded,
+                'Date & Time',
+                '${ride.date}  •  ${ride.time}',
+              ),
+              _summaryRow(
+                Icons.person_outline_rounded,
+                'Driver',
+                ride.driverName,
+              ),
+              _summaryRow(
+                Icons.directions_car_rounded,
+                'Car',
+                ride.carShortInfo,
+              ),
+              _summaryRow(
+                Icons.confirmation_number_outlined,
+                'Plate',
+                ride.plateNumber,
+              ),
+              _summaryRow(
+                Icons.event_seat_rounded,
+                'Seats',
+                '${provider.selectedCount}',
+              ),
+              _summaryRow(
+                Icons.my_location_rounded,
+                'Your Pickup',
+                '${pickup.latitude.toStringAsFixed(5)}, ${pickup.longitude.toStringAsFixed(5)}',
+              ),
+              _summaryRow(
+                Icons.flag_rounded,
+                'Your Drop-off',
+                '${dropoff.latitude.toStringAsFixed(5)}, ${dropoff.longitude.toStringAsFixed(5)}',
+              ),
+              const Divider(height: 32),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Total',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1A1A),
+                    ),
+                  ),
+                  Text(
+                    '${provider.totalPrice} JOD',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF8B1A2B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF757575),
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Cancel',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5C0A1A),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Confirm & Book',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    return result == true;
+  }
+
+  Widget _summaryRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: const Color(0xFF8B1A2B)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF9E9E9E),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1A1A),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -197,8 +422,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(bookingProvider, 0),
-                                  _buildSeat(bookingProvider, 1),
+                                  _buildSeat(bookingProvider, 0, null),
+                                  _buildSeat(bookingProvider, 1, _seatGenders[1]),
                                 ],
                               ),
                               const SizedBox(height: 40),
@@ -206,9 +431,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(bookingProvider, 2),
-                                  _buildSeat(bookingProvider, 3),
-                                  _buildSeat(bookingProvider, 4),
+                                  _buildSeat(bookingProvider, 2, _seatGenders[2]),
+                                  _buildSeat(bookingProvider, 3, _seatGenders[3]),
+                                  _buildSeat(bookingProvider, 4, _seatGenders[4]),
                                 ],
                               ),
                             ],
@@ -371,7 +596,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     );
   }
 
-  Widget _buildSeat(BookingProvider provider, int index) {
+  Widget _buildSeat(BookingProvider provider, int index, String? gender) {
     final state = provider.seatStates[index] ?? 0;
 
     if (state == 3) {
@@ -394,17 +619,29 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       bgColor = _primaryColor;
       iconColor = Colors.white;
     } else if (state == 2) {
-      bgColor = const Color(0xFFE0E0E0);
+      bgColor = const Color(0xFFBDBDBD);
       iconColor = Colors.white;
     } else {
       bgColor = const Color(0xFFF5F5F5);
       iconColor = const Color(0xFFBDBDBD);
     }
 
-    const genderIcon = Icons.person;
+    IconData genderIcon;
+    if (state == 2 && gender != null) {
+      final g = gender.toLowerCase();
+      if (g == 'female' || g == 'أنثى') {
+        genderIcon = Icons.woman_rounded;
+      } else if (g == 'male' || g == 'ذكر') {
+        genderIcon = Icons.man_rounded;
+      } else {
+        genderIcon = Icons.person;
+      }
+    } else {
+      genderIcon = Icons.person;
+    }
 
     return GestureDetector(
-      onTap: () => provider.toggleSeat(index),
+      onTap: state == 2 ? null : () => provider.toggleSeat(index),
       child: Container(
         width: 44,
         height: 44,
