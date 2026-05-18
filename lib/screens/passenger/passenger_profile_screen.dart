@@ -571,7 +571,7 @@ class _PassengerProfileScreenState extends State<PassengerProfileScreen> {
         // OVERLAPPING STATS CARD — fully dynamic
         // ════════════════════════════════════════════════════════
         Positioned(
-          top: 200,
+          top: 250,
           left: 20,
           right: 20,
           child: Material(

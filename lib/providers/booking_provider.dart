@@ -19,7 +19,7 @@ class BookingProvider extends ChangeNotifier {
 
   RideModel? _currentRide;
 
-  // Seat states: 0=available, 1=selected, 2=occupied, 3=driver
+  // Seat states: 0=available, 1=selected, 2=occupied, 3=driver, 4=non-existent
   final Map<int, int> _seatStates = {
     0: 3,
     1: 0,
@@ -41,13 +41,7 @@ class BookingProvider extends ChangeNotifier {
   void initFromRide(RideModel ride) {
     _currentRide = ride;
     for (int i = 1; i <= _passengerSlots; i++) {
-      if (ride.totalSeats > 0 && i > ride.totalSeats) {
-        _seatStates[i] = 2;
-      } else if (i <= ride.bookedSeats) {
-        _seatStates[i] = 2;
-      } else {
-        _seatStates[i] = 0;
-      }
+      _seatStates[i] = i <= ride.bookedSeats ? 2 : 0;
     }
     notifyListeners();
   }
@@ -74,9 +68,7 @@ class BookingProvider extends ChangeNotifier {
   /// Called whenever the booking stream fires.
   void updateOccupiedSeats(int bookedCount, int totalSeats) {
     for (int i = 1; i <= _passengerSlots; i++) {
-      if (totalSeats > 0 && i > totalSeats) {
-        _seatStates[i] = 2;
-      } else if (i <= bookedCount) {
+      if (i <= bookedCount) {
         if (_seatStates[i] != 1) _seatStates[i] = 2;
       } else {
         if (_seatStates[i] == 2) _seatStates[i] = 0;
@@ -93,6 +85,7 @@ class BookingProvider extends ChangeNotifier {
     double? pickupLng,
     double? dropoffLat,
     double? dropoffLng,
+    String? passengerGender,
   }) async {
     final ride = _currentRide;
     final user = _auth.currentUser;
@@ -143,7 +136,7 @@ class BookingProvider extends ChangeNotifier {
         rideId: ride.id,
         passengerId: user.uid,
         passengerName: user.name,
-        passengerGender: user.gender,
+        passengerGender: passengerGender ?? user.gender,
         driverId: ride.driverId,
         driverName: ride.driverName,
         carInfo: ride.carFullInfo,
@@ -172,6 +165,13 @@ class BookingProvider extends ChangeNotifier {
       notifyListeners();
       return null;
     }
+  }
+
+  /// Driver marks arrival at a specific passenger's pickup location.
+  Future<void> markDriverArrivedForBooking(String bookingId) async {
+    await _db.collection('bookings').doc(bookingId).update({
+      'driverArrivedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Driver accepts a pending booking — marks it confirmed and reserves seats.

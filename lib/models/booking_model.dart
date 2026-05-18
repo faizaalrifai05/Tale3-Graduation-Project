@@ -22,6 +22,7 @@ class BookingModel {
   final double? dropoffLat;
   final double? dropoffLng;
   final String passengerGender;
+  final DateTime? driverArrivedAt;
 
   const BookingModel({
     required this.id,
@@ -45,6 +46,7 @@ class BookingModel {
     this.dropoffLat,
     this.dropoffLng,
     this.passengerGender = '',
+    this.driverArrivedAt,
   });
 
   factory BookingModel.fromDoc(DocumentSnapshot doc) {
@@ -71,6 +73,7 @@ class BookingModel {
       dropoffLat: _toDouble(d['dropoffLat']),
       dropoffLng: _toDouble(d['dropoffLng']),
       passengerGender: d['passengerGender'] as String? ?? '',
+      driverArrivedAt: (d['driverArrivedAt'] as Timestamp?)?.toDate(),
     );
   }
 

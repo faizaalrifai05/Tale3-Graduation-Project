@@ -41,7 +41,7 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
   Future<void> _pickImage(bool isFront) async {
     final source = await _showSourceDialog();
     if (source == null) return;
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 25, maxWidth: 800);
     if (picked != null && mounted) {
       setState(() {
         if (isFront) {

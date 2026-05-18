@@ -7,12 +7,16 @@ class SavedPlace {
   final String title;
   final String subtitle;
   final String iconName; // 'home', 'work', 'star', 'place'
+  final double? lat;
+  final double? lng;
 
   const SavedPlace({
     required this.id,
     required this.title,
     required this.subtitle,
     required this.iconName,
+    this.lat,
+    this.lng,
   });
 
   IconData get icon {
@@ -32,6 +36,8 @@ class SavedPlace {
         'title': title,
         'subtitle': subtitle,
         'iconName': iconName,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
       };
 
   factory SavedPlace.fromDoc(DocumentSnapshot doc) {
@@ -41,6 +47,8 @@ class SavedPlace {
       title: data['title'] ?? '',
       subtitle: data['subtitle'] ?? '',
       iconName: data['iconName'] ?? 'place',
+      lat: (data['lat'] as num?)?.toDouble(),
+      lng: (data['lng'] as num?)?.toDouble(),
     );
   }
 }
@@ -87,6 +95,8 @@ class SavedPlacesProvider extends ChangeNotifier {
     required String title,
     required String subtitle,
     required String iconName,
+    double? lat,
+    double? lng,
   }) async {
     if (_col == null) return 'Not logged in.';
     try {
@@ -95,8 +105,10 @@ class SavedPlacesProvider extends ChangeNotifier {
         title: title,
         subtitle: subtitle,
         iconName: iconName,
+        lat: lat,
+        lng: lng,
       ).toMap());
-      _places.add(SavedPlace(id: doc.id, title: title, subtitle: subtitle, iconName: iconName));
+      _places.add(SavedPlace(id: doc.id, title: title, subtitle: subtitle, iconName: iconName, lat: lat, lng: lng));
       _places.sort((a, b) => a.title.compareTo(b.title));
       notifyListeners();
       return null;

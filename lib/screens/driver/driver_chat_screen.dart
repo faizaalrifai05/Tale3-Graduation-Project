@@ -64,8 +64,7 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
                   color: context.colors.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(Icons.edit_outlined,
-                    color: context.colors.textPrimary, size: 20),
+                
               ),
             ],
           ),
