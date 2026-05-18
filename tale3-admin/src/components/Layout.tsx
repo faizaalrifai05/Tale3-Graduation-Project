@@ -8,6 +8,7 @@ const navItems = [
   { path: '/rides', label: 'Rides', icon: '🚗' },
   { path: '/pricing', label: 'Pricing', icon: '💰' },
   { path: '/verification', label: 'Verification', icon: '✅' },
+  { path: '/commissions', label: 'Commissions', icon: '💳' },
 ]
 
 export default function Layout() {
