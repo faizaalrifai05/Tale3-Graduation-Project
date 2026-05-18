@@ -10,6 +10,7 @@ import UserManagement from './pages/UserManagement';
 import Rides from './pages/Rides';
 import Pricing from './pages/Pricing';
 import Verification from './pages/Verification';
+import Commissions from './pages/Commissions';
 
 function App() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
@@ -43,6 +44,7 @@ function App() {
           <Route path="rides" element={<Rides />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="verification" element={<Verification />} />
+          <Route path="commissions" element={<Commissions />} />
         </Route>
       </Routes>
     </BrowserRouter>
