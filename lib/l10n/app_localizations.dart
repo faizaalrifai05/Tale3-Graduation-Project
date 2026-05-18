@@ -982,7 +982,7 @@ class AppLocalizations {
   //  ARABIC STRINGS
   // ══════════════════════════════════════════════════════════════════════════
   static const Map<String, String> _ar = {
-    'appName': 'تعلي3',
+    'appName': 'طالع',
     'save': 'حفظ',
     'cancel': 'إلغاء',
     'yes': 'نعم',

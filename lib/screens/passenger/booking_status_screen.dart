@@ -28,7 +28,6 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
 
   late BookingModel _booking;
   String _rideStatus = 'active';
-  bool _ratingShown = false;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _bookingSub;
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
@@ -44,13 +43,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
         .snapshots()
         .listen((snap) {
       if (!mounted || !snap.exists) return;
-      final updated = BookingModel.fromDoc(snap);
-      final wasConfirmed = _booking.status == 'confirmed';
-      setState(() => _booking = updated);
-      if (wasConfirmed && updated.status == 'completed' && !_ratingShown) {
-        _ratingShown = true;
-        _showRatingPrompt();
-      }
+      setState(() => _booking = BookingModel.fromDoc(snap));
     });
 
     _rideSub = FirebaseFirestore.instance
@@ -71,17 +64,16 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
     super.dispose();
   }
 
-  Future<void> _showRatingPrompt() async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    if (!mounted) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => RateDriverScreen(booking: _booking)),
-    );
-  }
-
   bool get _isPending => _booking.status == 'pending';
   bool get _isRejected => _booking.status == 'rejected';
   bool get _isCompleted => _booking.status == 'completed';
+
+  void _goHome() {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const PassengerHomeScreen()),
+      (route) => false,
+    );
+  }
 
   bool get _isPast {
     try {
@@ -97,14 +89,17 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
   Widget build(BuildContext context) {
     final isRideLive = _rideStatus == 'live' && _booking.status == 'confirmed';
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (_, __) => _goHome(),
+      child: Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _goHome,
         ),
         title: Text(
           context.l10n.bookingStatus,
@@ -123,6 +118,50 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Driver arrived banner — shown when driver taps "I've Arrived" for this passenger
+              if (_booking.driverArrivedAt != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F5E9),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFF81C784)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.directions_car_rounded,
+                          color: Color(0xFF2E7D32), size: 22),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Your driver has arrived!',
+                              style: TextStyle(
+                                color: Color(0xFF1B5E20),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              'Head to your pickup point — your driver is waiting.',
+                              style: TextStyle(
+                                color: Color(0xFF2E7D32),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Live ride banner
               if (isRideLive) ...[
                 GestureDetector(
@@ -503,6 +542,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
           ),
         ),
       ),
+    ),
     );
   }
 

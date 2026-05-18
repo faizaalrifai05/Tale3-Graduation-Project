@@ -41,6 +41,10 @@ service cloud.firestore {
     // • Admins can read and update any user document (e.g. set verificationStatus).
     // • Only the backend / admin SDK creates user documents (no client create/delete).
 
+    match /users/{uid}/savedPlaces/{placeId} {
+      allow read, write: if isSelf(uid);
+    }
+
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
 
@@ -61,6 +65,9 @@ service cloud.firestore {
         && isDriver()
         && request.resource.data.verificationStatus == 'pending'
         && resource.data.verificationStatus in ['unsubmitted', 'pending'];
+
+      // Users may delete their own account document.
+      allow delete: if isSelf(uid) || isAdmin();
     }
 
     // ── rides ────────────────────────────────────────────────────────────────
@@ -125,7 +132,12 @@ service cloud.firestore {
                 && request.resource.data.status in ['confirmed', 'rejected'])
               || (resource.data.status == 'confirmed'
                 && request.resource.data.status in ['cancelled', 'completed'])
-            ));
+            ))
+        // Driver marks arrival at a specific passenger's pickup
+        || (isDriver()
+            && resource.data.driverId == request.auth.uid
+            && resource.data.status == 'confirmed'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['driverArrivedAt']));
 
       allow delete: if isAdmin();
     }

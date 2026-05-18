@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
@@ -407,7 +407,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Uploads front and back car photos to Firebase Storage and saves URLs to Firestore.
+  /// Encodes car photos as base64 and saves them directly to Firestore.
   Future<String?> submitCarPhotos({
     required File frontImage,
     required File backImage,
@@ -416,26 +416,23 @@ class AuthProvider extends ChangeNotifier {
     if (firebaseUser == null) return 'Not logged in.';
     final uid = firebaseUser.uid;
     try {
-      final storage = FirebaseStorage.instance;
-      final frontRef = storage.ref('verification/$uid/car_front.jpg');
-      final backRef = storage.ref('verification/$uid/car_back.jpg');
-      await frontRef.putFile(frontImage);
-      await backRef.putFile(backImage);
-      final frontUrl = await frontRef.getDownloadURL();
-      final backUrl = await backRef.getDownloadURL();
+      final frontBytes = await frontImage.readAsBytes();
+      final backBytes = await backImage.readAsBytes();
+      final frontBase64 = base64Encode(frontBytes);
+      final backBase64 = base64Encode(backBytes);
       await _db.collection('users').doc(uid).update({
-        'carFrontUrl': frontUrl,
-        'carBackUrl': backUrl,
+        'carFrontUrl': 'data:image/jpeg;base64,$frontBase64',
+        'carBackUrl': 'data:image/jpeg;base64,$backBase64',
       });
       _currentUser = _currentUser?.copyWith(
-        carFrontUrl: frontUrl,
-        carBackUrl: backUrl,
+        carFrontUrl: 'data:image/jpeg;base64,$frontBase64',
+        carBackUrl: 'data:image/jpeg;base64,$backBase64',
       );
       notifyListeners();
       return null;
     } catch (e) {
       debugPrint('submitCarPhotos error: $e');
-      return 'Failed to upload car photos. Please try again.';
+      return 'Upload failed: $e';
     }
   }
 
@@ -571,27 +568,65 @@ class AuthProvider extends ChangeNotifier {
     final user = _auth.currentUser;
     if (user == null) return 'Not logged in.';
     try {
-      if (password != null && user.email != null) {
+      // Re-authenticate — required by Firebase before sensitive operations.
+      final isGoogleUser = user.providerData
+          .any((p) => p.providerId == 'google.com');
+
+      if (isGoogleUser) {
+        final googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return 'Google sign-in cancelled.';
+        final googleAuth = await googleUser.authentication;
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+        await user.reauthenticateWithCredential(credential);
+      } else if (password != null && password.isNotEmpty && user.email != null) {
         final credential = EmailAuthProvider.credential(
           email: user.email!,
           password: password,
         );
         await user.reauthenticateWithCredential(credential);
       }
+
       final uid = user.uid;
+
+      // Stop listening to the user document before we delete it.
       _userSubscription?.cancel();
       _userSubscription = null;
+
+      // Delete savedPlaces subcollection first (Firestore doesn't cascade).
+      final placesSnap = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('savedPlaces')
+          .get();
+      if (placesSnap.docs.isNotEmpty) {
+        final batch = _db.batch();
+        for (final doc in placesSnap.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+
+      // Delete the user Firestore document.
       await _db.collection('users').doc(uid).delete();
+
+      // Delete the Firebase Auth account — frees the email for re-registration.
       await user.delete();
+
+      // Clean up Google session if applicable.
+      await _googleSignIn.signOut();
+
       _currentUser = null;
       notifyListeners();
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'requires-recent-login') {
-        return 'Please log out and log back in before deleting your account.';
+        return 'Please enter your password to confirm account deletion.';
       }
       if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
-        return 'Incorrect password.';
+        return 'Incorrect password. Please try again.';
       }
       return _friendlyError(e.code);
     } catch (_) {

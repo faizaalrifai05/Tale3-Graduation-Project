@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:testtale3/providers/saved_places_provider.dart';
 import 'package:testtale3/theme/app_styles.dart';
 
 class LocationPickerScreen extends StatefulWidget {
@@ -8,6 +10,7 @@ class LocationPickerScreen extends StatefulWidget {
   final LatLng initialPosition;
   final String confirmLabel;
   final Color pinColor;
+  final bool showSavedPlaces;
 
   const LocationPickerScreen({
     super.key,
@@ -16,6 +19,7 @@ class LocationPickerScreen extends StatefulWidget {
     required this.initialPosition,
     this.confirmLabel = 'Confirm Location',
     this.pinColor = AppStyles.primaryColor,
+    this.showSavedPlaces = false,
   });
 
   @override
@@ -25,11 +29,19 @@ class LocationPickerScreen extends StatefulWidget {
 class _LocationPickerScreenState extends State<LocationPickerScreen> {
   late LatLng _pickedLocation;
   bool _mapReady = false;
+  GoogleMapController? _mapController;
 
   @override
   void initState() {
     super.initState();
     _pickedLocation = widget.initialPosition;
+  }
+
+  void _snapToPlace(SavedPlace place) {
+    if (place.lat == null || place.lng == null) return;
+    final target = LatLng(place.lat!, place.lng!);
+    _mapController?.animateCamera(CameraUpdate.newLatLng(target));
+    setState(() => _pickedLocation = target);
   }
 
   @override
@@ -40,11 +52,14 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
           // Full-screen draggable map — pin stays fixed in center
           GoogleMap(
             initialCameraPosition:
-                CameraPosition(target: widget.initialPosition, zoom: 14),
-            onMapCreated: (_) => setState(() => _mapReady = true),
+                CameraPosition(target: widget.initialPosition, zoom: 13),
+            onMapCreated: (c) {
+              _mapController = c;
+              setState(() => _mapReady = true);
+            },
             onCameraMove: (pos) => _pickedLocation = pos.target,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
+            myLocationEnabled: false,
+            myLocationButtonEnabled: false,
             zoomControlsEnabled: false,
             mapToolbarEnabled: false,
           ),
@@ -146,6 +161,68 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               ),
             ),
           ],
+
+          // Saved places strip (shown only when requested)
+          if (widget.showSavedPlaces)
+            Positioned(
+              bottom: 100,
+              left: 0,
+              right: 0,
+              child: Consumer<SavedPlacesProvider>(
+                builder: (context, spp, _) {
+                  final places = spp.places
+                      .where((p) => p.lat != null && p.lng != null)
+                      .toList();
+                  if (places.isEmpty) return const SizedBox.shrink();
+                  return SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: places.length,
+                      separatorBuilder: (context, i) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        final place = places[i];
+                        return GestureDetector(
+                          onTap: () => _snapToPlace(place),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(22),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.12),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(place.icon,
+                                    size: 16, color: AppStyles.primaryColor),
+                                const SizedBox(width: 6),
+                                Text(
+                                  place.title,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1A1A1A),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
 
           // Confirm button
           Positioned(
