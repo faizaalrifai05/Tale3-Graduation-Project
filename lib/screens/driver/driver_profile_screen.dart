@@ -8,7 +8,7 @@ import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/models/rating_model.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/driver/driver_saved_places_screen.dart';
-import 'package:testtale3/models/user_model.dart';
+//import 'package:testtale3/models/user_model.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:testtale3/l10n/app_localizations.dart';

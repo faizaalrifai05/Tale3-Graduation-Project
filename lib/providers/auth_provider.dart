@@ -1,9 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 import '../models/saved_account.dart';
@@ -12,7 +12,12 @@ import '../Services/FCM_service.dart';
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    // Required on Android (google_sign_in v6+) to get an idToken back,
+    // which Firebase Auth needs. Use the web client ID from google-services.json.
+    serverClientId:
+        '290962167334-5dgdt7he5aeh9ua5p9vqkd8cmbejqib5.apps.googleusercontent.com',
+  );
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -407,7 +412,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Encodes car photos as base64 and saves them directly to Firestore.
+  /// Uploads car photos to Firebase Storage and saves download URLs to Firestore.
   Future<String?> submitCarPhotos({
     required File frontImage,
     required File backImage,
@@ -416,17 +421,24 @@ class AuthProvider extends ChangeNotifier {
     if (firebaseUser == null) return 'Not logged in.';
     final uid = firebaseUser.uid;
     try {
-      final frontBytes = await frontImage.readAsBytes();
-      final backBytes = await backImage.readAsBytes();
-      final frontBase64 = base64Encode(frontBytes);
-      final backBase64 = base64Encode(backBytes);
+      final storage = FirebaseStorage.instance;
+      final meta = SettableMetadata(contentType: 'image/jpeg');
+
+      final frontRef = storage.ref('verification/$uid/car_front.jpg');
+      await frontRef.putFile(frontImage, meta);
+      final frontUrl = await frontRef.getDownloadURL();
+
+      final backRef = storage.ref('verification/$uid/car_back.jpg');
+      await backRef.putFile(backImage, meta);
+      final backUrl = await backRef.getDownloadURL();
+
       await _db.collection('users').doc(uid).update({
-        'carFrontUrl': 'data:image/jpeg;base64,$frontBase64',
-        'carBackUrl': 'data:image/jpeg;base64,$backBase64',
+        'carFrontUrl': frontUrl,
+        'carBackUrl': backUrl,
       });
       _currentUser = _currentUser?.copyWith(
-        carFrontUrl: 'data:image/jpeg;base64,$frontBase64',
-        carBackUrl: 'data:image/jpeg;base64,$backBase64',
+        carFrontUrl: frontUrl,
+        carBackUrl: backUrl,
       );
       notifyListeners();
       return null;

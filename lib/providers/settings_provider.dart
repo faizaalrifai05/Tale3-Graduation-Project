@@ -9,6 +9,10 @@ class SettingsProvider extends ChangeNotifier {
   bool _notificationsEnabled = false;
   bool _locationEnabled = false;
 
+  SettingsProvider() {
+    syncPermissions();
+  }
+
   // ── Theme ──────────────────────────────────────────────────────────────────
   ThemeMode _themeMode = ThemeMode.system;
 
@@ -102,23 +106,13 @@ class SettingsProvider extends ChangeNotifier {
   ///        if permanently denied.
   Future<void> toggleNotifications(bool value) async {
     if (!value) {
-      // User turned OFF — disable in-app usage without touching OS settings.
       _notificationsEnabled = false;
       notifyListeners();
       return;
     }
-
-    // User turned ON.
-    final status = await Permission.notification.status;
-    if (status.isGranted) {
-      _notificationsEnabled = true;
-      notifyListeners();
-    } else if (status.isPermanentlyDenied) {
-      await openAppSettings();
-      await syncPermissions();
-    } else {
-      await requestNotifications();
-    }
+    // ON → send user to device settings to enable it themselves
+    await openAppSettings();
+    // State syncs when they return via didChangeAppLifecycleState → syncPermissions()
   }
 
   /// Toggle location switch from the settings screen.
@@ -128,23 +122,13 @@ class SettingsProvider extends ChangeNotifier {
   ///        if permanently denied.
   Future<void> toggleLocation(bool value) async {
     if (!value) {
-      // User turned OFF — disable in-app usage without touching OS settings.
       _locationEnabled = false;
       notifyListeners();
       return;
     }
-
-    // User turned ON.
-    final status = await Permission.locationWhenInUse.status;
-    if (status.isGranted) {
-      _locationEnabled = true;
-      notifyListeners();
-    } else if (status.isPermanentlyDenied) {
-      await openAppSettings();
-      await syncPermissions();
-    } else {
-      await requestLocation();
-    }
+    // ON → send user to device settings to enable it themselves
+    await openAppSettings();
+    // State syncs when they return via didChangeAppLifecycleState → syncPermissions()
   }
 
   // kept for old call sites

@@ -20,7 +20,7 @@ class RideProvider extends ChangeNotifier {
   String _destination = '';
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
-  int _seats = 3;
+  final Set<int> _selectedSeats = {1, 2, 3, 4};
   int _price = 0;
   bool _acChecked = true;
   bool _luggageChecked = true;
@@ -39,7 +39,8 @@ class RideProvider extends ChangeNotifier {
   String get destination => _destination;
   DateTime? get selectedDate => _selectedDate;
   TimeOfDay? get selectedTime => _selectedTime;
-  int get seats => _seats;
+  int get seats => _selectedSeats.length;
+  Set<int> get selectedSeats => Set.unmodifiable(_selectedSeats);
   int get price => _price;
   bool get acChecked => _acChecked;
   bool get luggageChecked => _luggageChecked;
@@ -96,9 +97,15 @@ class RideProvider extends ChangeNotifier {
 
   void setDate(DateTime d) { _selectedDate = d; notifyListeners(); }
   void setTime(TimeOfDay t) { _selectedTime = t; notifyListeners(); }
-  void incrementSeats() { if (_seats < 4) { _seats++; notifyListeners(); } }
-  void decrementSeats() { if (_seats > 1) { _seats--; notifyListeners(); } }
-  void tapSeat(int index) { if (index >= 1 && index <= 4) { _seats = index; notifyListeners(); } }
+  void tapSeat(int index) {
+    if (index < 1 || index > 4) return;
+    if (_selectedSeats.contains(index)) {
+      if (_selectedSeats.length > 1) _selectedSeats.remove(index);
+    } else {
+      _selectedSeats.add(index);
+    }
+    notifyListeners();
+  }
   void toggleAc(bool v) { _acChecked = v; notifyListeners(); }
   void toggleLuggage(bool v) { _luggageChecked = v; notifyListeners(); }
   void togglePets(bool v) { _petsChecked = v; notifyListeners(); }
@@ -172,7 +179,9 @@ class RideProvider extends ChangeNotifier {
     _destination = '';
     _selectedDate = null;
     _selectedTime = null;
-    _seats = 3;
+    _selectedSeats
+      ..clear()
+      ..addAll({1, 2, 3, 4});
     _price = 0;
     _acChecked = true;
     _luggageChecked = true;
@@ -222,7 +231,7 @@ class RideProvider extends ChangeNotifier {
         'destination': _destination.trim(),
         'date': dateIso,
         'time': timeLabel,
-        'totalSeats': _seats,
+        'totalSeats': _selectedSeats.length,
         'bookedSeats': 0,
         'pricePerSeat': _adminPrice,
         'acEnabled': _acChecked,

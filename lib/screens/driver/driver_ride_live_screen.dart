@@ -12,6 +12,7 @@ import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/Services/maps_service.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
@@ -209,12 +210,12 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
   }
 
   Future<void> _startLocationTracking() async {
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) {
-      perm = await Geolocator.requestPermission();
-    }
+    final perm = await Geolocator.checkPermission();
     if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) { return; }
+        perm == LocationPermission.deniedForever) {
+      if (mounted) await showLocationSettingsReminder(context);
+      return;
+    }
 
     _locationSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(

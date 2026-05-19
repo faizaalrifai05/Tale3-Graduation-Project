@@ -162,49 +162,6 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                 ),
               ],
 
-              // Live ride banner
-              if (isRideLive) ...[
-                GestureDetector(
-                  onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => PassengerLiveRideScreen(booking: _booking),
-                  )),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    margin: const EdgeInsets.only(bottom: 24),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8B1A2B), Color(0xFFB71C1C)],
-                      ),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 10, height: 10,
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        const Expanded(
-                          child: Text(
-                            'Your ride is LIVE — tap to track',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-
               // Status icon
               Container(
                 width: 80,
@@ -281,7 +238,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                         : _isCompleted
                             ? 'Thanks for travelling with Tale3! Don\'t forget to rate your driver.'
                             : isRideLive
-                                ? 'Your driver has started the ride. Tap the banner above to track it.'
+                                ? 'Your driver has started the ride. Tap the button below to track it.'
                                 : context.l10n.bookingConfirmedDesc,
                 textAlign: TextAlign.center,
                 style: const TextStyle(

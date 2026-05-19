@@ -49,10 +49,7 @@ class _RideResultsScreenState extends State<RideResultsScreen> {
 
   Future<void> _fetchLocation() async {
     try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
+      final perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
         if (mounted) setState(() => _locationDenied = true);

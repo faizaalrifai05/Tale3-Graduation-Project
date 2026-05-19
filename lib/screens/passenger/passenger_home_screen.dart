@@ -26,6 +26,7 @@ import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
 import 'package:testtale3/screens/passenger/location_picker_screen.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/providers/saved_places_provider.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
@@ -41,9 +42,10 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
       _subscribeToCompletedBookings();
+      if (mounted) await requestFirstTimePermissionsIfNeeded(context);
     });
   }
 
@@ -209,18 +211,24 @@ class _HomeTabState extends State<_HomeTab> {
   int _seats = 1;
   bool _locating = false;
 
+  // Cached stream — must not be recreated on each build or rides flash/disappear
+  late Stream<List<RideModel>> _availableRidesStream;
+
   // Default camera position: Amman city center
   static const LatLng _amman = LatLng(31.9539, 35.9106);
+
+  @override
+  void initState() {
+    super.initState();
+    _availableRidesStream = context.read<RideProvider>().availableRidesStream;
+  }
 
   // ── Get device location for initial camera position ───────────────────
   Future<LatLng> _devicePosition() async {
     try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.deniedForever ||
-          perm == LocationPermission.denied) {
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
         return _amman;
       }
       final pos = await Geolocator.getCurrentPosition(
@@ -832,8 +840,7 @@ class _HomeTabState extends State<_HomeTab> {
             builder: (context, bookingSnap) {
               final pastBookings = bookingSnap.data ?? [];
               return StreamBuilder<List<RideModel>>(
-                stream:
-                    context.read<RideProvider>().availableRidesStream,
+                stream: _availableRidesStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState ==
                       ConnectionState.waiting) {
