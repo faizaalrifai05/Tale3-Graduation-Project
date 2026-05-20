@@ -15,6 +15,8 @@ export interface User {
   carYear?: string;
   carColor?: string;
   plateNumber?: string;
+  cardNumber?: string;
+cardExpiry?: string;
 }
 
 export interface Ride {

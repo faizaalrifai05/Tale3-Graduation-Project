@@ -604,7 +604,7 @@ class DriverCreateRideScreen extends StatelessWidget {
 
   Widget _buildPassengerSeatDot(
       BuildContext context, int index, RideProvider rideProvider) {
-    final available = index <= rideProvider.seats;
+    final available = rideProvider.selectedSeats.contains(index);
     return GestureDetector(
       onTap: () => rideProvider.tapSeat(index),
       child: Container(

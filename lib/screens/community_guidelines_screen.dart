@@ -1,32 +1,10 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:testtale3/providers/settings_provider.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
-import 'package:testtale3/widgets/permission_dialog.dart';
-
-// ignore_for_file: use_build_context_synchronously
 
 class CommunityGuidelinesScreen extends StatelessWidget {
   const CommunityGuidelinesScreen({super.key});
-
-  Future<void> _requestFirstTimePermissions(BuildContext context) async {
-    final settings = context.read<SettingsProvider>();
-
-    if (!await settings.isFirstTimePermissions()) return;
-    await settings.markPermissionsAsked();
-
-    if (!context.mounted) return;
-    final notifAllowed =
-        await showPermissionDialog(context, PermissionType.notifications);
-    if (notifAllowed) await settings.requestNotifications();
-
-    if (!context.mounted) return;
-    final locAllowed =
-        await showPermissionDialog(context, PermissionType.location);
-    if (locAllowed) await settings.requestLocation();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,9 +181,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () async {
-                    await _requestFirstTimePermissions(context);
-                    if (!context.mounted) return;
+                  onPressed: () {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (context) => const WelcomeScreen(),

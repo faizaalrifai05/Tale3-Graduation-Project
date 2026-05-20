@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:testtale3/screens/passenger/rate_driver_screen.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +25,8 @@ import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
 import 'package:testtale3/screens/passenger/location_picker_screen.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
+import 'package:testtale3/providers/saved_places_provider.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
@@ -31,19 +36,60 @@ class PassengerHomeScreen extends StatefulWidget {
 }
 
 class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
+  StreamSubscription<QuerySnapshot>? _completedBookingsSub;
+  final Set<String> _seenCompletedBookings = {};
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+      _subscribeToCompletedBookings();
+      if (mounted) await requestFirstTimePermissionsIfNeeded(context);
     });
   }
 
   @override
   void dispose() {
     context.read<app_auth.AuthProvider>().removeListener(_checkIfBlocked);
+    _completedBookingsSub?.cancel();
     super.dispose();
+  }
+
+  void _subscribeToCompletedBookings() {
+    final uid = context.read<app_auth.AuthProvider>().currentUser?.uid;
+    if (uid == null) return;
+    _completedBookingsSub = FirebaseFirestore.instance
+        .collection('bookings')
+        .where('passengerId', isEqualTo: uid)
+        .where('status', isEqualTo: 'completed')
+        .snapshots()
+        .listen((snap) {
+      for (final change in snap.docChanges) {
+        if (change.type == DocumentChangeType.added &&
+            !_seenCompletedBookings.contains(change.doc.id)) {
+          _seenCompletedBookings.add(change.doc.id);
+          _promptRating(BookingModel.fromDoc(change.doc));
+        }
+      }
+    });
+  }
+
+  Future<void> _promptRating(BookingModel booking) async {
+    final uid = context.read<app_auth.AuthProvider>().currentUser?.uid;
+    if (uid == null) return;
+    final existing = await FirebaseFirestore.instance
+        .collection('ratings')
+        .where('bookingId', isEqualTo: booking.id)
+        .where('passengerId', isEqualTo: uid)
+        .limit(1)
+        .get();
+    if (existing.docs.isNotEmpty) return;
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => RateDriverScreen(booking: booking)),
+    );
   }
 
   void _checkIfBlocked() {
@@ -165,23 +211,36 @@ class _HomeTabState extends State<_HomeTab> {
   int _seats = 1;
   bool _locating = false;
 
+  // Cached stream — must not be recreated on each build or rides flash/disappear
+  late Stream<List<RideModel>> _availableRidesStream;
+
   // Default camera position: Amman city center
   static const LatLng _amman = LatLng(31.9539, 35.9106);
+
+  @override
+  void initState() {
+    super.initState();
+    _availableRidesStream = context.read<RideProvider>().availableRidesStream;
+  }
 
   // ── Get device location for initial camera position ───────────────────
   Future<LatLng> _devicePosition() async {
     try {
-      var perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
-      }
-      if (perm == LocationPermission.deniedForever ||
-          perm == LocationPermission.denied) {
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
         return _amman;
       }
       final pos = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.medium);
-      return LatLng(pos.latitude, pos.longitude);
+      final loc = LatLng(pos.latitude, pos.longitude);
+      // Jordan bounding box: lat 29–34 N, lon 34.5–40 E
+      // If the GPS fix is outside Jordan (emulator, VPN, etc.) use Amman
+      if (loc.latitude < 29.0 || loc.latitude > 34.0 ||
+          loc.longitude < 34.5 || loc.longitude > 40.0) {
+        return _amman;
+      }
+      return loc;
     } catch (_) {
       return _amman;
     }
@@ -596,7 +655,40 @@ class _HomeTabState extends State<_HomeTab> {
                         isLoading: false,
                         onTap: () => _openPicker(isPickup: false),
                       ),
-                      const SizedBox(height: 12),
+
+                      // ── Saved places quick-pick ─────────────────────
+                      Consumer<SavedPlacesProvider>(
+                        builder: (_, sp, _) {
+                          if (sp.places.isEmpty) {
+                            return const SizedBox(height: 12);
+                          }
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 10),
+                              Text(
+                                'My Places',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: context.colors.textTertiary,
+                                  letterSpacing: 0.4,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: sp.places
+                                      .map((p) => _buildSavedPlaceChip(p))
+                                      .toList(),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          );
+                        },
+                      ),
 
                       // Date + Seats row
                       Row(
@@ -748,8 +840,7 @@ class _HomeTabState extends State<_HomeTab> {
             builder: (context, bookingSnap) {
               final pastBookings = bookingSnap.data ?? [];
               return StreamBuilder<List<RideModel>>(
-                stream:
-                    context.read<RideProvider>().availableRidesStream,
+                stream: _availableRidesStream,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState ==
                       ConnectionState.waiting) {
@@ -874,6 +965,131 @@ class _HomeTabState extends State<_HomeTab> {
             ),
             Icon(Icons.map_outlined,
                 size: 18, color: context.colors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Saved place chip ────────────────────────────────────────────────────
+  Widget _buildSavedPlaceChip(SavedPlace place) {
+    return GestureDetector(
+      onTap: () => _onSavedPlaceTapped(place),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: context.colors.cardBackgroundColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: context.colors.borderColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(place.icon, size: 14, color: AppStyles.primaryColor),
+            const SizedBox(width: 6),
+            Text(
+              place.title,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: context.colors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _onSavedPlaceTapped(SavedPlace place) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: context.colors.surfaceColor,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: context.colors.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Icon(place.icon, color: AppStyles.primaryColor, size: 20),
+                  const SizedBox(width: 10),
+                  Text(
+                    place.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                place.subtitle,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.colors.textSecondary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1),
+            ListTile(
+              leading: Icon(Icons.radio_button_checked,
+                  color: AppStyles.primaryColor),
+              title: const Text('Set as Pickup',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                final label = place.subtitle.isNotEmpty
+                    ? place.subtitle
+                    : place.title;
+                setState(() {
+                  _pickupLabel = label;
+                  if (place.lat != null && place.lng != null) {
+                    _pickupLatLng = LatLng(place.lat!, place.lng!);
+                  }
+                });
+              },
+            ),
+            ListTile(
+              leading:
+                  Icon(Icons.location_on, color: AppStyles.successColor),
+              title: const Text('Set as Destination',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                final label = place.subtitle.isNotEmpty
+                    ? place.subtitle
+                    : place.title;
+                setState(() {
+                  _destinationLabel = label;
+                  if (place.lat != null && place.lng != null) {
+                    _destinationLatLng = LatLng(place.lat!, place.lng!);
+                  }
+                });
+              },
+            ),
+            const SizedBox(height: 8),
           ],
         ),
       ),

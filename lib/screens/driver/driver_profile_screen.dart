@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/screens/settings_screen.dart';
 import 'package:testtale3/providers/auth_provider.dart';
+import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
+import 'package:testtale3/models/rating_model.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/screens/driver/driver_saved_places_screen.dart';
+//import 'package:testtale3/models/user_model.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -580,20 +583,16 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                         title: context.l10n.verification,
                         child: Column(
                           children: [
-                            _buildVerificationItem(context.l10n.identityVerified, true),
+                            _buildVerificationItem(context.l10n.identityVerified, authUser?.isVerified ?? false),
                             const SizedBox(height: 10),
-                            _buildVerificationItem(context.l10n.backgroundCheck, true),
+                            _buildVerificationItem(context.l10n.backgroundCheck, authUser?.isVerified ?? false),
                           ],
                         ),
                       ),
                       const SizedBox(height: 24),
 
                       // ── Quick Links ──────────────────────────────────
-                      _buildSection(
-                        title: context.l10n.quickLinks,
-                        child: _buildLinkTile(
-                            Icons.favorite_border_rounded, context.l10n.savedPlaces),
-                      ),
+                      
                       const SizedBox(height: 24),
 
                       // ── Logout ───────────────────────────────────────
@@ -680,7 +679,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
         // OVERLAPPING STATS CARD
         // ════════════════════════════════════════════════════════
         Positioned(
-          top: 200,
+          top: 250,
           left: 20,
           right: 20,
           child: Material(
@@ -693,15 +692,28 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
               child: Row(
                 children: [
                   // ── DYNAMIC RATING ──────────────────────────────────
-                  _buildStatCard(
-                      icon: ratingCount == 0
-                          ? Icons.star_border_rounded
-                          : Icons.star_rounded,
-                      iconColor: ratingCount == 0
-                          ? context.colors.textTertiary
-                          : AppStyles.goldStar,
-                      value: ratingDisplay,
-                      label: context.l10n.rating),
+                  // ── DYNAMIC RATING (live stream, same as home screen) ──
+                  StreamBuilder<List<RatingModel>>(
+                    stream: context
+                        .read<RatingProvider>()
+                        .driverRatingsStream(authUser?.uid ?? ''),
+                    builder: (_, snap) {
+                      final ratings = snap.data ?? [];
+                      final avg = ratings.isEmpty
+                          ? null
+                          : ratings.map((r) => r.stars).reduce((a, b) => a + b) /
+                              ratings.length;
+                      return _buildStatCard(
+                          icon: avg == null
+                              ? Icons.star_border_rounded
+                              : Icons.star_rounded,
+                          iconColor: avg == null
+                              ? context.colors.textTertiary
+                              : AppStyles.goldStar,
+                          value: avg == null ? '—' : avg!.toStringAsFixed(1),
+                          label: context.l10n.rating);
+                    },
+                  ),
                   Container(width: 1, height: 40, color: context.colors.dividerColor),
                   // ── DYNAMIC RIDES COUNT ──────────────────────────────
                   StreamBuilder<int>(

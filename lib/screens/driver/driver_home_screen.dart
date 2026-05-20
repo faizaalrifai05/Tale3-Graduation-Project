@@ -16,7 +16,7 @@ import 'package:testtale3/screens/driver/driver_chat_screen.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
-import 'package:testtale3/screens/driver/driver_ride_live_screen.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 
 class DriverHomeScreen extends StatefulWidget {
   const DriverHomeScreen({super.key});
@@ -30,8 +30,9 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
+      if (mounted) await requestFirstTimePermissionsIfNeeded(context);
     });
   }
 
@@ -177,73 +178,6 @@ class _DriverHomeTab extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
                 child: Column(
                   children: [
-                    // Live ride banner
-                    StreamBuilder<RideModel?>(
-                      stream: context.read<RideProvider>().liveRideStream,
-                      builder: (context, snap) {
-                        final liveRide = snap.data;
-                        if (liveRide == null) return const SizedBox.shrink();
-                        return GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => DriverRideLiveScreen(
-                                rideId: liveRide.id,
-                                origin: liveRide.origin,
-                                destination: liveRide.destination,
-                                driverName: liveRide.driverName,
-                              ),
-                            ),
-                          ),
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 10),
-                            margin: const EdgeInsets.only(bottom: 14),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                  color:
-                                      Colors.white.withValues(alpha: 0.3)),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 9,
-                                  height: 9,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFFF5252),
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    'LIVE · ${liveRide.origin} → ${liveRide.destination}',
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                const Text(
-                                  'Return →',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-
                     // Top row
                     Row(
                       children: [

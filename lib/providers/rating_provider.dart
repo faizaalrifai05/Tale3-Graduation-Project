@@ -112,10 +112,30 @@ class RatingProvider extends ChangeNotifier {
         'comment': comment,
         'createdAt': FieldValue.serverTimestamp(),
       });
+      _updatePassengerAverage(passengerId);
       return null;
     } catch (_) {
       return 'Failed to submit rating. Please try again.';
     }
+  }
+
+  /// Recomputes and writes the passenger's averageRating + ratingCount to Firestore.
+  Future<void> _updatePassengerAverage(String passengerId) async {
+    try {
+      final snap = await _db
+          .collection('passengerRatings')
+          .where('passengerId', isEqualTo: passengerId)
+          .get();
+      if (snap.docs.isEmpty) return;
+      final total = snap.docs
+          .map((d) => (d.data()['stars'] as num?)?.toDouble() ?? 0.0)
+          .reduce((a, b) => a + b);
+      final avg = total / snap.docs.length;
+      await _db.collection('users').doc(passengerId).update({
+        'averageRating': double.parse(avg.toStringAsFixed(1)),
+        'ratingCount': snap.docs.length,
+      });
+    } catch (_) {}
   }
 
   /// Stream that emits true if the driver has already rated this passenger booking.

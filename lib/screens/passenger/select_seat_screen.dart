@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/models/booking_model.dart';
+import 'package:testtale3/providers/auth_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 import 'package:testtale3/screens/passenger/location_picker_screen.dart';
@@ -74,9 +75,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         int totalBooked = 0;
         for (final b in bookings) {
           totalBooked += b.seatsBooked;
+          // Support comma-separated per-seat genders (e.g. "male,female,male")
+          final parts = b.passengerGender.split(',');
           for (int i = 0; i < b.seatsBooked; i++) {
             if (seat <= 4) {
-              newGenders[seat] = b.passengerGender;
+              newGenders[seat] = i < parts.length
+                  ? parts[i].trim()
+                  : b.passengerGender;
               seat++;
             }
           }
@@ -97,6 +102,20 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   }
 
   Future<void> _startConfirmFlow() async {
+    final provider = context.read<BookingProvider>();
+
+    // Step 0 — passenger specifies gender for each booked seat
+    final genders = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _GenderSelectionSheet(
+        seatCount: provider.selectedCount,
+        ownGender: context.read<AuthProvider>().currentUser?.gender ?? '',
+      ),
+    );
+    if (genders == null || !mounted) return;
+
     // Step 1 — passenger picks their pickup pin in the origin city
     final origin = MapsService.cityCoords(widget.ride.origin)
         ?? const LatLng(31.9539, 35.9106);
@@ -107,6 +126,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           instruction: 'Drag map to your pickup point',
           initialPosition: origin,
           confirmLabel: 'Confirm Pickup →',
+          showSavedPlaces: true,
         ),
       ),
     );
@@ -123,13 +143,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           initialPosition: dest,
           confirmLabel: 'Confirm Booking',
           pinColor: const Color(0xFF2E7D32),
+          showSavedPlaces: true,
         ),
       ),
     );
     if (dropoff == null || !mounted) return;
 
     // Step 3 — show booking summary and wait for passenger confirmation
-    final provider = context.read<BookingProvider>();
     final confirmed = await _showBookingSummary(context, provider,
         pickup: pickup, dropoff: dropoff);
     if (!confirmed || !mounted) return;
@@ -142,6 +162,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
               pickupLng: pickup.longitude,
               dropoffLat: dropoff.latitude,
               dropoffLng: dropoff.longitude,
+              passengerGender: genders.join(','),
             );
     if (!mounted) return;
     setState(() => _isConfirming = false);
@@ -442,18 +463,27 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                         const SizedBox(height: 48),
 
                         // Legend
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                        Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: 14,
+                          runSpacing: 8,
                           children: [
                             _buildLegendItem(
                                 const Color(0xFFE0E0E0), context.l10n.available),
-                            const SizedBox(width: 16),
                             _buildLegendItem(_primaryColor, context.l10n.selectedLabel,
                                 isSelected: true),
-                            const SizedBox(width: 16),
-                            _buildLegendItem(const Color(0xFFBDBDBD),
-                                context.l10n.occupied,
-                                iconColor: Colors.white),
+                            _buildLegendItem(
+                              const Color(0xFFE3F2FD),
+                              'Male',
+                              iconColor: const Color(0xFF1565C0),
+                              icon: Icons.man_rounded,
+                            ),
+                            _buildLegendItem(
+                              const Color(0xFFFCE4EC),
+                              'Female',
+                              iconColor: const Color(0xFFE91E8C),
+                              icon: Icons.woman_rounded,
+                            ),
                           ],
                         ),
                       ],
@@ -613,14 +643,29 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       );
     }
 
-    Color bgColor;
+
+Color bgColor;
     Color iconColor;
     if (state == 1) {
       bgColor = _primaryColor;
       iconColor = Colors.white;
     } else if (state == 2) {
-      bgColor = const Color(0xFFBDBDBD);
-      iconColor = Colors.white;
+      if (gender != null) {
+        final g = gender.toLowerCase();
+        if (g == 'female' || g == 'أنثى') {
+          bgColor = const Color(0xFFFCE4EC);
+          iconColor = const Color(0xFFE91E8C);
+        } else if (g == 'male' || g == 'ذكر') {
+          bgColor = const Color(0xFFE3F2FD);
+          iconColor = const Color(0xFF1565C0);
+        } else {
+          bgColor = const Color(0xFFBDBDBD);
+          iconColor = Colors.white;
+        }
+      } else {
+        bgColor = const Color(0xFFBDBDBD);
+        iconColor = Colors.white;
+      }
     } else {
       bgColor = const Color(0xFFF5F5F5);
       iconColor = const Color(0xFFBDBDBD);
@@ -657,8 +702,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   }
 
   Widget _buildLegendItem(Color color, String label,
-      {bool isSelected = false, Color iconColor = Colors.transparent}) {
+      {bool isSelected = false, Color iconColor = Colors.transparent, IconData? icon}) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: 16,
@@ -671,7 +717,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                 : Border.all(color: const Color(0xFFE0E0E0)),
           ),
           child: iconColor != Colors.transparent
-              ? Icon(Icons.person, size: 10, color: iconColor)
+              ? Icon(icon ?? Icons.person, size: 10, color: iconColor)
               : null,
         ),
         const SizedBox(width: 6),
@@ -684,6 +730,201 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Gender selection sheet — shown before location picker
+// ─────────────────────────────────────────────────────────────────────────────
+class _GenderSelectionSheet extends StatefulWidget {
+  final int seatCount;
+  final String ownGender;
+  const _GenderSelectionSheet({required this.seatCount, required this.ownGender});
+
+  @override
+  State<_GenderSelectionSheet> createState() => _GenderSelectionSheetState();
+}
+
+class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
+  static const Color _primary = Color(0xFF8B1A2B);
+  static const Color _female = Color(0xFFE91E8C);
+  static const Color _male = Color(0xFF1565C0);
+
+  late List<String> _genders;
+
+  @override
+  void initState() {
+    super.initState();
+    _genders = List.generate(widget.seatCount, (i) {
+      if (i == 0) {
+        final g = widget.ownGender.toLowerCase();
+        if (g == 'female' || g == 'أنثى') return 'female';
+        if (g == 'male' || g == 'ذكر') return 'male';
+      }
+      return 'male';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // drag handle
+          Center(
+            child: Container(
+              width: 40, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE0E0E0),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "Who's joining?",
+            style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Select the gender for each seat so the driver knows who to expect.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
+          ),
+          const SizedBox(height: 24),
+
+          ...List.generate(widget.seatCount, (i) {
+            final isYou = i == 0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  // Seat label
+                  Container(
+                    width: 80,
+                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isYou ? 'You' : 'Seat ${i + 1}',
+                      style: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Male toggle
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _genders[i] = 'male'),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _genders[i] == 'male'
+                              ? _male.withValues(alpha: 0.12)
+                              : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _genders[i] == 'male' ? _male : const Color(0xFFE0E0E0),
+                            width: _genders[i] == 'male' ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.man_rounded,
+                                color: _genders[i] == 'male' ? _male : const Color(0xFFBDBDBD),
+                                size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Male',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: _genders[i] == 'male' ? _male : const Color(0xFF9E9E9E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Female toggle
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => setState(() => _genders[i] = 'female'),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _genders[i] == 'female'
+                              ? _female.withValues(alpha: 0.12)
+                              : const Color(0xFFF5F5F5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _genders[i] == 'female' ? _female : const Color(0xFFE0E0E0),
+                            width: _genders[i] == 'female' ? 1.5 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.woman_rounded,
+                                color: _genders[i] == 'female' ? _female : const Color(0xFFBDBDBD),
+                                size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Female',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: _genders[i] == 'female' ? _female : const Color(0xFF9E9E9E),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(_genders),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text(
+                'Continue',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

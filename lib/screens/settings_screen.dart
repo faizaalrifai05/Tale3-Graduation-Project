@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/settings_provider.dart';
-import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/saved_account.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
@@ -1449,97 +1448,118 @@ class _SettingsScreenState extends State<SettingsScreen>
     final passwordController = TextEditingController();
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (ctx) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.colors.errorLightBg,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.warning_amber_rounded,
-                    color: AppStyles.errorColor, size: 22),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                context.l10n.deleteAccount,
-                style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: context.colors.textPrimary),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'This action is permanent and cannot be undone. All your data, ride history, and ratings will be permanently removed.',
-                style: TextStyle(
-                    fontSize: 14,
-                    color: context.colors.textSecondary,
-                    height: 1.5),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: passwordController,
-                obscureText: true,
-                decoration: InputDecoration(
-                  labelText: 'Enter your password to confirm',
-                  labelStyle:
-                      TextStyle(fontSize: 13, color: context.colors.textSecondary),
-                  border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10)),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 12),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(
-                context.l10n.cancel,
-                style: TextStyle(
-                    color: context.colors.textSecondary,
-                    fontWeight: FontWeight.w600),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final password = passwordController.text;
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            bool deleting = false;
+
+            Future<void> confirmDelete() async {
+              setDialogState(() => deleting = true);
+              final password = passwordController.text;
+              final auth = context.read<AuthProvider>();
+              final navigator = Navigator.of(context);
+              final error = await auth.deleteAccount(
+                password: password.isNotEmpty ? password : null,
+              );
+              if (!mounted) return;
+              if (error != null) {
                 Navigator.pop(ctx);
-                final error = await context
-                    .read<AuthProvider>()
-                    .deleteAccount(password: password.isNotEmpty ? password : null);
-                if (!mounted) return;
-                if (error != null) {
-                  _showSnackBar(error, isError: true);
-                } else {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                        builder: (_) => const WelcomeScreen()),
-                    (route) => false,
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppStyles.errorColor,
-                foregroundColor: AppStyles.onPrimary,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
+                _showSnackBar(error, isError: true);
+              } else {
+                navigator.pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
+                  (route) => false,
+                );
+              }
+            }
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: context.colors.errorLightBg,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.warning_amber_rounded,
+                        color: AppStyles.errorColor, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    context.l10n.deleteAccount,
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: context.colors.textPrimary),
+                  ),
+                ],
               ),
-              child: Text(context.l10n.delete,
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-            ),
-          ],
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'This action is permanent and cannot be undone. Your account and all saved data will be removed. The email will be free to register again.',
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: context.colors.textSecondary,
+                        height: 1.5),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: passwordController,
+                    obscureText: true,
+                    enabled: !deleting,
+                    decoration: InputDecoration(
+                      labelText: 'Enter your password to confirm',
+                      labelStyle: TextStyle(
+                          fontSize: 13,
+                          color: context.colors.textSecondary),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: deleting ? null : () => Navigator.pop(ctx),
+                  child: Text(
+                    context.l10n.cancel,
+                    style: TextStyle(
+                        color: context.colors.textSecondary,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: deleting ? null : confirmDelete,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppStyles.errorColor,
+                    foregroundColor: AppStyles.onPrimary,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    elevation: 0,
+                  ),
+                  child: deleting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(context.l10n.delete,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
