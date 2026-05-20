@@ -15,6 +15,7 @@ import 'package:testtale3/screens/driver/pickup_schedule_screen.dart';
 import 'package:testtale3/screens/driver/driver_chat_screen.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
+import 'package:testtale3/providers/chat_provider.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/widgets/permission_dialog.dart';
 
@@ -223,35 +224,42 @@ class _DriverHomeTab extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(Icons.notifications_none_rounded,
-                                  color: AppStyles.onPrimary, size: 22),
-                              Positioned(
-                                top: 9,
-                                right: 10,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppStyles.notificationDot,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppStyles.darkMaroon,
-                                        width: 1.5),
-                                  ),
-                                ),
+                        StreamBuilder<int>(
+                          stream: context.read<ChatProvider>().totalUnreadStream,
+                          builder: (context, snap) {
+                            final hasUnread = (snap.data ?? 0) > 0;
+                            return Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  const Icon(Icons.notifications_none_rounded,
+                                      color: AppStyles.onPrimary, size: 22),
+                                  if (hasUnread)
+                                    Positioned(
+                                      top: 9,
+                                      right: 10,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: AppStyles.notificationDot,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: AppStyles.darkMaroon,
+                                              width: 1.5),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

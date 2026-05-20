@@ -16,11 +16,13 @@ class PickupScheduleScreen extends StatefulWidget {
 class _PickupScheduleScreenState extends State<PickupScheduleScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  late Stream<List<RideModel>> _stream;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
+    _stream = context.read<RideProvider>().myRidesStream;
   }
 
   @override
@@ -59,12 +61,12 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
             controller: _tabController,
             labelColor: AppStyles.primaryColor,
             unselectedLabelColor: context.colors.textTertiary,
-            labelStyle: TextStyle(
-              fontSize: 14,
+            labelStyle: const TextStyle(
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
-            unselectedLabelStyle: TextStyle(
-              fontSize: 14,
+            unselectedLabelStyle: const TextStyle(
+              fontSize: 13,
               fontWeight: FontWeight.w500,
             ),
             indicatorColor: AppStyles.primaryColor,
@@ -72,8 +74,9 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
             indicatorSize: TabBarIndicatorSize.label,
             dividerColor: context.colors.borderColor,
             tabs: [
-              Tab(text: context.l10n.upcoming),
-              Tab(text: context.l10n.completed),
+              Tab(text: context.l10n.active.toUpperCase()),
+              Tab(text: context.l10n.completed.toUpperCase()),
+              Tab(text: context.l10n.cancelled.toUpperCase()),
             ],
           ),
         ),
@@ -81,21 +84,27 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
         // ── Tab content ──
         Expanded(
           child: StreamBuilder<List<RideModel>>(
-            stream: context.read<RideProvider>().myRidesStream,
+            stream: _stream,
+            initialData: context.read<RideProvider>().lastMyRides,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  (snapshot.data == null || snapshot.data!.isEmpty)) {
                 return const Center(child: CircularProgressIndicator());
               }
               final all = snapshot.data ?? [];
-              final upcoming =
-                  all.where((r) => r.status == 'active').toList();
-              final history =
-                  all.where((r) => r.status != 'active').toList();
+              final active = all
+                  .where((r) => r.status == 'active' || r.status == 'live')
+                  .toList();
+              final completed =
+                  all.where((r) => r.status == 'completed').toList();
+              final cancelled =
+                  all.where((r) => r.status == 'cancelled').toList();
               return TabBarView(
                 controller: _tabController,
                 children: [
-                  _RideList(rides: upcoming, isUpcoming: true),
-                  _RideList(rides: history, isUpcoming: false),
+                  _RideList(rides: active, emptyKey: 'active'),
+                  _RideList(rides: completed, emptyKey: 'completed'),
+                  _RideList(rides: cancelled, emptyKey: 'cancelled'),
                 ],
               );
             },
@@ -111,17 +120,19 @@ class _PickupScheduleScreenState extends State<PickupScheduleScreen>
 // ─────────────────────────────────────────────────────────────────────────────
 class _RideList extends StatelessWidget {
   final List<RideModel> rides;
-  final bool isUpcoming;
-  const _RideList({required this.rides, required this.isUpcoming});
+  final String emptyKey;
+  const _RideList({required this.rides, required this.emptyKey});
 
   @override
   Widget build(BuildContext context) {
     if (rides.isEmpty) {
+      final msg = emptyKey == 'completed'
+          ? context.l10n.noPastTrips
+          : emptyKey == 'cancelled'
+              ? context.l10n.noCancelledTrips
+              : context.l10n.noUpcomingTrips;
       return Center(
-        child: Text(
-          isUpcoming ? context.l10n.noUpcomingTrips : context.l10n.noPastTrips,
-          style: TextStyle(color: context.colors.textSecondary),
-        ),
+        child: Text(msg, style: TextStyle(color: context.colors.textSecondary)),
       );
     }
     return ListView.separated(

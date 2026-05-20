@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/ride_model.dart';
@@ -8,11 +9,25 @@ class RideProvider extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   AuthProvider _auth;
 
-  RideProvider(this._auth);
+  RideProvider(this._auth) {
+    _restartRidesListener();
+    _restartMyRidesListener();
+  }
 
   void updateAuth(AuthProvider auth) {
     _auth = auth;
+    _restartRidesListener();
+    _restartMyRidesListener();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _ridesSub?.cancel();
+    _ridesController.close();
+    _myRidesSub?.cancel();
+    _myRidesController.close();
+    super.dispose();
   }
 
   // ── Form state ─────────────────────────────────────────────────────────────
@@ -312,29 +327,41 @@ class RideProvider extends ChangeNotifier {
     await batch.commit();
   }
 
-  // ── Firestore streams ─────────────────────────────────────────────────────
+  // ── Available rides stream (persistent, auth-aware) ──────────────────────
 
-  Stream<List<RideModel>> get availableRidesStream {
+  final _ridesController = StreamController<List<RideModel>>.broadcast();
+  StreamSubscription<QuerySnapshot>? _ridesSub;
+  List<RideModel> _lastRides = const [];
+
+  Stream<List<RideModel>> get availableRidesStream => _ridesController.stream;
+  List<RideModel> get lastAvailableRides => List.unmodifiable(_lastRides);
+
+  void _restartRidesListener() {
+    _ridesSub?.cancel();
     final uid = _auth.currentUser?.uid;
-    final now = DateTime.now();
-    final todayStr = '${now.year}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-    return _db
+    _ridesSub = _db
         .collection('rides')
         .where('status', isEqualTo: 'active')
         .snapshots()
-        .map((snap) {
-          final rides = snap.docs
-              .map(RideModel.fromDoc)
-              .where((r) =>
-                  r.driverId != uid &&
-                  !r.isFull &&
-                  r.date.compareTo(todayStr) >= 0)
-              .toList();
-          rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return rides;
-        });
+        .listen(
+      (snap) {
+        final now = DateTime.now();
+        final todayStr = '${now.year}-'
+            '${now.month.toString().padLeft(2, '0')}-'
+            '${now.day.toString().padLeft(2, '0')}';
+        final rides = snap.docs
+            .map(RideModel.fromDoc)
+            .where((r) =>
+                r.driverId != uid &&
+                !r.isFull &&
+                r.date.compareTo(todayStr) >= 0)
+            .toList();
+        rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _lastRides = rides;
+        if (!_ridesController.isClosed) _ridesController.add(rides);
+      },
+      onError: (e) => debugPrint('availableRides stream error: $e'),
+    );
   }
 
   /// Fetch a single ride by ID — used by deep link handler.
@@ -362,18 +389,32 @@ class RideProvider extends ChangeNotifier {
             snap.docs.isEmpty ? null : RideModel.fromDoc(snap.docs.first));
   }
 
-  Stream<List<RideModel>> get myRidesStream {
+  // ── My rides stream (persistent, auth-aware) ─────────────────────────────
+
+  final _myRidesController = StreamController<List<RideModel>>.broadcast();
+  StreamSubscription<QuerySnapshot>? _myRidesSub;
+  List<RideModel> _lastMyRides = const [];
+
+  Stream<List<RideModel>> get myRidesStream => _myRidesController.stream;
+  List<RideModel> get lastMyRides => List.unmodifiable(_lastMyRides);
+
+  void _restartMyRidesListener() {
+    _myRidesSub?.cancel();
     final uid = _auth.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return _db
+    if (uid == null) return;
+    _myRidesSub = _db
         .collection('rides')
         .where('driverId', isEqualTo: uid)
         .snapshots()
-        .map((snap) {
-          final rides = snap.docs.map(RideModel.fromDoc).toList();
-          rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return rides;
-        });
+        .listen(
+      (snap) {
+        final rides = snap.docs.map(RideModel.fromDoc).toList();
+        rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _lastMyRides = rides;
+        if (!_myRidesController.isClosed) _myRidesController.add(rides);
+      },
+      onError: (e) => debugPrint('myRides stream error: $e'),
+    );
   }
 
   /// Stream that emits the count of completed rides for a driver.

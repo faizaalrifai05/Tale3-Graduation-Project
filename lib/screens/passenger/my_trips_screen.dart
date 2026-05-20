@@ -6,105 +6,122 @@ import '../../providers/booking_provider.dart';
 import 'booking_status_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
-class MyTripsScreen extends StatelessWidget {
+class MyTripsScreen extends StatefulWidget {
   const MyTripsScreen({super.key});
 
   @override
+  State<MyTripsScreen> createState() => _MyTripsScreenState();
+}
+
+class _MyTripsScreenState extends State<MyTripsScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  late Stream<List<BookingModel>> _stream;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 4, vsync: this);
+    _stream = context.read<BookingProvider>().myBookingsStream;
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Column(
-        children: [
-          Container(
-            color: Colors.white,
-            padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.myTrips,
-                  style: const TextStyle(
-                    color: AppStyles.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
-                  ),
+    return Column(
+      children: [
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.l10n.myTrips,
+                style: const TextStyle(
+                  color: AppStyles.textPrimary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
                 ),
-                const SizedBox(height: 12),
-                TabBar(
-                  labelColor: AppStyles.primaryColor,
-                  unselectedLabelColor: AppStyles.textTertiary,
-                  indicatorColor: AppStyles.primaryColor,
-                  indicatorWeight: 3,
-                  labelStyle: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w700),
-                  tabs: [
-                    Tab(text: context.l10n.upcoming.toUpperCase()),
-                    Tab(text: context.l10n.past.toUpperCase()),
-                    Tab(text: context.l10n.canceled),
-                  ],
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 12),
+              TabBar(
+                controller: _tabController,
+                labelColor: AppStyles.primaryColor,
+                unselectedLabelColor: AppStyles.textTertiary,
+                indicatorColor: AppStyles.primaryColor,
+                indicatorWeight: 3,
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                unselectedLabelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                tabs: [
+                  Tab(text: context.l10n.pending.toUpperCase()),
+                  Tab(text: context.l10n.upcoming.toUpperCase()),
+                  Tab(text: context.l10n.past.toUpperCase()),
+                  Tab(text: context.l10n.cancelled.toUpperCase()),
+                ],
+              ),
+            ],
           ),
-          Expanded(
-            child: StreamBuilder<List<BookingModel>>(
-              stream: context.read<BookingProvider>().myBookingsStream,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final all = snapshot.data ?? [];
-                final today = DateTime(
-                  DateTime.now().year,
-                  DateTime.now().month,
-                  DateTime.now().day,
-                );
+        ),
+        Expanded(
+          child: StreamBuilder<List<BookingModel>>(
+            stream: _stream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  snapshot.data == null) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final all = snapshot.data ?? [];
+              final today = DateTime(
+                DateTime.now().year,
+                DateTime.now().month,
+                DateTime.now().day,
+              );
 
-                DateTime? parseDate(String d) {
-                  try { return DateTime.parse(d); } catch (_) { return null; }
-                }
+              DateTime? parseDate(String d) {
+                try { return DateTime.parse(d); } catch (_) { return null; }
+              }
 
-                final upcoming = all.where((b) {
-                  if (b.status == 'pending') return true;
-                  if (b.status != 'confirmed') return false;
-                  final d = parseDate(b.date);
-                  return d == null || !d.isBefore(today);
-                }).toList();
+              final pending = all.where((b) => b.status == 'pending').toList();
 
-                final past = all.where((b) {
-                  if (b.status == 'completed') return true;
-                  if (b.status != 'confirmed') return false;
-                  final d = parseDate(b.date);
-                  return d != null && d.isBefore(today);
-                }).toList();
+              final upcoming = all.where((b) {
+                if (b.status != 'confirmed') return false;
+                final d = parseDate(b.date);
+                return d == null || !d.isBefore(today);
+              }).toList();
 
-                final cancelled = all
-                    .where((b) =>
-                        b.status == 'cancelled' || b.status == 'rejected')
-                    .toList();
+              final past = all.where((b) {
+                if (b.status == 'completed') return true;
+                if (b.status != 'confirmed') return false;
+                final d = parseDate(b.date);
+                return d != null && d.isBefore(today);
+              }).toList();
 
-                return TabBarView(
-                  physics: const BouncingScrollPhysics(),
-                  children: [
-                    _BookingList(
-                      bookings: upcoming,
-                      emptyMessage: context.l10n.noUpcomingTrips,
-                    ),
-                    _BookingList(
-                      bookings: past,
-                      emptyMessage: context.l10n.noPastTrips,
-                    ),
-                    _BookingList(
-                      bookings: cancelled,
-                      emptyMessage: context.l10n.noCancelledTrips,
-                    ),
-                  ],
-                );
-              },
-            ),
+              final cancelled = all
+                  .where((b) => b.status == 'cancelled' || b.status == 'rejected')
+                  .toList();
+
+              return TabBarView(
+                controller: _tabController,
+                physics: const BouncingScrollPhysics(),
+                children: [
+                  _BookingList(bookings: pending, emptyMessage: context.l10n.noUpcomingTrips),
+                  _BookingList(bookings: upcoming, emptyMessage: context.l10n.noUpcomingTrips),
+                  _BookingList(bookings: past, emptyMessage: context.l10n.noPastTrips),
+                  _BookingList(bookings: cancelled, emptyMessage: context.l10n.noCancelledTrips),
+                ],
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

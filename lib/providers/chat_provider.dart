@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_provider.dart';
@@ -48,11 +49,71 @@ class ChatProvider extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   AuthProvider _auth;
 
-  ChatProvider(this._auth);
+  ChatProvider(this._auth) {
+    _restartConversationsListener();
+  }
 
   void updateAuth(AuthProvider auth) {
     _auth = auth;
+    _restartConversationsListener();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _convSub?.cancel();
+    _convController.close();
+    _unreadController.close();
+    super.dispose();
+  }
+
+  // ── Conversations stream (persistent, auth-aware) ─────────────────────────
+
+  final _convController = StreamController<List<Conversation>>.broadcast();
+  final _unreadController = StreamController<int>.broadcast();
+  StreamSubscription<QuerySnapshot>? _convSub;
+
+  Stream<List<Conversation>> get conversationsStream => _convController.stream;
+  Stream<int> get totalUnreadStream => _unreadController.stream;
+
+  void _restartConversationsListener() {
+    _convSub?.cancel();
+    final uid = _uid;
+    if (uid == null) return;
+    _convSub = _db
+        .collection('chats')
+        .where('participants', arrayContains: uid)
+        .snapshots()
+        .listen(
+      (snap) {
+        final docs = snap.docs.toList()
+          ..sort((a, b) {
+            final aTime = (a.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
+            final bTime = (b.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
+            return bTime.compareTo(aTime);
+          });
+        final convs = docs.map((doc) {
+          final data = doc.data();
+          final participants = List<String>.from(data['participants'] as List? ?? []);
+          final otherUid = participants.firstWhere((p) => p != uid, orElse: () => '');
+          final names = Map<String, String>.from(data['participantNames'] as Map? ?? {});
+          final unread = Map<String, dynamic>.from(data['unread'] as Map? ?? {});
+          return Conversation(
+            chatId: doc.id,
+            otherUserId: otherUid,
+            otherUserName: names[otherUid] ?? 'Unknown',
+            lastMessage: data['lastMessage'] as String? ?? '',
+            lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime.now(),
+            unreadCount: (unread[uid] as num?)?.toInt() ?? 0,
+          );
+        }).toList();
+
+        if (!_convController.isClosed) _convController.add(convs);
+        final totalUnread = convs.fold<int>(0, (sum, c) => sum + c.unreadCount);
+        if (!_unreadController.isClosed) _unreadController.add(totalUnread);
+      },
+      onError: (e) => debugPrint('conversations stream error: $e'),
+    );
   }
 
   String? get _uid => _auth.currentUser?.uid;
@@ -64,44 +125,6 @@ class ChatProvider extends ChangeNotifier {
     return '${sorted[0]}_${sorted[1]}';
   }
 
-  /// Stream of the current user's conversations, newest first.
-  Stream<List<Conversation>> get conversationsStream {
-    final uid = _uid;
-    if (uid == null) return const Stream.empty();
-    return _db
-        .collection('chats')
-        .where('participants', arrayContains: uid)
-        .snapshots()
-        .map((snap) {
-          final docs = snap.docs.toList()
-            ..sort((a, b) {
-              final aTime = (a.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
-              final bTime = (b.data()['lastMessageTime'] as Timestamp?)?.toDate() ?? DateTime(0);
-              return bTime.compareTo(aTime);
-            });
-          return docs.map((doc) {
-              final data = doc.data();
-              final participants =
-                  List<String>.from(data['participants'] as List? ?? []);
-              final otherUid =
-                  participants.firstWhere((p) => p != uid, orElse: () => '');
-              final names = Map<String, String>.from(
-                  data['participantNames'] as Map? ?? {});
-              final unread =
-                  Map<String, dynamic>.from(data['unread'] as Map? ?? {});
-              return Conversation(
-                chatId: doc.id,
-                otherUserId: otherUid,
-                otherUserName: names[otherUid] ?? 'Unknown',
-                lastMessage: data['lastMessage'] as String? ?? '',
-                lastMessageTime:
-                    (data['lastMessageTime'] as Timestamp?)?.toDate() ??
-                        DateTime.now(),
-                unreadCount: (unread[uid] as num?)?.toInt() ?? 0,
-              );
-            }).toList();
-        });
-  }
 
   /// Stream of messages for a specific chat, oldest first.
   /// Sorted client-side — avoids Firestore index requirements and includes

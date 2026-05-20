@@ -32,8 +32,16 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
   StreamSubscription<List<BookingModel>>? _bookingsSub;
-  // seat index (1-4) → passenger gender string
-  final Map<int, String> _seatGenders = {};
+  StreamSubscription<List<BookingModel>>? _pendingBookingsSub;
+
+  // confirmed bookings (accepted by driver)
+  List<BookingModel> _confirmedBookings = [];
+  // pending booking requests (awaiting driver approval)
+  List<BookingModel> _pendingBookings = [];
+
+  // seat index (1-4) → gender string for that seat
+  final Map<int, String> _seatGenders = {};        // confirmed seats
+  final Map<int, String> _pendingSeatGenders = {}; // pending seats
 
   String _mapError(String? code) {
     switch (code) {
@@ -63,41 +71,71 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           .snapshots()
           .listen((snap) {
         if (!mounted || !snap.exists) return;
-        setState(() {
-          _totalSeats = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
-        });
+        final newTotal = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
+        if (newTotal != _totalSeats) {
+          _totalSeats = newTotal;
+          _recalcSeats(provider);
+        }
       });
 
       _bookingsSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
         if (!mounted) return;
-        final newGenders = <int, String>{};
-        int seat = 1;
-        int totalBooked = 0;
-        for (final b in bookings) {
-          totalBooked += b.seatsBooked;
-          // Support comma-separated per-seat genders (e.g. "male,female,male")
-          final parts = b.passengerGender.split(',');
-          for (int i = 0; i < b.seatsBooked; i++) {
-            if (seat <= 4) {
-              newGenders[seat] = i < parts.length
-                  ? parts[i].trim()
-                  : b.passengerGender;
-              seat++;
-            }
-          }
-        }
-        provider.updateOccupiedSeats(totalBooked, _totalSeats);
-        setState(() => _seatGenders
-          ..clear()
-          ..addAll(newGenders));
+        _confirmedBookings = bookings;
+        _recalcSeats(provider);
+      });
+
+      _pendingBookingsSub = provider.ridePendingBookingsStream(widget.ride.id).listen((bookings) {
+        if (!mounted) return;
+        _pendingBookings = bookings;
+        _recalcSeats(provider);
       });
     });
+  }
+
+  /// Recomputes seat states and gender maps from the latest confirmed + pending lists.
+  void _recalcSeats(BookingProvider provider) {
+    final newConfirmed = <int, String>{};
+    int seat = 1;
+    int confirmedCount = 0;
+    for (final b in _confirmedBookings) {
+      confirmedCount += b.seatsBooked;
+      final parts = b.passengerGender.split(',');
+      for (int i = 0; i < b.seatsBooked; i++) {
+        if (seat <= 4) {
+          newConfirmed[seat] = i < parts.length ? parts[i].trim() : b.passengerGender;
+          seat++;
+        }
+      }
+    }
+
+    final newPending = <int, String>{};
+    int pendingSeat = confirmedCount + 1;
+    int pendingCount = 0;
+    for (final b in _pendingBookings) {
+      pendingCount += b.seatsBooked;
+      final parts = b.passengerGender.split(',');
+      for (int i = 0; i < b.seatsBooked; i++) {
+        if (pendingSeat <= 4) {
+          newPending[pendingSeat] = i < parts.length ? parts[i].trim() : b.passengerGender;
+          pendingSeat++;
+        }
+      }
+    }
+
+    provider.updateAllSeats(confirmedCount, pendingCount, _totalSeats);
+    if (mounted) {
+      setState(() {
+        _seatGenders..clear()..addAll(newConfirmed);
+        _pendingSeatGenders..clear()..addAll(newPending);
+      });
+    }
   }
 
   @override
   void dispose() {
     _rideSub?.cancel();
     _bookingsSub?.cancel();
+    _pendingBookingsSub?.cancel();
     super.dispose();
   }
 
@@ -443,8 +481,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(bookingProvider, 0, null),
-                                  _buildSeat(bookingProvider, 1, _seatGenders[1]),
+                                  _buildSeat(bookingProvider, 0),
+                                  _buildSeat(bookingProvider, 1),
                                 ],
                               ),
                               const SizedBox(height: 40),
@@ -452,9 +490,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  _buildSeat(bookingProvider, 2, _seatGenders[2]),
-                                  _buildSeat(bookingProvider, 3, _seatGenders[3]),
-                                  _buildSeat(bookingProvider, 4, _seatGenders[4]),
+                                  _buildSeat(bookingProvider, 2),
+                                  _buildSeat(bookingProvider, 3),
+                                  _buildSeat(bookingProvider, 4),
                                 ],
                               ),
                             ],
@@ -483,6 +521,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                               'Female',
                               iconColor: const Color(0xFFE91E8C),
                               icon: Icons.woman_rounded,
+                            ),
+                            _buildLegendItem(
+                              const Color(0xFFFFF9C4),
+                              'Pending',
+                              iconColor: const Color(0xFFFFB300),
+                              icon: Icons.hourglass_top_rounded,
+                              isBordered: true,
                             ),
                           ],
                         ),
@@ -626,9 +671,10 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     );
   }
 
-  Widget _buildSeat(BookingProvider provider, int index, String? gender) {
+  Widget _buildSeat(BookingProvider provider, int index) {
     final state = provider.seatStates[index] ?? 0;
 
+    // ── Driver seat ──────────────────────────────────────────────────────────
     if (state == 3) {
       return Container(
         width: 44,
@@ -643,8 +689,62 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       );
     }
 
+    // ── Non-existent seat ────────────────────────────────────────────────────
+    if (state == 4) {
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFE0E0E0)),
+        ),
+        child: const Center(
+          child: Icon(Icons.block, color: Color(0xFFCCCCCC), size: 18),
+        ),
+      );
+    }
 
-Color bgColor;
+    // ── Pending request seat ─────────────────────────────────────────────────
+    if (state == 5) {
+      final gender = _pendingSeatGenders[index];
+      Color bgColor;
+      Color borderColor;
+      IconData icon;
+      if (gender != null) {
+        final g = gender.toLowerCase();
+        if (g == 'female' || g == 'أنثى') {
+          bgColor = const Color(0xFFFCE4EC);
+          borderColor = const Color(0xFFE91E8C);
+          icon = Icons.woman_rounded;
+        } else {
+          bgColor = const Color(0xFFE3F2FD);
+          borderColor = const Color(0xFF1565C0);
+          icon = Icons.man_rounded;
+        }
+      } else {
+        bgColor = const Color(0xFFFFF9C4);
+        borderColor = const Color(0xFFFFB300);
+        icon = Icons.person;
+      }
+      return Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: bgColor.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: borderColor.withValues(alpha: 0.6), width: 1.5),
+        ),
+        child: Center(
+          child: Icon(icon, color: borderColor.withValues(alpha: 0.7), size: 24),
+        ),
+      );
+    }
+
+    // ── Confirmed / available / selected seats ───────────────────────────────
+    final gender = state == 2 ? _seatGenders[index] : null;
+
+    Color bgColor;
     Color iconColor;
     if (state == 1) {
       bgColor = _primaryColor;
@@ -693,8 +793,7 @@ Color bgColor;
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
-          border:
-              state == 0 ? Border.all(color: const Color(0xFFE0E0E0)) : null,
+          border: state == 0 ? Border.all(color: const Color(0xFFE0E0E0)) : null,
         ),
         child: Center(child: Icon(genderIcon, color: iconColor, size: 24)),
       ),
@@ -702,7 +801,7 @@ Color bgColor;
   }
 
   Widget _buildLegendItem(Color color, String label,
-      {bool isSelected = false, Color iconColor = Colors.transparent, IconData? icon}) {
+      {bool isSelected = false, bool isBordered = false, Color iconColor = Colors.transparent, IconData? icon}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -710,14 +809,16 @@ Color bgColor;
           width: 16,
           height: 16,
           decoration: BoxDecoration(
-            color: color,
+            color: color.withValues(alpha: isBordered ? 0.4 : 1.0),
             borderRadius: BorderRadius.circular(4),
             border: isSelected
                 ? null
-                : Border.all(color: const Color(0xFFE0E0E0)),
+                : isBordered
+                    ? Border.all(color: iconColor.withValues(alpha: 0.6), width: 1.5)
+                    : Border.all(color: const Color(0xFFE0E0E0)),
           ),
           child: iconColor != Colors.transparent
-              ? Icon(icon ?? Icons.person, size: 10, color: iconColor)
+              ? Icon(icon ?? Icons.person, size: 10, color: iconColor.withValues(alpha: isBordered ? 0.7 : 1.0))
               : null,
         ),
         const SizedBox(width: 6),
@@ -756,14 +857,9 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
   @override
   void initState() {
     super.initState();
-    _genders = List.generate(widget.seatCount, (i) {
-      if (i == 0) {
-        final g = widget.ownGender.toLowerCase();
-        if (g == 'female' || g == 'أنثى') return 'female';
-        if (g == 'male' || g == 'ذكر') return 'male';
-      }
-      return 'male';
-    });
+    final g = widget.ownGender.toLowerCase();
+    final defaultGender = (g == 'female' || g == 'أنثى') ? 'female' : 'male';
+    _genders = List.generate(widget.seatCount, (_) => defaultGender);
   }
 
   @override

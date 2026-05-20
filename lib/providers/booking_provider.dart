@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/ride_model.dart';
@@ -10,11 +11,21 @@ class BookingProvider extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   AuthProvider _auth;
 
-  BookingProvider(this._auth);
+  BookingProvider(this._auth) {
+    _restartMyBookingsListener();
+  }
 
   void updateAuth(AuthProvider auth) {
     _auth = auth;
+    _restartMyBookingsListener();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _myBookingsSub?.cancel();
+    _myBookingsController.close();
+    super.dispose();
   }
 
   RideModel? _currentRide;
@@ -41,7 +52,11 @@ class BookingProvider extends ChangeNotifier {
   void initFromRide(RideModel ride) {
     _currentRide = ride;
     for (int i = 1; i <= _passengerSlots; i++) {
-      _seatStates[i] = i <= ride.bookedSeats ? 2 : 0;
+      if (i > ride.totalSeats) {
+        _seatStates[i] = 4; // non-existent — driver didn't offer this seat
+      } else {
+        _seatStates[i] = i <= ride.bookedSeats ? 2 : 0;
+      }
     }
     notifyListeners();
   }
@@ -64,14 +79,19 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Keeps seat states in sync with the live booking stream.
-  /// Called whenever the booking stream fires.
-  void updateOccupiedSeats(int bookedCount, int totalSeats) {
+  /// Keeps seat states in sync with the live confirmed + pending booking streams.
+  void updateAllSeats(int confirmedCount, int pendingCount, int totalSeats) {
     for (int i = 1; i <= _passengerSlots; i++) {
-      if (i <= bookedCount) {
-        if (_seatStates[i] != 1) _seatStates[i] = 2;
+      if (i > totalSeats) {
+        _seatStates[i] = 4; // non-existent
+      } else if (i <= confirmedCount) {
+        if (_seatStates[i] != 1) _seatStates[i] = 2; // confirmed / occupied
+      } else if (i <= confirmedCount + pendingCount) {
+        if (_seatStates[i] != 1) _seatStates[i] = 5; // pending request
       } else {
-        if (_seatStates[i] == 2) _seatStates[i] = 0;
+        if (_seatStates[i] == 2 || _seatStates[i] == 4 || _seatStates[i] == 5) {
+          _seatStates[i] = 0;
+        }
       }
     }
     notifyListeners();
@@ -248,6 +268,21 @@ class BookingProvider extends ChangeNotifier {
         });
   }
 
+  /// Stream of pending booking requests for a ride — visible to all passengers
+  /// so the seat map can show which seats are awaiting driver approval.
+  Stream<List<BookingModel>> ridePendingBookingsStream(String rideId) {
+    return _db
+        .collection('bookings')
+        .where('rideId', isEqualTo: rideId)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) {
+          final bookings = snap.docs.map(BookingModel.fromDoc).toList();
+          bookings.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return bookings;
+        });
+  }
+
   /// Live stream of confirmed bookings for a ride — driver only.
   /// Includes driverId filter so Firestore security rules are satisfied.
   Stream<List<BookingModel>> driverRideBookingsStream(String rideId) {
@@ -298,19 +333,29 @@ class BookingProvider extends ChangeNotifier {
         .toList();
   }
 
-  /// Stream of bookings belonging to the currently logged-in passenger.
-  Stream<List<BookingModel>> get myBookingsStream {
+  // ── My bookings stream (persistent, auth-aware) ───────────────────────────
+
+  final _myBookingsController = StreamController<List<BookingModel>>.broadcast();
+  StreamSubscription<QuerySnapshot>? _myBookingsSub;
+
+  Stream<List<BookingModel>> get myBookingsStream => _myBookingsController.stream;
+
+  void _restartMyBookingsListener() {
+    _myBookingsSub?.cancel();
     final uid = _auth.currentUser?.uid;
-    if (uid == null) return const Stream.empty();
-    return _db
+    if (uid == null) return;
+    _myBookingsSub = _db
         .collection('bookings')
         .where('passengerId', isEqualTo: uid)
         .snapshots()
-        .map((snap) {
-          final bookings = snap.docs.map(BookingModel.fromDoc).toList();
-          bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          return bookings;
-        });
+        .listen(
+      (snap) {
+        final bookings = snap.docs.map(BookingModel.fromDoc).toList();
+        bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        if (!_myBookingsController.isClosed) _myBookingsController.add(bookings);
+      },
+      onError: (e) => debugPrint('myBookings stream error: $e'),
+    );
   }
 
   /// Cancels a booking. Only decrements bookedSeats if the booking was

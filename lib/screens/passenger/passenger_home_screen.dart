@@ -14,6 +14,7 @@ import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
 import '../../providers/ride_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/chat_provider.dart';
 import '../../providers/rating_provider.dart';
 import '../../models/ride_model.dart';
 import '../../models/booking_model.dart';
@@ -492,35 +493,42 @@ class _HomeTabState extends State<_HomeTab> {
                             ],
                           ),
                         ),
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              const Icon(Icons.notifications_none_rounded,
-                                  color: AppStyles.onPrimary, size: 22),
-                              Positioned(
-                                top: 9,
-                                right: 10,
-                                child: Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color: AppStyles.notificationDot,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(
-                                        color: AppStyles.darkMaroon,
-                                        width: 1.5),
-                                  ),
-                                ),
+                        StreamBuilder<int>(
+                          stream: context.read<ChatProvider>().totalUnreadStream,
+                          builder: (context, snap) {
+                            final hasUnread = (snap.data ?? 0) > 0;
+                            return Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.12),
+                                shape: BoxShape.circle,
                               ),
-                            ],
-                          ),
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  const Icon(Icons.notifications_none_rounded,
+                                      color: AppStyles.onPrimary, size: 22),
+                                  if (hasUnread)
+                                    Positioned(
+                                      top: 9,
+                                      right: 10,
+                                      child: Container(
+                                        width: 8,
+                                        height: 8,
+                                        decoration: BoxDecoration(
+                                          color: AppStyles.notificationDot,
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: AppStyles.darkMaroon,
+                                              width: 1.5),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -841,6 +849,7 @@ class _HomeTabState extends State<_HomeTab> {
               final pastBookings = bookingSnap.data ?? [];
               return StreamBuilder<List<RideModel>>(
                 stream: _availableRidesStream,
+                initialData: context.read<RideProvider>().lastAvailableRides,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState ==
                       ConnectionState.waiting) {
