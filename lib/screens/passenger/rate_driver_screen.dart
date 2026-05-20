@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/theme/app_styles.dart';
+import 'package:testtale3/screens/shared/report_screen.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -73,7 +74,8 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Column(
             children: [
-              // Driver avatar
+
+              // ── Driver avatar ──────────────────────────────────
               CircleAvatar(
                 radius: 40,
                 backgroundColor: context.colors.highlightBackgroundColor,
@@ -104,6 +106,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               ),
               const SizedBox(height: 32),
 
+              // ── How was your ride ──────────────────────────────
               Text(
                 'How was your ride?',
                 style: TextStyle(
@@ -114,7 +117,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Star selector
+              // ── Stars ─────────────────────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: List.generate(5, (i) {
@@ -123,7 +126,9 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Icon(
-                        i < _stars ? Icons.star_rounded : Icons.star_outline_rounded,
+                        i < _stars
+                            ? Icons.star_rounded
+                            : Icons.star_outline_rounded,
                         color: AppStyles.goldStar,
                         size: 44,
                       ),
@@ -134,7 +139,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               const SizedBox(height: 8),
               Text(
                 _starLabel(_stars),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppStyles.primaryColor,
@@ -142,7 +147,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Comment field
+              // ── Comment ───────────────────────────────────────
               Container(
                 decoration: BoxDecoration(
                   color: context.colors.inputFillColor,
@@ -164,6 +169,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               ),
               const SizedBox(height: 16),
 
+              // ── Error ─────────────────────────────────────────
               if (_error != null) ...[
                 Container(
                   width: double.infinity,
@@ -190,6 +196,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                 const SizedBox(height: 16),
               ],
 
+              // ── Submit Rating ─────────────────────────────────
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -211,10 +218,13 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                         )
                       : const Text('Submit Rating',
                           style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600)),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(height: 12),
+
+              // ── Skip ──────────────────────────────────────────
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 child: Text(
@@ -223,6 +233,67 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                       color: context.colors.textSecondary, fontSize: 14),
                 ),
               ),
+
+              const SizedBox(height: 24),
+
+              // ── Divider ───────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                      child: Divider(color: context.colors.borderColor)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'Had a problem?',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: context.colors.textTertiary),
+                    ),
+                  ),
+                  Expanded(
+                      child: Divider(color: context.colors.borderColor)),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── Report Driver button ───────────────────────────
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ReportScreen(
+                          reportedUserId: widget.booking.driverId,
+                          reportedUserName: widget.booking.driverName,
+                          reportedUserRole: 'driver',
+                          rideId: widget.booking.rideId,
+                          origin: widget.booking.origin,
+                          destination: widget.booking.destination,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.flag_outlined,
+                      size: 18, color: Colors.red),
+                  label: const Text(
+                    'Report Driver',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                        color: Colors.red, width: 1.5),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -232,11 +303,16 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
 
   String _starLabel(int stars) {
     switch (stars) {
-      case 1: return 'Terrible';
-      case 2: return 'Bad';
-      case 3: return 'Okay';
-      case 4: return 'Good';
-      default: return 'Excellent!';
+      case 1:
+        return 'Terrible';
+      case 2:
+        return 'Bad';
+      case 3:
+        return 'Okay';
+      case 4:
+        return 'Good';
+      default:
+        return 'Excellent!';
     }
   }
 }

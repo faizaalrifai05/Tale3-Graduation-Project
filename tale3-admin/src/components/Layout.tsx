@@ -8,7 +8,9 @@ const navItems = [
   { path: '/rides', label: 'Rides', icon: '🚗' },
   { path: '/pricing', label: 'Pricing', icon: '💰' },
   { path: '/verification', label: 'Verification', icon: '✅' },
+    { path: '/fleet', label: 'Fleet', icon: '🚘' },   // ← ADD THIS
   { path: '/commissions', label: 'Commissions', icon: '💳' },
+  { path: '/reports', label: 'Reports', icon: '🚩' },
 ]
 
 export default function Layout() {
