@@ -670,7 +670,7 @@ class _RequestsSectionState extends State<_RequestsSection> {
 
   Future<void> _reject(BuildContext context, BookingModel booking) async {
     setState(() => _processing.add(booking.id));
-    await context.read<BookingProvider>().rejectBooking(booking.id);
+    await context.read<BookingProvider>().rejectBooking(booking);
     if (mounted) setState(() => _processing.remove(booking.id));
   }
 
@@ -1182,7 +1182,7 @@ class _PassengersSection extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${bookings.length} ${context.l10n.booked}',
+                      '${bookings.fold(0, (s, b) => s + b.seatsBooked)} ${context.l10n.booked}',
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -1202,12 +1202,22 @@ class _PassengersSection extends StatelessWidget {
                       fontSize: 13, color: context.colors.textSecondary),
                 )
               else
-                ...bookings.asMap().entries.map((e) => _PassengerRow(
-                      name: e.value.passengerName,
-                      passengerId: e.value.passengerId,
-                      seat: 'Seat ${e.key + 1}',
-                      seatsBooked: e.value.seatsBooked,
-                    )),
+                ...() {
+                  int seatStart = 1;
+                  return bookings.map((b) {
+                    final seatEnd = seatStart + b.seatsBooked - 1;
+                    final label = b.seatsBooked > 1
+                        ? 'Seats $seatStart–$seatEnd'
+                        : 'Seat $seatStart';
+                    seatStart = seatEnd + 1;
+                    return _PassengerRow(
+                      name: b.passengerName,
+                      passengerId: b.passengerId,
+                      seat: label,
+                      seatsBooked: b.seatsBooked,
+                    );
+                  }).toList();
+                }(),
             ],
           ),
         );

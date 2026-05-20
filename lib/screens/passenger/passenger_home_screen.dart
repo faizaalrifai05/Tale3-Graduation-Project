@@ -851,8 +851,8 @@ class _HomeTabState extends State<_HomeTab> {
                 stream: _availableRidesStream,
                 initialData: context.read<RideProvider>().lastAvailableRides,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState ==
-                      ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      snapshot.data == null) {
                     return const Center(
                         child: Padding(
                             padding: EdgeInsets.all(24),

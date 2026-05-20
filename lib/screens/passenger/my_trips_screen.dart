@@ -73,6 +73,7 @@ class _MyTripsScreenState extends State<MyTripsScreen>
         Expanded(
           child: StreamBuilder<List<BookingModel>>(
             stream: _stream,
+            initialData: context.read<BookingProvider>().lastMyBookings,
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting &&
                   snapshot.data == null) {

@@ -48,14 +48,18 @@ class BookingProvider extends ChangeNotifier {
   String? _confirmError;
   String? get confirmError => _confirmError;
 
-  /// Initialises the seat map from [ride]'s real-time booked / total counts.
+  /// Initialises the seat map from [ride]'s real-time booked / pending / total counts.
   void initFromRide(RideModel ride) {
     _currentRide = ride;
     for (int i = 1; i <= _passengerSlots; i++) {
       if (i > ride.totalSeats) {
-        _seatStates[i] = 4; // non-existent — driver didn't offer this seat
+        _seatStates[i] = 4;
+      } else if (i <= ride.bookedSeats) {
+        _seatStates[i] = 2;
+      } else if (i <= ride.bookedSeats + ride.pendingSeats) {
+        _seatStates[i] = 5;
       } else {
-        _seatStates[i] = i <= ride.bookedSeats ? 2 : 0;
+        _seatStates[i] = 0;
       }
     }
     notifyListeners();
@@ -97,7 +101,7 @@ class BookingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Writes a pending booking request to Firestore.
+  /// Writes a pending booking request to Firestore and increments pendingSeats.
   /// Does NOT reserve seats — the driver must accept first.
   /// Returns the created [BookingModel] or null on failure.
   Future<BookingModel?> confirmBooking({
@@ -140,48 +144,57 @@ class BookingProvider extends ChangeNotifier {
         return null;
       }
 
-      // Check fresh seat capacity (confirmed bookings only).
-      final rideDoc = await _db.collection('rides').doc(ride.id).get();
-      final latestBooked = (rideDoc.data()?['bookedSeats'] as num?)?.toInt() ?? 0;
-      final latestTotal = (rideDoc.data()?['totalSeats'] as num?)?.toInt() ?? 0;
-      if (latestTotal > 0 && latestBooked + seats > latestTotal) {
-        _confirmError = 'not_enough_seats';
-        notifyListeners();
-        return null;
-      }
-
+      // Pre-generate the booking ref so we can use its ID in BookingModel.
       final bookingRef = _db.collection('bookings').doc();
-      final booking = BookingModel(
-        id: bookingRef.id,
-        rideId: ride.id,
-        passengerId: user.uid,
-        passengerName: user.name,
-        passengerGender: passengerGender ?? user.gender,
-        driverId: ride.driverId,
-        driverName: ride.driverName,
-        carInfo: ride.carFullInfo,
-        plateNumber: ride.plateNumber,
-        origin: ride.origin,
-        destination: ride.destination,
-        date: ride.date,
-        time: ride.time,
-        seatsBooked: seats,
-        totalPrice: totalPrice,
-        status: 'pending',
-        createdAt: DateTime.now(),
-        pickupLat: pickupLat,
-        pickupLng: pickupLng,
-        dropoffLat: dropoffLat,
-        dropoffLng: dropoffLng,
-      );
+      final rideRef = _db.collection('rides').doc(ride.id);
 
-      await bookingRef.set(booking.toMap());
+      BookingModel? booking;
+
+      await _db.runTransaction((tx) async {
+        final rideSnap = await tx.get(rideRef);
+        final latestBooked = (rideSnap.data()?['bookedSeats'] as num?)?.toInt() ?? 0;
+        final latestPending = (rideSnap.data()?['pendingSeats'] as num?)?.toInt() ?? 0;
+        final latestTotal = (rideSnap.data()?['totalSeats'] as num?)?.toInt() ?? 0;
+        if (latestTotal > 0 && latestBooked + latestPending + seats > latestTotal) {
+          throw Exception('not_enough_seats');
+        }
+        booking = BookingModel(
+          id: bookingRef.id,
+          rideId: ride.id,
+          passengerId: user.uid,
+          passengerName: user.name,
+          passengerGender: passengerGender ?? user.gender,
+          driverId: ride.driverId,
+          driverName: ride.driverName,
+          carInfo: ride.carFullInfo,
+          plateNumber: ride.plateNumber,
+          origin: ride.origin,
+          destination: ride.destination,
+          date: ride.date,
+          time: ride.time,
+          seatsBooked: seats,
+          totalPrice: totalPrice,
+          status: 'pending',
+          createdAt: DateTime.now(),
+          pickupLat: pickupLat,
+          pickupLng: pickupLng,
+          dropoffLat: dropoffLat,
+          dropoffLng: dropoffLng,
+        );
+        tx.set(bookingRef, booking!.toMap());
+        tx.update(rideRef, {'pendingSeats': FieldValue.increment(seats)});
+      });
+
       return booking;
     } catch (e) {
       final raw = e.toString();
-      _confirmError = raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')
-          ? 'permission_denied'
-          : 'booking_failed';
+      if (raw.contains('not_enough_seats')) {
+        _confirmError = 'not_enough_seats';
+      } else if (raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')) {
+        _confirmError = 'permission_denied';
+      } else {
+        _confirmError = 'booking_failed';
+      }
       notifyListeners();
       return null;
     }
@@ -208,7 +221,10 @@ class BookingProvider extends ChangeNotifier {
           throw Exception('not_enough_seats');
         }
         tx.update(bookingRef, {'status': 'confirmed'});
-        tx.update(rideRef, {'bookedSeats': FieldValue.increment(booking.seatsBooked)});
+        tx.update(rideRef, {
+          'bookedSeats': FieldValue.increment(booking.seatsBooked),
+          'pendingSeats': FieldValue.increment(-booking.seatsBooked),
+        });
       });
       return true;
     } catch (_) {
@@ -217,8 +233,13 @@ class BookingProvider extends ChangeNotifier {
   }
 
   /// Driver rejects a pending booking request.
-  Future<void> rejectBooking(String bookingId) async {
-    await _db.collection('bookings').doc(bookingId).update({'status': 'rejected'});
+  Future<void> rejectBooking(BookingModel booking) async {
+    final batch = _db.batch();
+    batch.update(_db.collection('bookings').doc(booking.id), {'status': 'rejected'});
+    batch.update(_db.collection('rides').doc(booking.rideId), {
+      'pendingSeats': FieldValue.increment(-booking.seatsBooked),
+    });
+    await batch.commit();
   }
 
   /// Live stream of pending booking requests for a specific ride (driver only).
@@ -337,8 +358,10 @@ class BookingProvider extends ChangeNotifier {
 
   final _myBookingsController = StreamController<List<BookingModel>>.broadcast();
   StreamSubscription<QuerySnapshot>? _myBookingsSub;
+  List<BookingModel> _lastMyBookings = const [];
 
   Stream<List<BookingModel>> get myBookingsStream => _myBookingsController.stream;
+  List<BookingModel> get lastMyBookings => List.unmodifiable(_lastMyBookings);
 
   void _restartMyBookingsListener() {
     _myBookingsSub?.cancel();
@@ -352,32 +375,30 @@ class BookingProvider extends ChangeNotifier {
       (snap) {
         final bookings = snap.docs.map(BookingModel.fromDoc).toList();
         bookings.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        _lastMyBookings = bookings;
         if (!_myBookingsController.isClosed) _myBookingsController.add(bookings);
       },
       onError: (e) => debugPrint('myBookings stream error: $e'),
     );
   }
 
-  /// Cancels a booking. Only decrements bookedSeats if the booking was
-  /// already confirmed (pending requests never reserved a seat).
-  /// If the ride document is missing (deleted/cancelled by driver) the
-  /// booking is still cancelled — seat count adjustment is skipped.
+  /// Cancels a booking. Decrements the appropriate seat counter on the ride:
+  /// confirmed → bookedSeats, pending → pendingSeats.
+  /// If the ride document is missing the booking is still cancelled.
   Future<void> cancelBooking(BookingModel booking) async {
     final bookingRef = _db.collection('bookings').doc(booking.id);
-    if (booking.status == 'confirmed') {
+    if (booking.status == 'confirmed' || booking.status == 'pending') {
       final rideRef = _db.collection('rides').doc(booking.rideId);
+      final field = booking.status == 'confirmed' ? 'bookedSeats' : 'pendingSeats';
       try {
         await _db.runTransaction((tx) async {
           final rideSnap = await tx.get(rideRef);
           tx.update(bookingRef, {'status': 'cancelled'});
           if (rideSnap.exists) {
-            tx.update(rideRef,
-                {'bookedSeats': FieldValue.increment(-booking.seatsBooked)});
+            tx.update(rideRef, {field: FieldValue.increment(-booking.seatsBooked)});
           }
         });
       } catch (_) {
-        // Transaction failed (e.g. permission denied on ride) —
-        // still cancel the booking on its own so the user is unblocked.
         await bookingRef.update({'status': 'cancelled'});
       }
     } else {

@@ -22,6 +22,7 @@ class RideModel {
   final String notes;
   final String status;
   final DateTime createdAt;
+  final int pendingSeats;
 
   const RideModel({
     required this.id,
@@ -45,6 +46,7 @@ class RideModel {
     required this.notes,
     required this.status,
     required this.createdAt,
+    this.pendingSeats = 0,
   });
 
   int get availableSeats {
@@ -79,6 +81,7 @@ class RideModel {
       notes: d['notes'] as String? ?? '',
       status: d['status'] as String? ?? 'active',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      pendingSeats: (d['pendingSeats'] as num?)?.toInt() ?? 0,
     );
   }
 

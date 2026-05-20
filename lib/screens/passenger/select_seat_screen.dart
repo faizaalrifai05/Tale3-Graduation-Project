@@ -28,7 +28,6 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
   bool _isConfirming = false;
   String? _errorMessage;
-  int _totalSeats = 0;
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
   StreamSubscription<List<BookingModel>>? _bookingsSub;
@@ -61,7 +60,6 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   @override
   void initState() {
     super.initState();
-    _totalSeats = widget.ride.totalSeats;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final provider = context.read<BookingProvider>();
       provider.initFromRide(widget.ride);
@@ -71,29 +69,33 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           .snapshots()
           .listen((snap) {
         if (!mounted || !snap.exists) return;
-        final newTotal = (snap.data()!['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
-        if (newTotal != _totalSeats) {
-          _totalSeats = newTotal;
-          _recalcSeats(provider);
-        }
+        final data = snap.data()!;
+        final newTotal = (data['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
+        final newBooked = (data['bookedSeats'] as num?)?.toInt() ?? 0;
+        final newPending = (data['pendingSeats'] as num?)?.toInt() ?? 0;
+        provider.updateAllSeats(newBooked, newPending, newTotal);
       });
 
+      // Booking queries are best-effort for gender colours only.
+      // Firestore rules may block these for passengers not yet in a booking —
+      // onError silently swallows rule violations so the seat map still works.
       _bookingsSub = provider.rideBookingsStream(widget.ride.id).listen((bookings) {
         if (!mounted) return;
         _confirmedBookings = bookings;
-        _recalcSeats(provider);
-      });
+        _updateGenders();
+      }, onError: (_) {});
 
       _pendingBookingsSub = provider.ridePendingBookingsStream(widget.ride.id).listen((bookings) {
         if (!mounted) return;
         _pendingBookings = bookings;
-        _recalcSeats(provider);
-      });
+        _updateGenders();
+      }, onError: (_) {});
     });
   }
 
-  /// Recomputes seat states and gender maps from the latest confirmed + pending lists.
-  void _recalcSeats(BookingProvider provider) {
+  /// Rebuilds gender colour maps from the latest confirmed + pending booking lists.
+  /// Seat states are driven by the ride document via [updateAllSeats], not here.
+  void _updateGenders() {
     final newConfirmed = <int, String>{};
     int seat = 1;
     int confirmedCount = 0;
@@ -110,9 +112,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
     final newPending = <int, String>{};
     int pendingSeat = confirmedCount + 1;
-    int pendingCount = 0;
     for (final b in _pendingBookings) {
-      pendingCount += b.seatsBooked;
       final parts = b.passengerGender.split(',');
       for (int i = 0; i < b.seatsBooked; i++) {
         if (pendingSeat <= 4) {
@@ -122,7 +122,6 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       }
     }
 
-    provider.updateAllSeats(confirmedCount, pendingCount, _totalSeats);
     if (mounted) {
       setState(() {
         _seatGenders..clear()..addAll(newConfirmed);

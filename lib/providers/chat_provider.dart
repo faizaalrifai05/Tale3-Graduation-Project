@@ -72,9 +72,11 @@ class ChatProvider extends ChangeNotifier {
   final _convController = StreamController<List<Conversation>>.broadcast();
   final _unreadController = StreamController<int>.broadcast();
   StreamSubscription<QuerySnapshot>? _convSub;
+  List<Conversation> _lastConversations = const [];
 
   Stream<List<Conversation>> get conversationsStream => _convController.stream;
   Stream<int> get totalUnreadStream => _unreadController.stream;
+  List<Conversation> get lastConversations => List.unmodifiable(_lastConversations);
 
   void _restartConversationsListener() {
     _convSub?.cancel();
@@ -108,6 +110,7 @@ class ChatProvider extends ChangeNotifier {
           );
         }).toList();
 
+        _lastConversations = convs;
         if (!_convController.isClosed) _convController.add(convs);
         final totalUnread = convs.fold<int>(0, (sum, c) => sum + c.unreadCount);
         if (!_unreadController.isClosed) _unreadController.add(totalUnread);

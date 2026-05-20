@@ -100,8 +100,10 @@ class _DriverChatScreenState extends State<DriverChatScreen> {
         Expanded(
           child: StreamBuilder<List<Conversation>>(
             stream: chatProvider.conversationsStream,
+            initialData: chatProvider.lastConversations,
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
+              if (snapshot.connectionState == ConnectionState.waiting &&
+                  snapshot.data == null) {
                 return const Center(child: CircularProgressIndicator());
               }
               final all = snapshot.data ?? [];
