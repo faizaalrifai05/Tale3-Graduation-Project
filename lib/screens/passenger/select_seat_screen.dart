@@ -28,6 +28,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
   bool _isConfirming = false;
   String? _errorMessage;
+  // ignore: prefer_final_fields
+  String _rideStatus = 'active';
+
+  bool get _isRideOpen {
+    if (_rideStatus != 'active') return false;
+    try {
+      final departure = DateTime.parse('${widget.ride.date} ${widget.ride.time}:00');
+      return DateTime.now().isBefore(departure);
+    } catch (_) {
+      return false;
+    }
+  }
 
   StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _rideSub;
   StreamSubscription<List<BookingModel>>? _bookingsSub;
@@ -42,17 +54,19 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   final Map<int, String> _seatGenders = {};        // confirmed seats
   final Map<int, String> _pendingSeatGenders = {}; // pending seats
 
-  String _mapError(String? code) {
+  String _mapError(String? code, BookingProvider provider) {
     switch (code) {
       case 'already_booked':
         return "You've already booked this ride.";
       case 'not_enough_seats':
         return 'No seats available. Someone may have just booked the last one.';
       case 'permission_denied':
-        return 'Booking failed — please make sure you are logged in and try again.';
+        return 'Booking failed — permission denied. Check Firestore rules.';
       case 'not_logged_in':
         return 'Your session has expired. Please sign out and sign in again.';
       default:
+        final raw = provider.rawError;
+        if (raw != null && raw.isNotEmpty) return 'Error: $raw';
         return 'Something went wrong. Please try again.';
     }
   }
@@ -70,10 +84,61 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
           .listen((snap) {
         if (!mounted || !snap.exists) return;
         final data = snap.data()!;
+        final newStatus = data['status'] as String? ?? 'active';
+        if (newStatus != _rideStatus) setState(() => _rideStatus = newStatus);
         final newTotal = (data['totalSeats'] as num?)?.toInt() ?? widget.ride.totalSeats;
         final newBooked = (data['bookedSeats'] as num?)?.toInt() ?? 0;
-        final newPending = (data['pendingSeats'] as num?)?.toInt() ?? 0;
-        provider.updateAllSeats(newBooked, newPending, newTotal);
+
+        // Resolve which seat positions exist for this ride.
+        // New rides store explicit indices; legacy rides fall back to sequential.
+        final rawIndices = data['seatIndices'] as List<dynamic>?;
+        final seatIndices = rawIndices != null && rawIndices.isNotEmpty
+            ? rawIndices.map((e) => (e as num).toInt()).toList()
+            : List.generate(newTotal, (i) => i + 1);
+
+        // Parse pending genders + seat indices from ride doc.
+        // New format: "seatIdx:gender[,seatIdx:gender]" (e.g. "2:female,3:male").
+        // Old format fallback: plain gender string assigned sequentially.
+        final rawEntries = (data['pendingGenderEntries'] as Map<String, dynamic>?) ?? {};
+        final newPendingGenders = <int, String>{};
+        final pendingIndices = <int>[];
+        int fallbackSeat = newBooked + 1;
+
+        final sorted = rawEntries.entries.toList()
+          ..sort((a, b) => a.key.compareTo(b.key));
+        for (final entry in sorted) {
+          final value = entry.value as String? ?? '';
+          bool usedIndex = false;
+          for (final part in value.split(',')) {
+            final colon = part.indexOf(':');
+            if (colon > 0) {
+              final idx = int.tryParse(part.substring(0, colon).trim());
+              final g = part.substring(colon + 1).trim();
+              if (idx != null && idx >= 1 && idx <= 4) {
+                newPendingGenders[idx] = g;
+                pendingIndices.add(idx);
+                usedIndex = true;
+              }
+            }
+          }
+          if (!usedIndex) {
+            // Legacy entries without seat index — assign sequentially.
+            for (final g in value.split(',')) {
+              if (fallbackSeat <= 4) {
+                newPendingGenders[fallbackSeat] = g.trim();
+                pendingIndices.add(fallbackSeat);
+                fallbackSeat++;
+              }
+            }
+          }
+        }
+
+        provider.updateSeatsExact(
+          newBooked,
+          pendingIndices,
+          seatIndices,
+          pendingGenders: newPendingGenders,
+        );
       });
 
       // Booking queries are best-effort for gender colours only.
@@ -139,6 +204,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   }
 
   Future<void> _startConfirmFlow() async {
+    if (!_isRideOpen) return;
     final provider = context.read<BookingProvider>();
 
     // Step 0 — passenger specifies gender for each booked seat
@@ -193,20 +259,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
     // Step 4 — write booking to Firestore with both coordinates
     setState(() { _isConfirming = true; _errorMessage = null; });
-    final BookingModel? booking =
-        await context.read<BookingProvider>().confirmBooking(
-              pickupLat: pickup.latitude,
-              pickupLng: pickup.longitude,
-              dropoffLat: dropoff.latitude,
-              dropoffLng: dropoff.longitude,
-              passengerGender: genders.join(','),
-            );
+    final BookingModel? booking = await provider.confirmBooking(
+      pickupLat: pickup.latitude,
+      pickupLng: pickup.longitude,
+      dropoffLat: dropoff.latitude,
+      dropoffLng: dropoff.longitude,
+      passengerGender: genders.join(','),
+    );
     if (!mounted) return;
     setState(() => _isConfirming = false);
 
     if (booking == null) {
-      final code = context.read<BookingProvider>().confirmError;
-      setState(() => _errorMessage = _mapError(code));
+      setState(() => _errorMessage = _mapError(provider.confirmError, provider));
       return;
     }
 
@@ -626,12 +690,45 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                         ),
                       ],
                       const SizedBox(height: 16),
+                      if (!_isRideOpen) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 14, horizontal: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFB300)),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.lock_clock_rounded,
+                                  color: Color(0xFFE65100), size: 18),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _rideStatus == 'in_progress'
+                                      ? 'This ride has already started.'
+                                      : 'Booking is closed — departure time has passed.',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFE65100),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton(
                           onPressed: (_isConfirming ||
-                                  bookingProvider.selectedCount == 0)
+                                  bookingProvider.selectedCount == 0 ||
+                                  !_isRideOpen)
                               ? null
                               : _startConfirmFlow,
                           style: ElevatedButton.styleFrom(
@@ -706,7 +803,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
 
     // ── Pending request seat ─────────────────────────────────────────────────
     if (state == 5) {
-      final gender = _pendingSeatGenders[index];
+      final gender = provider.pendingGenders[index];
       Color bgColor;
       Color borderColor;
       IconData icon;

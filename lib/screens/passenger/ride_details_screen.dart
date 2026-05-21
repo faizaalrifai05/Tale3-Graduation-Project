@@ -10,6 +10,7 @@ import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
 import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/screens/shared/route_map_widget.dart';
+import 'package:testtale3/Services/maps_service.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -29,6 +30,14 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   static const Color _darkMaroon = Color(0xFF5C0A1A);
 
   String? _locationError;
+  late final Future<String> _durationFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _durationFuture = MapsService.fetchDrivingDuration(
+        widget.ride.origin, widget.ride.destination);
+  }
 
   Future<void> _handleBooking() async {
     final perm = await Geolocator.checkPermission();
@@ -300,12 +309,15 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  const Text(
-                                    '1h 15m',
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1A1A1A),
+                                  FutureBuilder<String>(
+                                    future: _durationFuture,
+                                    builder: (context, snap) => Text(
+                                      snap.data ?? '—',
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF1A1A1A),
+                                      ),
                                     ),
                                   ),
                                 ],

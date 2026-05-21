@@ -90,8 +90,17 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       final withGps = bookings
           .where((b) => b.pickupLat != null && b.pickupLng != null)
           .toList();
+
+      // Keep _orderedPassengers in sync with the latest booking data so that
+      // driverArrivedAt updates are reflected and _currentStopIndex advances.
+      final bookingById = {for (final b in bookings) b.id: b};
+      final updatedOrdered = _orderedPassengers
+          .map((b) => bookingById[b.id] ?? b)
+          .toList();
+
       setState(() {
         _bookings = bookings;
+        _orderedPassengers = updatedOrdered;
         _passengersWithoutGps = bookings
             .where((b) => b.pickupLat == null || b.pickupLng == null)
             .toList();
@@ -249,23 +258,61 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
     }
   }
 
+  Future<void> _confirmCancelRide() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Cancel Ride',
+            style: TextStyle(fontWeight: FontWeight.w800)),
+        content: const Text(
+            'Are you sure you want to cancel this ride? All passengers will be notified.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Keep Riding')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Cancel Ride',
+                style: TextStyle(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+    try {
+      await context.read<RideProvider>().cancelRide(widget.rideId);
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
+          (route) => false,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _actionError = 'Could not cancel the ride. Please try again.');
+      }
+    }
+  }
+
   Future<void> _confirmComplete() async {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Complete Ride',
+        title: const Text('Arrived at Destination?',
             style: TextStyle(fontWeight: FontWeight.w800)),
         content: const Text(
-            'Mark this ride as completed? Passengers will be able to leave a rating.'),
+            'Confirm you have arrived at the destination. Passengers will be able to leave a rating.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
               child: const Text('Not Yet')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Complete',
+            child: const Text('Yes, We\'ve Arrived',
                 style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
@@ -476,35 +523,53 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                 const SizedBox(height: 16),
               ],
 
-              // Complete Ride button — enabled only when all picked up
+              // Arrived at destination button — only shown when all picked up
+              if (allDone) ...[
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    onPressed: !_completing ? _confirmComplete : null,
+                    icon: _completing
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                                color: Colors.white, strokeWidth: 2))
+                        : const Icon(Icons.location_on_rounded, size: 20),
+                    label: Text(
+                      'Arrived at ${widget.destination}',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppStyles.successColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // Cancel ride button
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton.icon(
-                  onPressed:
-                      (allDone && !_completing) ? _confirmComplete : null,
-                  icon: _completing
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                              color: Colors.white, strokeWidth: 2))
-                      : const Icon(Icons.flag_rounded, size: 20),
-                  label: Text(
-                    allDone
-                        ? 'Complete Ride'
-                        : 'Pick up all passengers first',
-                    style: const TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w600),
+                child: OutlinedButton.icon(
+                  onPressed: _completing ? null : _confirmCancelRide,
+                  icon: const Icon(Icons.cancel_outlined, size: 20),
+                  label: const Text(
+                    'Cancel Ride',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppStyles.successColor,
-                    foregroundColor: Colors.white,
-                    disabledBackgroundColor: const Color(0xFFBDBDBD),
-                    disabledForegroundColor: Colors.white70,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
                   ),
                 ),
               ),
@@ -863,7 +928,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                       color: Color(0xFF2E7D32)),
                 ),
                 Text(
-                  'Drive to ${widget.destination} and tap Complete Ride when done.',
+                  'Drive to ${widget.destination} and tap when you arrive.',
                   style: const TextStyle(
                       fontSize: 12, color: Color(0xFF388E3C)),
                 ),

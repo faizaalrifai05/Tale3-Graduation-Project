@@ -58,14 +58,6 @@ class _PassengerChatScreenState extends State<PassengerChatScreen> {
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: context.colors.cardBackgroundColor,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                
-              ),
             ],
           ),
         ),

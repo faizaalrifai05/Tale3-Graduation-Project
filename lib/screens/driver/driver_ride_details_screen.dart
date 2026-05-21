@@ -433,8 +433,12 @@ class _MapSectionState extends State<_MapSection> {
       setState(() => _loading = false);
       return;
     }
-    final points = await MapsService.getRoute(origin, destination);
-    if (mounted) setState(() { _polylinePoints = points; _loading = false; });
+    try {
+      final points = await MapsService.getRoute(origin, destination);
+      if (mounted) setState(() { _polylinePoints = points; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _onMapCreated(GoogleMapController controller) async {
@@ -670,14 +674,17 @@ class _RequestsSectionState extends State<_RequestsSection> {
 
   Future<void> _reject(BuildContext context, BookingModel booking) async {
     setState(() => _processing.add(booking.id));
-    await context.read<BookingProvider>().rejectBooking(booking);
-    if (mounted) setState(() => _processing.remove(booking.id));
+    try {
+      await context.read<BookingProvider>().rejectBooking(booking);
+    } finally {
+      if (mounted) setState(() => _processing.remove(booking.id));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final ride = widget.ride;
-    if (ride == null) return const SizedBox.shrink();
+    if (ride == null || ride.status == 'in_progress') return const SizedBox.shrink();
 
     return StreamBuilder<List<BookingModel>>(
       stream: context.read<BookingProvider>().pendingBookingsStream(ride.id),
@@ -1203,20 +1210,26 @@ class _PassengersSection extends StatelessWidget {
                 )
               else
                 ...() {
-                  int seatStart = 1;
-                  return bookings.map((b) {
-                    final seatEnd = seatStart + b.seatsBooked - 1;
-                    final label = b.seatsBooked > 1
-                        ? 'Seats $seatStart–$seatEnd'
-                        : 'Seat $seatStart';
-                    seatStart = seatEnd + 1;
-                    return _PassengerRow(
-                      name: b.passengerName,
-                      passengerId: b.passengerId,
-                      seat: label,
-                      seatsBooked: b.seatsBooked,
-                    );
-                  }).toList();
+                  int seatNum = 1;
+                  final rows = <_PassengerRow>[];
+                  final bp = context.read<BookingProvider>();
+                  for (final b in bookings) {
+                    final genders = b.passengerGender.isNotEmpty
+                        ? b.passengerGender.split(',')
+                        : <String>[];
+                    for (int i = 0; i < b.seatsBooked; i++) {
+                      final gender = i < genders.length ? genders[i].trim() : '';
+                      rows.add(_PassengerRow(
+                        name: b.passengerName,
+                        passengerId: b.passengerId,
+                        seat: 'Seat $seatNum',
+                        passengerGender: gender,
+                        bookingProvider: bp,
+                      ));
+                      seatNum++;
+                    }
+                  }
+                  return rows;
                 }(),
             ],
           ),
@@ -1226,38 +1239,67 @@ class _PassengersSection extends StatelessWidget {
   }
 }
 
-class _PassengerRow extends StatelessWidget {
+class _PassengerRow extends StatefulWidget {
   final String name;
   final String passengerId;
   final String seat;
-  final int seatsBooked;
+  final String passengerGender;
+  final BookingProvider bookingProvider;
   const _PassengerRow({
     required this.name,
     required this.passengerId,
     required this.seat,
-    this.seatsBooked = 1,
+    required this.bookingProvider,
+    this.passengerGender = '',
   });
 
   @override
+  State<_PassengerRow> createState() => _PassengerRowState();
+}
+
+class _PassengerRowState extends State<_PassengerRow> {
+  late Future<({String name, String photoUrl, double averageRating, int ratingCount})> _infoFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _infoFuture = widget.bookingProvider.fetchPassengerInfo(
+      widget.passengerId,
+      fallbackName: widget.name.trim(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return FutureBuilder<({String name, String photoUrl, double averageRating, int ratingCount})>(
+      future: _infoFuture,
+      builder: (context, snap) {
+        final displayName = snap.data?.name.isNotEmpty == true
+            ? snap.data!.name
+            : widget.name.trim();
+        final photoUrl = snap.data?.photoUrl ?? '';
+        final ratingCount = snap.data?.ratingCount ?? 0;
+        final ratingDisplay = ratingCount == 0
+            ? '—'
+            : (snap.data!.averageRating).toStringAsFixed(1);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: context.colors.highlightBackgroundColor,
-                child: Text(
-                  name[0],
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: AppStyles.primaryColor,
-                  ),
-                ),
-              ),
-            ],
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: context.colors.highlightBackgroundColor,
+            backgroundImage: photoUrl.isNotEmpty ? NetworkImage(photoUrl) : null,
+            child: photoUrl.isEmpty
+                ? Text(
+                    displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: AppStyles.primaryColor,
+                    ),
+                  )
+                : null,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1265,7 +1307,7 @@ class _PassengerRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  name,
+                  displayName.isNotEmpty ? displayName : 'Passenger',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -1273,10 +1315,36 @@ class _PassengerRow extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  seat,
+                  widget.seat,
                   style: TextStyle(
                       fontSize: 12, color: context.colors.textSecondary),
                 ),
+                if (widget.passengerGender.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Builder(builder: (_) {
+                    final g = widget.passengerGender.toLowerCase();
+                    final isFemale = g == 'female' || g == 'أنثى';
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isFemale ? Icons.woman_rounded : Icons.man_rounded,
+                          size: 13,
+                          color: isFemale ? const Color(0xFFE91E8C) : const Color(0xFF1565C0),
+                        ),
+                        const SizedBox(width: 3),
+                        Text(
+                          isFemale ? 'Female' : 'Male',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: isFemale ? const Color(0xFFE91E8C) : const Color(0xFF1565C0),
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+                ],
               ],
             ),
           ),
@@ -1284,10 +1352,13 @@ class _PassengerRow extends StatelessWidget {
           Row(
             children: [
               Icon(Icons.star_rounded,
-                  size: 13, color: AppStyles.starRatingColor),
+                  size: 13,
+                  color: ratingCount == 0
+                      ? context.colors.textTertiary
+                      : AppStyles.starRatingColor),
               const SizedBox(width: 3),
               Text(
-                '4.8',
+                ratingDisplay,
                 style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -1299,8 +1370,8 @@ class _PassengerRow extends StatelessWidget {
           GestureDetector(
             onTap: () => Navigator.of(context).push(MaterialPageRoute(
               builder: (_) => ConversationScreen(
-                otherUserId: passengerId,
-                otherUserName: name,
+                otherUserId: widget.passengerId,
+                otherUserName: displayName.isNotEmpty ? displayName : 'Passenger',
               ),
             )),
             child: Container(
@@ -1316,6 +1387,8 @@ class _PassengerRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 }

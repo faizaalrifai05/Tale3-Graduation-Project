@@ -78,7 +78,32 @@ class AuthProvider extends ChangeNotifier {
           .doc(firebaseUser.uid)
           .snapshots()
           .listen((doc) async {
-        if (!doc.exists) return;
+        if (!doc.exists) {
+          // User document missing — recreate it from Firebase Auth info so the
+          // app doesn't end up in a broken state (e.g. after manual deletion).
+          try {
+            await _db.collection('users').doc(firebaseUser.uid).set({
+              'name': firebaseUser.displayName ?? '',
+              'email': firebaseUser.email ?? '',
+              'role': 'passenger',
+              'phone': '',
+              'gender': '',
+              'photoUrl': firebaseUser.photoURL ?? '',
+              'verificationStatus': 'unsubmitted',
+              'idFrontUrl': '',
+              'idBackUrl': '',
+              'carFrontUrl': '',
+              'carBackUrl': '',
+              'isBlocked': false,
+              'averageRating': 0.0,
+              'ratingCount': 0,
+              'createdAt': FieldValue.serverTimestamp(),
+            });
+          } catch (e) {
+            debugPrint('auth_provider: failed to recreate user doc: $e');
+          }
+          return;
+        }
         final data = doc.data()!;
         final blocked = data['isBlocked'] as bool? ?? false;
 

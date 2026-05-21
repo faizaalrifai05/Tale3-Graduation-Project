@@ -46,7 +46,7 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow read: if isSelf(uid) || isAdmin();
+      allow read: if isSignedIn();
 
       // Users may create their own document on registration.
       allow create: if isSelf(uid)
@@ -85,13 +85,25 @@ service cloud.firestore {
         && request.resource.data.status == 'active';
 
       // Driver may update their own ride (e.g. cancel it, accept a booking).
-      // Passengers may only decrement bookedSeats (when cancelling a confirmed booking).
+      // Passengers may decrement bookedSeats (cancel confirmed booking).
+      // Passengers may also update pendingSeats and pendingGenderEntries
+      //   (create / cancel a pending booking request).
       allow update: if isAdmin()
         || (isDriver() && resource.data.driverId == request.auth.uid)
-        || (isPassenger()
+        // Any signed-in user (passenger) may decrement bookedSeats when cancelling.
+        || (isSignedIn()
             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['bookedSeats'])
             && request.resource.data.bookedSeats < resource.data.bookedSeats
-            && request.resource.data.bookedSeats >= 0);
+            && request.resource.data.bookedSeats >= 0)
+        // Any signed-in user (passenger) may update pendingSeats / pendingGenderEntries
+        // when creating or cancelling a pending booking request.
+        || (isSignedIn()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['pendingSeats', 'pendingGenderEntries']))
+        // Post-transaction gender display write.
+        || (isSignedIn()
+            && request.resource.data.diff(resource.data).affectedKeys()
+                .hasOnly(['pendingGenderEntries']));
 
       allow delete: if isAdmin();
     }
@@ -110,8 +122,9 @@ service cloud.firestore {
             || resource.data.status == 'confirmed'
            ));
 
-      // Passengers create booking requests in 'pending' state.
-      allow create: if isPassenger()
+      // Any signed-in user may create a booking in 'pending' state for themselves.
+      // isSignedIn() used instead of isPassenger() to avoid role-lookup failures.
+      allow create: if isSignedIn()
         && request.resource.data.passengerId == request.auth.uid
         && request.resource.data.status == 'pending';
 
@@ -174,15 +187,24 @@ service cloud.firestore {
     // ── chats ────────────────────────────────────────────────────────────────
     // • Only participants of a chat may read or write it.
     // • Admins may read any chat (moderation).
+    // • resource == null allows existence-check GET on a non-existent document
+    //   (needed by ensureChatExists before the chat is created).
 
     match /chats/{chatId} {
-      allow read, write: if isAdmin()
+      allow read: if isAdmin()
+        || (isSignedIn() && (
+            resource == null
+            || request.auth.uid in resource.data.participants
+        ));
+
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.participants;
+
+      allow update: if isAdmin()
         || (isSignedIn()
             && request.auth.uid in resource.data.participants);
 
-      // Allow creating a new chat document when the caller is one of the participants.
-      allow create: if isSignedIn()
-        && request.auth.uid in request.resource.data.participants;
+      allow delete: if isAdmin();
 
       match /messages/{messageId} {
         allow read: if isAdmin()
@@ -193,7 +215,6 @@ service cloud.firestore {
           && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
           && request.resource.data.senderId == request.auth.uid;
 
-        // Messages are immutable once written.
         allow update, delete: if isAdmin();
       }
     }

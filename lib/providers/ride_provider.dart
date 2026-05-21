@@ -247,6 +247,7 @@ class RideProvider extends ChangeNotifier {
         'date': dateIso,
         'time': timeLabel,
         'totalSeats': _selectedSeats.length,
+        'seatIndices': (_selectedSeats.toList()..sort()),
         'bookedSeats': 0,
         'pricePerSeat': _adminPrice,
         'acEnabled': _acChecked,
@@ -333,7 +334,14 @@ class RideProvider extends ChangeNotifier {
   StreamSubscription<QuerySnapshot>? _ridesSub;
   List<RideModel> _lastRides = const [];
 
-  Stream<List<RideModel>> get availableRidesStream => _ridesController.stream;
+  Stream<List<RideModel>> get availableRidesStream {
+    final ctrl = StreamController<List<RideModel>>();
+    ctrl.add(_lastRides);
+    final sub = _ridesController.stream.listen(ctrl.add, onError: ctrl.addError, onDone: ctrl.close);
+    ctrl.onCancel = sub.cancel;
+    return ctrl.stream;
+  }
+
   List<RideModel> get lastAvailableRides => List.unmodifiable(_lastRides);
 
   void _restartRidesListener() {
@@ -346,15 +354,17 @@ class RideProvider extends ChangeNotifier {
         .listen(
       (snap) {
         final now = DateTime.now();
-        final todayStr = '${now.year}-'
-            '${now.month.toString().padLeft(2, '0')}-'
-            '${now.day.toString().padLeft(2, '0')}';
         final rides = snap.docs
             .map(RideModel.fromDoc)
-            .where((r) =>
-                r.driverId != uid &&
-                !r.isFull &&
-                r.date.compareTo(todayStr) >= 0)
+            .where((r) {
+              if (r.driverId == uid || r.isFull) return false;
+              try {
+                final departure = DateTime.parse('${r.date} ${r.time}:00');
+                return departure.isAfter(now);
+              } catch (_) {
+                return false;
+              }
+            })
             .toList();
         rides.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         _lastRides = rides;
@@ -395,7 +405,14 @@ class RideProvider extends ChangeNotifier {
   StreamSubscription<QuerySnapshot>? _myRidesSub;
   List<RideModel> _lastMyRides = const [];
 
-  Stream<List<RideModel>> get myRidesStream => _myRidesController.stream;
+  Stream<List<RideModel>> get myRidesStream {
+    final ctrl = StreamController<List<RideModel>>();
+    ctrl.add(_lastMyRides);
+    final sub = _myRidesController.stream.listen(ctrl.add, onError: ctrl.addError, onDone: ctrl.close);
+    ctrl.onCancel = sub.cancel;
+    return ctrl.stream;
+  }
+
   List<RideModel> get lastMyRides => List.unmodifiable(_lastMyRides);
 
   void _restartMyRidesListener() {

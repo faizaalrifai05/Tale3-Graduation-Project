@@ -1,14 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:testtale3/screens/passenger/rate_driver_screen.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
 import '../../widgets/app_bottom_nav_bar.dart';
 import '../../providers/navigation_provider.dart';
 import '../../providers/auth_provider.dart' as app_auth;
@@ -18,16 +14,13 @@ import '../../providers/chat_provider.dart';
 import '../../providers/rating_provider.dart';
 import '../../models/ride_model.dart';
 import '../../models/booking_model.dart';
-import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/screens/passenger/ride_results_screen.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/passenger/my_trips_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_chat_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_profile_screen.dart';
-import 'package:testtale3/screens/passenger/location_picker_screen.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/providers/saved_places_provider.dart';
-import 'package:testtale3/widgets/permission_dialog.dart';
 
 class PassengerHomeScreen extends StatefulWidget {
   const PassengerHomeScreen({super.key});
@@ -46,7 +39,6 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
       _subscribeToCompletedBookings();
-      if (mounted) await requestFirstTimePermissionsIfNeeded(context);
     });
   }
 
@@ -201,22 +193,19 @@ class _HomeTab extends StatefulWidget {
 }
 
 class _HomeTabState extends State<_HomeTab> {
-  // Picked locations
-  LatLng? _pickupLatLng;
-  LatLng? _destinationLatLng;
-  // Human-readable city/area names
   String? _pickupLabel;
   String? _destinationLabel;
 
   DateTime? _selectedDate;
   int _seats = 1;
-  bool _locating = false;
 
-  // Cached stream — must not be recreated on each build or rides flash/disappear
   late Stream<List<RideModel>> _availableRidesStream;
 
-  // Default camera position: Amman city center
-  static const LatLng _amman = LatLng(31.9539, 35.9106);
+  static const _cities = [
+    'Amman', 'Irbid', 'Zarqa', 'Aqaba', 'Mafraq',
+    'Salt', 'Madaba', 'Karak', 'Tafilah', 'Maan',
+    'Jerash', 'Ajloun', 'Ramtha', 'Russeifa', 'Petra', 'Azraq',
+  ];
 
   @override
   void initState() {
@@ -224,148 +213,91 @@ class _HomeTabState extends State<_HomeTab> {
     _availableRidesStream = context.read<RideProvider>().availableRidesStream;
   }
 
-  // ── Get device location for initial camera position ───────────────────
-  Future<LatLng> _devicePosition() async {
-    try {
-      final perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) {
-        return _amman;
-      }
-      final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium);
-      final loc = LatLng(pos.latitude, pos.longitude);
-      // Jordan bounding box: lat 29–34 N, lon 34.5–40 E
-      // If the GPS fix is outside Jordan (emulator, VPN, etc.) use Amman
-      if (loc.latitude < 29.0 || loc.latitude > 34.0 ||
-          loc.longitude < 34.5 || loc.longitude > 40.0) {
-        return _amman;
-      }
-      return loc;
-    } catch (_) {
-      return _amman;
-    }
-  }
-
-  // ── Reverse geocode a LatLng → city/area name ─────────────────────────
-  // First tries to match against MapsService known cities (fast, offline).
-  // Falls back to Google Geocoding API for exact area/neighbourhood name.
-  Future<String> _reverseGeocode(LatLng point) async {
-    // 1. Try nearest known Jordanian city (within 15 km)
-    const cities = {
-      'Amman':    LatLng(31.9539, 35.9106),
-      'Zarqa':    LatLng(32.0728, 36.0878),
-      'Irbid':    LatLng(32.5556, 35.8500),
-      'Aqaba':    LatLng(29.5269, 35.0065),
-      'Madaba':   LatLng(31.7167, 35.8000),
-      'Jerash':   LatLng(32.2833, 35.9000),
-      'Ajloun':   LatLng(32.3333, 35.7500),
-      'Karak':    LatLng(31.1833, 35.7000),
-      'Mafraq':   LatLng(32.3417, 36.2042),
-      'Salt':     LatLng(32.0333, 35.7167),
-      'Russeifa': LatLng(32.0417, 36.0583),
-      'Ramtha':   LatLng(32.5667, 36.0000),
-      'Tafilah':  LatLng(30.8333, 35.6000),
-      'Maan':     LatLng(30.2000, 35.7333),
-      'Petra':    LatLng(30.3217, 35.4789),
-      'Azraq':    LatLng(31.8417, 36.8167),
-    };
-
-    String? nearestCity;
-    double nearestDist = double.infinity;
-    for (final entry in cities.entries) {
-      final d = MapsService.distanceKm(point, entry.value);
-      if (d < nearestDist) {
-        nearestDist = d;
-        nearestCity = entry.key;
-      }
-    }
-    if (nearestDist <= 15 && nearestCity != null) return nearestCity;
-
-    // 2. Fall back to Google Geocoding API for sub-city areas
-    try {
-      final url = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json'
-        '?latlng=${point.latitude},${point.longitude}'
-        '&key=${MapsService.apiKey}'
-        '&language=en'
-        '&result_type=locality|sublocality|administrative_area_level_2',
-      );
-      final res = await http.get(url);
-      if (res.statusCode == 200) {
-        final data = json.decode(res.body) as Map<String, dynamic>;
-        if (data['status'] == 'OK') {
-          final results = data['results'] as List;
-          if (results.isNotEmpty) {
-            final components =
-                (results.first['address_components'] as List)
-                    .map((c) => c as Map<String, dynamic>)
-                    .toList();
-            // Prefer locality → sublocality → administrative_area_level_2
-            for (final type in [
-              'locality',
-              'sublocality',
-              'administrative_area_level_2'
-            ]) {
-              final match = components.firstWhere(
-                (c) => (c['types'] as List).contains(type),
-                orElse: () => {},
-              );
-              if (match.isNotEmpty) {
-                return match['long_name'] as String;
-              }
-            }
-          }
-        }
-      }
-    } catch (_) {}
-
-    // 3. Last resort — return coordinates string
-    return '${point.latitude.toStringAsFixed(4)}, '
-        '${point.longitude.toStringAsFixed(4)}';
-  }
-
-  // ── Open LocationPickerScreen and handle result ───────────────────────
-  Future<void> _openPicker({required bool isPickup}) async {
-    setState(() => _locating = true);
-    final initial = await _devicePosition();
-    setState(() => _locating = false);
-    if (!mounted) return;
-
-    final result = await Navigator.of(context).push<LatLng>(
-      MaterialPageRoute(
-        builder: (_) => LocationPickerScreen(
-          title: isPickup ? 'Select Pickup Location' : 'Select Destination',
-          instruction: isPickup
-              ? 'Drag map to your pickup spot'
-              : 'Drag map to your destination',
-          initialPosition: isPickup
-              ? (_pickupLatLng ?? initial)
-              : (_destinationLatLng ?? initial),
-          confirmLabel:
-              isPickup ? 'Confirm Pickup' : 'Confirm Destination',
-          pinColor: isPickup
-              ? AppStyles.primaryColor
-              : AppStyles.successColor,
+  void _pickCity({required bool isPickup}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollController) => Column(
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: context.colors.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  isPickup ? 'Select Pickup City' : 'Select Destination City',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.textPrimary,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Divider(height: 1, color: context.colors.borderColor),
+            Expanded(
+              child: ListView.separated(
+                controller: scrollController,
+                itemCount: _cities.length,
+                separatorBuilder: (context, i) =>
+                    Divider(height: 1, indent: 56, color: context.colors.borderColor),
+                itemBuilder: (_, i) {
+                  final city = _cities[i];
+                  final selected = isPickup
+                      ? _pickupLabel == city
+                      : _destinationLabel == city;
+                  return ListTile(
+                    leading: Icon(
+                      isPickup ? Icons.radio_button_checked : Icons.location_on,
+                      color: isPickup ? AppStyles.primaryColor : AppStyles.successColor,
+                      size: 20,
+                    ),
+                    title: Text(
+                      city,
+                      style: TextStyle(
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        color: context.colors.textPrimary,
+                      ),
+                    ),
+                    trailing: selected
+                        ? Icon(Icons.check_circle, color: AppStyles.primaryColor, size: 18)
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        if (isPickup) {
+                          _pickupLabel = city;
+                        } else {
+                          _destinationLabel = city;
+                        }
+                      });
+                      Navigator.pop(ctx);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
-
-    if (result == null || !mounted) return;
-
-    // Reverse geocode in background
-    final label = await _reverseGeocode(result);
-    if (!mounted) return;
-
-    setState(() {
-      if (isPickup) {
-        _pickupLatLng = result;
-        _pickupLabel = label;
-      } else {
-        _destinationLatLng = result;
-        _destinationLabel = label;
-      }
-    });
   }
 
   String _getGreeting(BuildContext context) {
@@ -638,8 +570,8 @@ class _HomeTabState extends State<_HomeTab> {
                         iconColor: AppStyles.primaryColor,
                         label: _pickupLabel ?? 'Select pickup location',
                         isSet: _pickupLabel != null,
-                        isLoading: _locating,
-                        onTap: () => _openPicker(isPickup: true),
+                        isLoading: false,
+                        onTap: () => _pickCity(isPickup: true),
                       ),
                       const SizedBox(height: 1),
 
@@ -661,7 +593,7 @@ class _HomeTabState extends State<_HomeTab> {
                         label: _destinationLabel ?? 'Select destination',
                         isSet: _destinationLabel != null,
                         isLoading: false,
-                        onTap: () => _openPicker(isPickup: false),
+                        onTap: () => _pickCity(isPickup: false),
                       ),
 
                       // ── Saved places quick-pick ─────────────────────
@@ -786,7 +718,9 @@ class _HomeTabState extends State<_HomeTab> {
                         width: double.infinity,
                         height: 52,
                         child: ElevatedButton.icon(
-                          onPressed: _search,
+                          onPressed: (_pickupLabel != null && _destinationLabel != null)
+                              ? _search
+                              : null,
                           icon: const Icon(Icons.search, size: 20),
                           label: Text(context.l10n.searchRides,
                               style: const TextStyle(
@@ -972,8 +906,8 @@ class _HomeTabState extends State<_HomeTab> {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            Icon(Icons.map_outlined,
-                size: 18, color: context.colors.textTertiary),
+            Icon(Icons.keyboard_arrow_down_rounded,
+                size: 20, color: context.colors.textTertiary),
           ],
         ),
       ),
@@ -1074,9 +1008,6 @@ class _HomeTabState extends State<_HomeTab> {
                     : place.title;
                 setState(() {
                   _pickupLabel = label;
-                  if (place.lat != null && place.lng != null) {
-                    _pickupLatLng = LatLng(place.lat!, place.lng!);
-                  }
                 });
               },
             ),
@@ -1092,9 +1023,6 @@ class _HomeTabState extends State<_HomeTab> {
                     : place.title;
                 setState(() {
                   _destinationLabel = label;
-                  if (place.lat != null && place.lng != null) {
-                    _destinationLatLng = LatLng(place.lat!, place.lng!);
-                  }
                 });
               },
             ),

@@ -23,6 +23,10 @@ class RideModel {
   final String status;
   final DateTime createdAt;
   final int pendingSeats;
+  final Map<String, String> pendingGenderEntries;
+  /// Specific seat indices (1–4) the driver has opened for passengers.
+  /// Empty list = legacy ride; treat all 1..totalSeats as open.
+  final List<int> seatIndices;
 
   const RideModel({
     required this.id,
@@ -47,6 +51,8 @@ class RideModel {
     required this.status,
     required this.createdAt,
     this.pendingSeats = 0,
+    this.pendingGenderEntries = const {},
+    this.seatIndices = const [],
   });
 
   int get availableSeats {
@@ -82,6 +88,13 @@ class RideModel {
       status: d['status'] as String? ?? 'active',
       createdAt: (d['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       pendingSeats: (d['pendingSeats'] as num?)?.toInt() ?? 0,
+      pendingGenderEntries: (d['pendingGenderEntries'] as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(k, v.toString())) ??
+          {},
+      seatIndices: (d['seatIndices'] as List<dynamic>?)
+              ?.map((e) => (e as num).toInt())
+              .toList() ??
+          [],
     );
   }
 
@@ -106,5 +119,6 @@ class RideModel {
         'notes': notes,
         'status': status,
         'createdAt': FieldValue.serverTimestamp(),
+        'seatIndices': seatIndices,
       };
 }

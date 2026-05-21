@@ -48,18 +48,31 @@ class BookingProvider extends ChangeNotifier {
   String? _confirmError;
   String? get confirmError => _confirmError;
 
+  String? _rawError;
+  String? get rawError => _rawError;
+
   /// Initialises the seat map from [ride]'s real-time booked / pending / total counts.
   void initFromRide(RideModel ride) {
     _currentRide = ride;
+    // Use specific indices if stored, fall back to sequential for legacy rides.
+    final indices = ride.seatIndices.isNotEmpty
+        ? ride.seatIndices
+        : List.generate(ride.totalSeats, (i) => i + 1);
+    final indexSet = indices.toSet();
+    final sorted = indices.toList()..sort();
+
     for (int i = 1; i <= _passengerSlots; i++) {
-      if (i > ride.totalSeats) {
-        _seatStates[i] = 4;
-      } else if (i <= ride.bookedSeats) {
-        _seatStates[i] = 2;
-      } else if (i <= ride.bookedSeats + ride.pendingSeats) {
-        _seatStates[i] = 5;
+      if (!indexSet.contains(i)) {
+        _seatStates[i] = 4; // non-existent
       } else {
-        _seatStates[i] = 0;
+        final pos = sorted.indexOf(i);
+        if (pos < ride.bookedSeats) {
+          _seatStates[i] = 2; // occupied
+        } else if (pos < ride.bookedSeats + ride.pendingSeats) {
+          _seatStates[i] = 5; // pending
+        } else {
+          _seatStates[i] = 0; // available
+        }
       }
     }
     notifyListeners();
@@ -79,6 +92,42 @@ class BookingProvider extends ChangeNotifier {
   void resetSelection() {
     for (final key in _seatStates.keys) {
       if (_seatStates[key] == 1) _seatStates[key] = 0;
+    }
+    notifyListeners();
+  }
+
+  /// seat index → gender string for pending seats (populated from ride document).
+  final Map<int, String> _pendingGenders = {};
+  Map<int, String> get pendingGenders => Map.unmodifiable(_pendingGenders);
+
+  /// Keeps seat states in sync using exact seat indices for pending requests.
+  /// [seatIndices] lists which seat positions exist (driver's selection).
+  /// [pendingGenders] maps seat index → gender so one notifyListeners covers both.
+  void updateSeatsExact(
+    int confirmedCount,
+    List<int> pendingIndices,
+    List<int> seatIndices, {
+    Map<int, String> pendingGenders = const {},
+  }) {
+    _pendingGenders..clear()..addAll(pendingGenders);
+    final indexSet = seatIndices.toSet();
+    final sorted = seatIndices.toList()..sort();
+
+    for (int i = 1; i <= _passengerSlots; i++) {
+      if (!indexSet.contains(i)) {
+        _seatStates[i] = 4; // non-existent
+      } else {
+        final pos = sorted.indexOf(i);
+        if (pos < confirmedCount) {
+          if (_seatStates[i] != 1) _seatStates[i] = 2;
+        } else if (pendingIndices.contains(i)) {
+          if (_seatStates[i] != 1) _seatStates[i] = 5;
+        } else {
+          if (_seatStates[i] == 2 || _seatStates[i] == 4 || _seatStates[i] == 5) {
+            _seatStates[i] = 0;
+          }
+        }
+      }
     }
     notifyListeners();
   }
@@ -115,30 +164,38 @@ class BookingProvider extends ChangeNotifier {
     final user = _auth.currentUser;
 
     if (ride == null || selectedCount == 0) {
+      debugPrint('❌ confirmBooking: ride=$ride, selectedCount=$selectedCount — early exit');
       _confirmError = 'booking_failed';
       notifyListeners();
       return null;
     }
 
     if (user == null) {
+      debugPrint('❌ confirmBooking: user is null');
       _confirmError = 'not_logged_in';
       notifyListeners();
       return null;
     }
 
     final seats = selectedCount;
+    debugPrint('📋 confirmBooking: seats=$seats, ride=${ride.id}, uid=${user.uid}');
     _confirmError = null;
 
     try {
       // Block if there's already a pending or confirmed booking for this ride.
-      final existing = await _db
+      // Use a simple 2-field query (no whereIn) to avoid needing a composite index.
+      debugPrint('📋 confirmBooking: checking for existing booking...');
+      final existingSnap = await _db
           .collection('bookings')
           .where('rideId', isEqualTo: ride.id)
           .where('passengerId', isEqualTo: user.uid)
-          .where('status', whereIn: ['pending', 'confirmed'])
-          .limit(1)
           .get();
-      if (existing.docs.isNotEmpty) {
+      final hasActive = existingSnap.docs.any((d) {
+        final s = d.data()['status'] as String? ?? '';
+        return s == 'pending' || s == 'confirmed';
+      });
+      if (hasActive) {
+        debugPrint('📋 confirmBooking: already_booked');
         _confirmError = 'already_booked';
         notifyListeners();
         return null;
@@ -148,8 +205,18 @@ class BookingProvider extends ChangeNotifier {
       final bookingRef = _db.collection('bookings').doc();
       final rideRef = _db.collection('rides').doc(ride.id);
 
+      // Capture selected seat indices BEFORE the transaction (stable snapshot).
+      final selectedIndices = _seatStates.entries
+          .where((e) => e.value == 1)
+          .map((e) => e.key)
+          .toList()..sort();
+
+      debugPrint('📋 confirmBooking: selectedIndices=$selectedIndices');
+
       BookingModel? booking;
 
+      // Transaction: atomically create the booking + increment pendingSeats only.
+      debugPrint('📋 confirmBooking: starting transaction...');
       await _db.runTransaction((tx) async {
         final rideSnap = await tx.get(rideRef);
         final latestBooked = (rideSnap.data()?['bookedSeats'] as num?)?.toInt() ?? 0;
@@ -162,7 +229,9 @@ class BookingProvider extends ChangeNotifier {
           id: bookingRef.id,
           rideId: ride.id,
           passengerId: user.uid,
-          passengerName: user.name,
+          passengerName: user.name.isNotEmpty
+              ? user.name
+              : user.email.split('@').first,
           passengerGender: passengerGender ?? user.gender,
           driverId: ride.driverId,
           driverName: ride.driverName,
@@ -181,22 +250,103 @@ class BookingProvider extends ChangeNotifier {
           dropoffLat: dropoffLat,
           dropoffLng: dropoffLng,
         );
+
+        debugPrint('📋 confirmBooking: writing booking + pendingSeats...');
         tx.set(bookingRef, booking!.toMap());
-        tx.update(rideRef, {'pendingSeats': FieldValue.increment(seats)});
+        tx.update(rideRef, {
+          'pendingSeats': FieldValue.increment(seats),
+        });
       });
+      debugPrint('📋 confirmBooking: transaction succeeded');
+
+      // Post-transaction: write gender entries for seat-map display (best-effort).
+      // Done separately so a rules mismatch here never kills the booking itself.
+      if (booking != null && selectedIndices.isNotEmpty) {
+        try {
+          final genderParts = (passengerGender ?? user.gender).split(',');
+          final genderEntry = List.generate(selectedIndices.length, (i) {
+            final g = i < genderParts.length ? genderParts[i].trim() : 'unknown';
+            return '${selectedIndices[i]}:$g';
+          }).join(',');
+          await rideRef.update({
+            'pendingGenderEntries.${bookingRef.id}': genderEntry,
+          });
+        } catch (e) {
+          debugPrint('⚠️ pendingGenderEntries write failed (non-critical): $e');
+        }
+      }
 
       return booking;
     } catch (e) {
       final raw = e.toString();
+      debugPrint('❌ confirmBooking error: $raw');
+      _rawError = raw;
       if (raw.contains('not_enough_seats')) {
         _confirmError = 'not_enough_seats';
       } else if (raw.contains('permission-denied') || raw.contains('PERMISSION_DENIED')) {
         _confirmError = 'permission_denied';
+      } else if (raw.contains('already_booked')) {
+        _confirmError = 'already_booked';
       } else {
         _confirmError = 'booking_failed';
       }
       notifyListeners();
       return null;
+    }
+  }
+
+  /// Fetches display name, photo URL, and rating for a passenger.
+  /// Runs user-doc read and passengerRatings query in parallel so rating is
+  /// always accurate even when the user document is missing or stale.
+  Future<({String name, String photoUrl, double averageRating, int ratingCount})>
+      fetchPassengerInfo(String uid, {String fallbackName = ''}) async {
+    if (uid.isEmpty) {
+      return (name: fallbackName, photoUrl: '', averageRating: 0.0, ratingCount: 0);
+    }
+    try {
+      final results = await Future.wait([
+        _db.collection('users').doc(uid).get(),
+        _db.collection('passengerRatings').where('passengerId', isEqualTo: uid).get(),
+      ]);
+
+      final userDoc = results[0] as DocumentSnapshot<Map<String, dynamic>>;
+      final ratingsSnap = results[1] as QuerySnapshot<Map<String, dynamic>>;
+
+      String name = fallbackName;
+      String photoUrl = '';
+
+      if (userDoc.exists) {
+        final data = userDoc.data() ?? {};
+        name = (data['name'] as String? ?? '').trim();
+        if (name.isEmpty) {
+          final email = (data['email'] as String? ?? '').trim();
+          name = email.isNotEmpty ? email.split('@').first : fallbackName;
+        }
+        photoUrl = (data['photoUrl'] as String? ?? '').trim();
+      }
+
+      final ratingDocs = ratingsSnap.docs;
+      final ratingCount = ratingDocs.length;
+      final averageRating = ratingCount == 0
+          ? 0.0
+          : ratingDocs.fold<double>(
+                  0,
+                  (acc, d) =>
+                      acc + ((d.data()['stars'] as num?)?.toDouble() ?? 0)) /
+              ratingCount;
+
+      // Heal stale user-doc cache in the background (no-await).
+      if (ratingCount > 0 && userDoc.exists) {
+        _db.collection('users').doc(uid).update({
+          'averageRating': double.parse(averageRating.toStringAsFixed(1)),
+          'ratingCount': ratingCount,
+        }).catchError((_) {});
+      }
+
+      return (name: name, photoUrl: photoUrl, averageRating: double.parse(averageRating.toStringAsFixed(1)), ratingCount: ratingCount);
+    } catch (e) {
+      debugPrint('👤 fetchPassengerInfo ERROR ($uid): $e');
+      return (name: fallbackName, photoUrl: '', averageRating: 0.0, ratingCount: 0);
     }
   }
 
@@ -215,6 +365,8 @@ class BookingProvider extends ChangeNotifier {
     try {
       await _db.runTransaction((tx) async {
         final rideSnap = await tx.get(rideRef);
+        final rideStatus = rideSnap.data()!['status'] as String? ?? 'active';
+        if (rideStatus != 'active') throw Exception('ride_not_accepting');
         final booked = (rideSnap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
         final total = (rideSnap.data()!['totalSeats'] as num?)?.toInt() ?? 0;
         if (total > 0 && booked + booking.seatsBooked > total) {
@@ -224,6 +376,7 @@ class BookingProvider extends ChangeNotifier {
         tx.update(rideRef, {
           'bookedSeats': FieldValue.increment(booking.seatsBooked),
           'pendingSeats': FieldValue.increment(-booking.seatsBooked),
+          'pendingGenderEntries.${booking.id}': FieldValue.delete(),
         });
       });
       return true;
@@ -234,12 +387,17 @@ class BookingProvider extends ChangeNotifier {
 
   /// Driver rejects a pending booking request.
   Future<void> rejectBooking(BookingModel booking) async {
-    final batch = _db.batch();
-    batch.update(_db.collection('bookings').doc(booking.id), {'status': 'rejected'});
-    batch.update(_db.collection('rides').doc(booking.rideId), {
-      'pendingSeats': FieldValue.increment(-booking.seatsBooked),
-    });
-    await batch.commit();
+    try {
+      final batch = _db.batch();
+      batch.update(_db.collection('bookings').doc(booking.id), {'status': 'rejected'});
+      batch.update(_db.collection('rides').doc(booking.rideId), {
+        'pendingSeats': FieldValue.increment(-booking.seatsBooked),
+        'pendingGenderEntries.${booking.id}': FieldValue.delete(),
+      });
+      await batch.commit();
+    } catch (e) {
+      debugPrint('rejectBooking error: $e');
+    }
   }
 
   /// Live stream of pending booking requests for a specific ride (driver only).
@@ -360,7 +518,14 @@ class BookingProvider extends ChangeNotifier {
   StreamSubscription<QuerySnapshot>? _myBookingsSub;
   List<BookingModel> _lastMyBookings = const [];
 
-  Stream<List<BookingModel>> get myBookingsStream => _myBookingsController.stream;
+  Stream<List<BookingModel>> get myBookingsStream {
+    final ctrl = StreamController<List<BookingModel>>();
+    ctrl.add(_lastMyBookings);
+    final sub = _myBookingsController.stream.listen(ctrl.add, onError: ctrl.addError, onDone: ctrl.close);
+    ctrl.onCancel = sub.cancel;
+    return ctrl.stream;
+  }
+
   List<BookingModel> get lastMyBookings => List.unmodifiable(_lastMyBookings);
 
   void _restartMyBookingsListener() {
@@ -395,7 +560,11 @@ class BookingProvider extends ChangeNotifier {
           final rideSnap = await tx.get(rideRef);
           tx.update(bookingRef, {'status': 'cancelled'});
           if (rideSnap.exists) {
-            tx.update(rideRef, {field: FieldValue.increment(-booking.seatsBooked)});
+            tx.update(rideRef, {
+              field: FieldValue.increment(-booking.seatsBooked),
+              if (booking.status == 'pending')
+                'pendingGenderEntries.${booking.id}': FieldValue.delete(),
+            });
           }
         });
       } catch (_) {

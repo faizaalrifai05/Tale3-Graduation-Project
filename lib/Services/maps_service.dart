@@ -52,6 +52,55 @@ class MapsService {
   static LatLng? cityCoords(String name) =>
       _cities[name.toLowerCase().trim()];
 
+  // Known city-pair driving times in minutes (bidirectional).
+  static const Map<String, int> _cityPairMinutes = {
+    'amman-irbid': 90,     'amman-zarqa': 35,
+    'amman-aqaba': 240,    'amman-madaba': 30,
+    'amman-jerash': 70,    'amman-ajloun': 80,
+    'amman-karak': 130,    'amman-mafraq': 80,
+    'amman-salt': 35,      'amman-russeifa': 25,
+    'amman-ramtha': 110,   'amman-tafilah': 160,
+    'amman-maan': 200,     "amman-ma'an": 200,
+    'amman-petra': 210,    'amman-wadi musa': 210,
+    'amman-azraq': 110,
+    'irbid-zarqa': 100,    'irbid-mafraq': 50,
+    'irbid-ramtha': 20,    'irbid-ajloun': 30,
+    'irbid-jerash': 45,
+    'zarqa-russeifa': 15,  'zarqa-mafraq': 55,
+    'zarqa-ramtha': 90,
+    'aqaba-karak': 130,    'aqaba-maan': 90,    "aqaba-ma'an": 90,
+    'karak-maan': 80,      "karak-ma'an": 80,
+    'karak-tafilah': 50,   'maan-petra': 30,    "ma'an-petra": 30,
+    'maan-wadi musa': 30,  "ma'an-wadi musa": 30,
+  };
+
+  /// Returns a formatted driving-time estimate (e.g. "1h 30m") between two
+  /// Jordanian cities.  Uses a lookup table for known pairs and falls back to
+  /// a distance-based estimate (90 km/h avg + 15 min overhead) for unknown ones.
+  static String estimatedDuration(String origin, String destination) {
+    final from = origin.toLowerCase().trim();
+    final to = destination.toLowerCase().trim();
+    if (from == to) return '—';
+
+    int? minutes = _cityPairMinutes['$from-$to'] ?? _cityPairMinutes['$to-$from'];
+
+    if (minutes == null) {
+      final a = cityCoords(from);
+      final b = cityCoords(to);
+      if (a != null && b != null) {
+        final km = distanceKm(a, b);
+        minutes = (km / 90 * 60 + 15).round();
+      }
+    }
+
+    if (minutes == null) return '—';
+    final h = minutes ~/ 60;
+    final m = minutes % 60;
+    if (h == 0) return '${m}m';
+    if (m == 0) return '${h}h';
+    return '${h}h ${m}m';
+  }
+
   /// Haversine distance in km between two points.
   static double distanceKm(LatLng a, LatLng b) {
     const r = 6371.0;
@@ -88,6 +137,34 @@ class MapsService {
     final tc = t.clamp(0.0, 1.0);
     return distanceKm(
         p, LatLng(a.latitude + tc * dy, a.longitude + tc * dx));
+  }
+
+  /// Fetches the driving duration between two cities from the Directions API.
+  /// Falls back to the static lookup table if the API call fails.
+  static Future<String> fetchDrivingDuration(
+      String origin, String destination) async {
+    try {
+      final url = Uri.parse(
+        'https://maps.googleapis.com/maps/api/directions/json'
+        '?origin=${Uri.encodeComponent('$origin, Jordan')}'
+        '&destination=${Uri.encodeComponent('$destination, Jordan')}'
+        '&mode=driving'
+        '&key=$apiKey',
+      );
+      final response = await http.get(url);
+      if (response.statusCode != 200) return estimatedDuration(origin, destination);
+      final data = json.decode(response.body) as Map<String, dynamic>;
+      if (data['status'] != 'OK') return estimatedDuration(origin, destination);
+      final seconds =
+          data['routes'][0]['legs'][0]['duration']['value'] as int;
+      final h = seconds ~/ 3600;
+      final m = (seconds % 3600) ~/ 60;
+      if (h == 0) return '${m}m';
+      if (m == 0) return '${h}h';
+      return '${h}h ${m}m';
+    } catch (_) {
+      return estimatedDuration(origin, destination);
+    }
   }
 
   /// Returns decoded polyline points for the route between two addresses.

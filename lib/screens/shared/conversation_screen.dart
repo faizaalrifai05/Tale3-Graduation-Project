@@ -24,16 +24,31 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final _scrollController = ScrollController();
 
   late final String _chatId;
-  late final Stream<List<ChatMessage>> _messagesStream;
+  // Null until the chat document is confirmed to exist.
+  Stream<List<ChatMessage>>? _messagesStream;
 
   @override
   void initState() {
     super.initState();
     final uid = context.read<AuthProvider>().currentUser?.uid ?? '';
     _chatId = ChatProvider.chatId(uid, widget.otherUserId);
-    _messagesStream = context.read<ChatProvider>().messagesStream(_chatId);
-    // Clear unread badge as soon as the screen opens.
-    context.read<ChatProvider>().markAsRead(_chatId);
+    _initChat();
+  }
+
+  Future<void> _initChat() async {
+    final chatProvider = context.read<ChatProvider>();
+    // Ensure the chat document exists BEFORE subscribing to the messages
+    // subcollection — otherwise the security rule's get(chatDoc) call
+    // returns null → permission denied → stream dies permanently.
+    await chatProvider.ensureChatExists(
+      otherUserId: widget.otherUserId,
+      otherUserName: widget.otherUserName,
+    );
+    if (!mounted) return;
+    setState(() {
+      _messagesStream = chatProvider.messagesStream(_chatId);
+    });
+    chatProvider.markAsRead(_chatId);
   }
 
   void _scrollToBottom() {
@@ -50,11 +65,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    await context.read<ChatProvider>().sendMessage(
+    final error = await context.read<ChatProvider>().sendMessage(
           otherUserId: widget.otherUserId,
           otherUserName: widget.otherUserName,
           text: text,
         );
+    if (error != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error), backgroundColor: Colors.red),
+      );
+    }
     Future.delayed(const Duration(milliseconds: 150), _scrollToBottom);
   }
 
@@ -114,24 +134,13 @@ class _ConversationScreenState extends State<ConversationScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<List<ChatMessage>>(
+            child: _messagesStream == null
+              ? const Center(child: CircularProgressIndicator())
+              : StreamBuilder<List<ChatMessage>>(
               stream: _messagesStream,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        'Could not load messages. Please check your connection and try again.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                            color: context.colors.textSecondary, fontSize: 14),
-                      ),
-                    ),
-                  );
                 }
                 final messages = snapshot.data ?? [];
                 WidgetsBinding.instance

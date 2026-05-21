@@ -73,9 +73,24 @@ class ChatProvider extends ChangeNotifier {
   final _unreadController = StreamController<int>.broadcast();
   StreamSubscription<QuerySnapshot>? _convSub;
   List<Conversation> _lastConversations = const [];
+  int _lastTotalUnread = 0;
 
-  Stream<List<Conversation>> get conversationsStream => _convController.stream;
-  Stream<int> get totalUnreadStream => _unreadController.stream;
+  Stream<List<Conversation>> get conversationsStream {
+    final ctrl = StreamController<List<Conversation>>();
+    ctrl.add(_lastConversations);
+    final sub = _convController.stream.listen(ctrl.add, onError: ctrl.addError, onDone: ctrl.close);
+    ctrl.onCancel = sub.cancel;
+    return ctrl.stream;
+  }
+
+  Stream<int> get totalUnreadStream {
+    final ctrl = StreamController<int>();
+    ctrl.add(_lastTotalUnread);
+    final sub = _unreadController.stream.listen(ctrl.add, onError: ctrl.addError, onDone: ctrl.close);
+    ctrl.onCancel = sub.cancel;
+    return ctrl.stream;
+  }
+
   List<Conversation> get lastConversations => List.unmodifiable(_lastConversations);
 
   void _restartConversationsListener() {
@@ -113,6 +128,7 @@ class ChatProvider extends ChangeNotifier {
         _lastConversations = convs;
         if (!_convController.isClosed) _convController.add(convs);
         final totalUnread = convs.fold<int>(0, (sum, c) => sum + c.unreadCount);
+        _lastTotalUnread = totalUnread;
         if (!_unreadController.isClosed) _unreadController.add(totalUnread);
       },
       onError: (e) => debugPrint('conversations stream error: $e'),
@@ -148,50 +164,89 @@ class ChatProvider extends ChangeNotifier {
   /// Send a message. Creates the chat document first if it doesn't exist,
   /// then writes the message in a separate batch so the message rule's
   /// get(chats/chatId) call finds an existing document.
-  Future<void> sendMessage({
+  /// Returns null on success, error string on failure.
+  Future<String?> sendMessage({
     required String otherUserId,
     required String otherUserName,
     required String text,
   }) async {
     final uid = _uid;
-    if (uid == null || text.trim().isEmpty) return;
+    if (uid == null) return 'Not logged in.';
+    if (text.trim().isEmpty) return null;
     final trimmed = text.trim();
     final id = chatId(uid, otherUserId);
     final chatRef = _db.collection('chats').doc(id);
 
-    final chatSnap = await chatRef.get();
-    if (!chatSnap.exists) {
-      await chatRef.set({
-        'participants': [uid, otherUserId],
-        'participantNames': {uid: _userName, otherUserId: otherUserName},
-        'lastMessage': '',
-        'lastMessageTime': FieldValue.serverTimestamp(),
-        'lastSenderId': '',
-        'unread': {},
-      });
-    }
+    try {
+      final chatSnap = await chatRef.get();
+      if (!chatSnap.exists) {
+        await chatRef.set({
+          'participants': [uid, otherUserId],
+          'participantNames': {uid: _userName, otherUserId: otherUserName},
+          'lastMessage': '',
+          'lastMessageTime': FieldValue.serverTimestamp(),
+          'lastSenderId': '',
+          'unread': {uid: 0, otherUserId: 0},
+        });
+      }
 
-    final msgRef = chatRef.collection('messages').doc();
-    final batch = _db.batch();
-    batch.set(msgRef, {
-      'senderId': uid,
-      'text': trimmed,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
-    batch.set(chatRef, {
-      'participantNames': {uid: _userName, otherUserId: otherUserName},
-      'lastMessage': trimmed,
-      'lastMessageTime': FieldValue.serverTimestamp(),
-      'lastSenderId': uid,
-      'unread': {otherUserId: FieldValue.increment(1)},
-    }, SetOptions(merge: true));
-    await batch.commit();
+      final msgRef = chatRef.collection('messages').doc();
+      final batch = _db.batch();
+      batch.set(msgRef, {
+        'senderId': uid,
+        'text': trimmed,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      batch.update(chatRef, {
+        'participantNames.$uid': _userName,
+        'participantNames.$otherUserId': otherUserName,
+        'lastMessage': trimmed,
+        'lastMessageTime': FieldValue.serverTimestamp(),
+        'lastSenderId': uid,
+        'unread.$otherUserId': FieldValue.increment(1),
+        'unread.$uid': 0,
+      });
+      await batch.commit();
+      return null;
+    } catch (e) {
+      debugPrint('💬 sendMessage ERROR: $e');
+      return e.toString();
+    }
+  }
+
+  /// Ensures the chat document exists so the messages subcollection can be
+  /// queried. Called when a conversation screen opens before subscribing to
+  /// the messages stream — avoids a permission-denied error caused by the
+  /// messages rule doing get(chatDoc) on a non-existent document.
+  Future<void> ensureChatExists({
+    required String otherUserId,
+    required String otherUserName,
+  }) async {
+    final uid = _uid;
+    if (uid == null) return;
+    final id = chatId(uid, otherUserId);
+    final chatRef = _db.collection('chats').doc(id);
+    try {
+      final snap = await chatRef.get();
+      if (!snap.exists) {
+        await chatRef.set({
+          'participants': [uid, otherUserId],
+          'participantNames': {uid: _userName, otherUserId: otherUserName},
+          'lastMessage': '',
+          'lastMessageTime': FieldValue.serverTimestamp(),
+          'lastSenderId': '',
+          'unread': {uid: 0, otherUserId: 0},
+        });
+      }
+    } catch (_) {}
   }
 
   /// Clears the unread badge for the current user in a chat.
   Future<void> markAsRead(String id) async {
     final uid = _uid;
     if (uid == null) return;
-    await _db.collection('chats').doc(id).update({'unread.$uid': 0});
+    try {
+      await _db.collection('chats').doc(id).update({'unread.$uid': 0});
+    } catch (_) {}
   }
 }
