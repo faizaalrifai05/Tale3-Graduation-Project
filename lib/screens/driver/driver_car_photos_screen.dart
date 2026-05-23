@@ -105,25 +105,23 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
     try {
       final auth = context.read<app_auth.AuthProvider>();
 
-      // 1. Upload car photos first — only mark pending once everything is uploaded
-      final carError = await auth.submitCarPhotos(
-        frontImage: _frontCarImage!,
-        backImage: _backCarImage!,
-      );
-      if (!mounted) return;
-      if (carError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(carError),
-            backgroundColor: AppStyles.primaryColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
+      // ── Step 1: Attempt car photo upload (best-effort) ──────────────────
+      // Firebase Storage may be disabled. We log the error but never return
+      // early — the driver must always reach the "pending" status write below.
+      if (_frontCarImage != null && _backCarImage != null) {
+        final carError = await auth.submitCarPhotos(
+          frontImage: _frontCarImage!,
+          backImage: _backCarImage!,
         );
-        return;
+        if (!mounted) return;
+        if (carError != null) {
+          debugPrint('⚠️ Car photo upload skipped (Storage may be disabled): $carError');
+        }
       }
 
-      // 2. Car photos uploaded — now submit ID verification or mark pending
+      // ── Step 2: Attempt ID photo upload OR just mark pending ─────────────
+      // Either way, verificationStatus MUST be written as 'pending' so the
+      // driver appears in the admin verification queue.
       if (widget.frontIdImage != null && widget.backIdImage != null) {
         final verifyError = await auth.submitIdVerification(
           frontImage: widget.frontIdImage!,
@@ -131,13 +129,17 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
         );
         if (!mounted) return;
         if (verifyError != null) {
-          debugPrint('ID verification submission error: $verifyError');
+          // submitIdVerification already calls setVerificationPending internally
+          // on Firestore — log only, do not block navigation.
+          debugPrint('⚠️ ID verification upload skipped: $verifyError');
         }
       } else {
+        // ID images are no longer in memory (e.g. resumed flow) — write pending directly.
         await auth.setVerificationPending();
         if (!mounted) return;
       }
 
+      // ── Step 3: Navigate to credit card screen ───────────────────────────
       final authUser = context.read<app_auth.AuthProvider>().currentUser;
       Navigator.of(context).push(
         MaterialPageRoute(

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, updateDoc, doc } from 'firebase/firestore'
+import { collection, onSnapshot, updateDoc, doc, query, where } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { User } from '../types'
 
@@ -13,83 +13,174 @@ export default function Verification() {
   const [showRejectInput, setShowRejectInput] = useState(false)
   const [previewImg, setPreviewImg] = useState<string | null>(null)
 
+  // ── Real-time listener on the 'users' collection ──────────────────────────
+  // Previously used getDocs() (a one-shot fetch) which meant newly registered
+  // drivers never appeared without a manual page refresh. onSnapshot() keeps
+  // the list live so new pending drivers show up instantly.
   useEffect(() => {
-    fetchDrivers()
-  }, [])
-
-  const fetchDrivers = async () => {
     setLoading(true)
-    const snap = await getDocs(collection(db, 'users'))
-    const data = snap.docs
-      .map(d => ({ uid: d.id, ...d.data() } as User))
-      .filter(u => u.role === 'driver')
-    setDrivers(data)
-    setLoading(false)
-  }
+
+    const q = query(collection(db, 'users'), where('role', '==', 'driver'))
+
+    const unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        const data = snap.docs.map(d => ({ uid: d.id, ...d.data() } as User))
+        setDrivers(data)
+
+        // If the currently selected driver was updated externally (e.g. another
+        // admin approved them), refresh the selected panel too.
+        setSelected(prev => {
+          if (!prev) return prev
+          const updated = data.find(d => d.uid === prev.uid)
+          return updated ?? prev
+        })
+
+        setLoading(false)
+      },
+      (error) => {
+        console.error('Verification listener error:', error)
+        setLoading(false)
+      }
+    )
+
+    return () => unsubscribe()
+  }, [])
 
   const filteredDrivers = drivers.filter(d => d.verificationStatus === filter)
 
+  // ── Counts for the queue stats footer ────────────────────────────────────
+  const pendingCount  = drivers.filter(d => d.verificationStatus === 'pending').length
+  const verifiedCount = drivers.filter(d => d.verificationStatus === 'verified').length
+  const rejectedCount = drivers.filter(d => d.verificationStatus === 'rejected').length
+
+  // ── Actions ───────────────────────────────────────────────────────────────
   const handleApprove = async () => {
     if (!selected) return
     setActionLoading(true)
-    await updateDoc(doc(db, 'users', selected.uid), {
-      verificationStatus: 'verified'
-    })
-    setDrivers(prev => prev.map(d =>
-      d.uid === selected.uid ? { ...d, verificationStatus: 'verified' } : d
-    ))
-    setSelected(prev => prev ? { ...prev, verificationStatus: 'verified' } : null)
-    setActionLoading(false)
+    try {
+      await updateDoc(doc(db, 'users', selected.uid), {
+        verificationStatus: 'verified',
+      })
+      // onSnapshot will update `drivers` and `selected` automatically.
+    } catch (err) {
+      console.error('Approve failed:', err)
+    } finally {
+      setActionLoading(false)
+    }
   }
 
   const handleReject = async () => {
     if (!selected) return
     setActionLoading(true)
-    await updateDoc(doc(db, 'users', selected.uid), {
-      verificationStatus: 'rejected',
-      rejectionReason: rejectReason,
-    })
-    setDrivers(prev => prev.map(d =>
-      d.uid === selected.uid ? { ...d, verificationStatus: 'rejected' } : d
-    ))
-    setSelected(prev => prev ? { ...prev, verificationStatus: 'rejected' } : null)
-    setShowRejectInput(false)
-    setRejectReason('')
-    setActionLoading(false)
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700'
-      case 'verified': return 'bg-green-100 text-green-700'
-      case 'rejected': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-500'
+    try {
+      await updateDoc(doc(db, 'users', selected.uid), {
+        verificationStatus: 'rejected',
+        rejectionReason: rejectReason,
+      })
+      setShowRejectInput(false)
+      setRejectReason('')
+    } catch (err) {
+      console.error('Reject failed:', err)
+    } finally {
+      setActionLoading(false)
     }
   }
 
-  if (loading) return (
-    <div className="flex items-center justify-center h-full">
-      <div className="text-primary font-semibold">Loading verifications...</div>
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending':  return 'bg-yellow-100 text-yellow-700'
+      case 'verified': return 'bg-green-100 text-green-700'
+      case 'rejected': return 'bg-red-100 text-red-700'
+      default:         return 'bg-gray-100 text-gray-500'
+    }
+  }
+
+  const formatDate = (ts: any): string => {
+    if (!ts) return '—'
+    try {
+      const date = ts.toDate ? ts.toDate() : new Date(ts)
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      })
+    } catch {
+      return '—'
+    }
+  }
+
+  // ── Photo card helper — handles empty/missing URLs gracefully ─────────────
+  const PhotoCard = ({ label, url }: { label: string; url?: string }) => (
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</p>
+        {url && (
+          <button
+            onClick={() => setPreviewImg(url)}
+            className="text-xs text-primary hover:underline"
+          >
+            🔍 Zoom
+          </button>
+        )}
+      </div>
+      <div className="p-4 h-48 flex items-center justify-center bg-gray-50">
+        {url ? (
+          <img
+            src={url}
+            className="max-h-full max-w-full object-contain rounded cursor-pointer"
+            onClick={() => setPreviewImg(url)}
+            onError={(e) => {
+              // If the URL is stale or Storage is disabled, show placeholder
+              ;(e.target as HTMLImageElement).style.display = 'none'
+            }}
+          />
+        ) : (
+          <div className="text-center">
+            <p className="text-2xl mb-1">📷</p>
+            <p className="text-sm text-gray-400">No photo uploaded</p>
+            <p className="text-xs text-gray-300 mt-1">(Firebase Storage may be disabled)</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (loading) return (
+    <div className="flex items-center justify-center h-full">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-primary font-semibold text-sm">Loading verifications...</p>
+      </div>
+    </div>
+  )
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-full">
-      {/* Image Preview Modal */}
+
+      {/* ── Image Preview Modal ────────────────────────────────────────────── */}
       {previewImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
           onClick={() => setPreviewImg(null)}
         >
-          <img src={previewImg} className="max-w-2xl max-h-screen rounded-lg shadow-2xl" />
-          <button className="absolute top-4 right-4 text-white text-2xl">✕</button>
+          <img src={previewImg} className="max-w-2xl max-h-screen rounded-lg shadow-2xl" alt="Preview" />
+          <button
+            className="absolute top-4 right-4 text-white text-2xl font-bold hover:opacity-70"
+            onClick={() => setPreviewImg(null)}
+          >
+            ✕
+          </button>
         </div>
       )}
 
-      {/* Left Panel — Driver List */}
+      {/* ── Left Panel — Driver Queue ──────────────────────────────────────── */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-5 border-b border-gray-100">
           <h2 className="text-base font-bold text-gray-900">Driver Verification Queue</h2>
+
+          {/* Filter tabs */}
           <div className="flex gap-1 mt-3">
             {(['pending', 'verified', 'rejected'] as const).map(f => (
               <button
@@ -100,15 +191,30 @@ export default function Verification() {
                 }`}
               >
                 {f}
+                {/* Live badge counts */}
+                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                  filter === f ? 'bg-white bg-opacity-30 text-white' : 'bg-gray-200 text-gray-500'
+                }`}>
+                  {f === 'pending' ? pendingCount : f === 'verified' ? verifiedCount : rejectedCount}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
+        {/* Driver list */}
         <div className="flex-1 overflow-y-auto">
           {filteredDrivers.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-sm">
-              No {filter} applications
+            <div className="text-center py-12 px-4">
+              <p className="text-3xl mb-2">
+                {filter === 'pending' ? '⏳' : filter === 'verified' ? '✅' : '❌'}
+              </p>
+              <p className="text-gray-400 text-sm font-medium">No {filter} applications</p>
+              {filter === 'pending' && (
+                <p className="text-gray-300 text-xs mt-1">
+                  New drivers will appear here after completing registration
+                </p>
+              )}
             </div>
           ) : filteredDrivers.map(driver => (
             <div
@@ -122,26 +228,31 @@ export default function Verification() {
                 <span className={`text-xs px-2 py-0.5 rounded font-medium uppercase ${getStatusColor(driver.verificationStatus)}`}>
                   {driver.verificationStatus}
                 </span>
+                <span className="text-xs text-gray-300">{formatDate(driver.createdAt)}</span>
               </div>
-              <p className="text-sm font-semibold text-gray-900">{driver.name}</p>
+              <p className="text-sm font-semibold text-gray-900 mt-1">{driver.name}</p>
               <p className="text-xs text-gray-400 mt-0.5">{driver.email}</p>
+              {driver.phone && (
+                <p className="text-xs text-gray-300 mt-0.5">📱 {driver.phone}</p>
+              )}
             </div>
           ))}
         </div>
 
-        {/* Queue Stats */}
+        {/* Queue stats */}
         <div className="p-4 border-t border-gray-100 bg-gray-50">
           <p className="text-xs text-gray-400">
-            Pending: <span className="font-semibold text-yellow-600">{drivers.filter(d => d.verificationStatus === 'pending').length}</span>
+            Pending: <span className="font-semibold text-yellow-600">{pendingCount}</span>
             {' · '}
-            Verified: <span className="font-semibold text-green-600">{drivers.filter(d => d.verificationStatus === 'verified').length}</span>
+            Verified: <span className="font-semibold text-green-600">{verifiedCount}</span>
             {' · '}
-            Rejected: <span className="font-semibold text-red-600">{drivers.filter(d => d.verificationStatus === 'rejected').length}</span>
+            Rejected: <span className="font-semibold text-red-600">{rejectedCount}</span>
           </p>
+          <p className="text-[10px] text-gray-300 mt-1">Updates in real-time</p>
         </div>
       </div>
 
-      {/* Right Panel — Review */}
+      {/* ── Right Panel — Review ───────────────────────────────────────────── */}
       <div className="flex-1 overflow-auto p-8">
         {!selected ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -151,7 +262,8 @@ export default function Verification() {
           </div>
         ) : (
           <div>
-            {/* Driver Header */}
+
+            {/* ── Driver header ────────────────────────────────────────────── */}
             <div className="flex items-start justify-between mb-8">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Reviewing Application</p>
@@ -159,8 +271,11 @@ export default function Verification() {
                 <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                   <span>📧 {selected.email}</span>
                   {selected.phone && <span>📱 {selected.phone}</span>}
+                  <span>📅 Registered {formatDate(selected.createdAt)}</span>
                 </div>
               </div>
+
+              {/* Action buttons — only shown when pending */}
               <div className="flex gap-3">
                 {selected.verificationStatus === 'pending' && (
                   <>
@@ -192,7 +307,7 @@ export default function Verification() {
               </div>
             </div>
 
-            {/* Reject Input */}
+            {/* ── Rejection reason input ───────────────────────────────────── */}
             {showRejectInput && (
               <div className="mb-6 bg-red-50 rounded-xl p-4">
                 <p className="text-sm font-medium text-red-700 mb-2">Rejection Reason (optional)</p>
@@ -212,7 +327,7 @@ export default function Verification() {
                     {actionLoading ? 'Processing...' : 'Confirm Rejection'}
                   </button>
                   <button
-                    onClick={() => setShowRejectInput(false)}
+                    onClick={() => { setShowRejectInput(false); setRejectReason('') }}
                     className="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm"
                   >
                     Cancel
@@ -221,74 +336,34 @@ export default function Verification() {
               </div>
             )}
 
-            {/* ID Photos */}
+            {/* ── ID Document photos ───────────────────────────────────────── */}
             <div className="mb-8">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Document Review</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Identity Documents</h2>
               <div className="grid grid-cols-2 gap-4">
-                {/* Front ID */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">National ID (Front)</p>
-                    {selected.idFrontUrl && (
-                      <button
-                        onClick={() => setPreviewImg(selected.idFrontUrl)}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        🔍 Zoom
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-4 h-48 flex items-center justify-center bg-gray-50">
-                    {selected.idFrontUrl ? (
-                      <img
-                        src={selected.idFrontUrl}
-                        className="max-h-full max-w-full object-contain rounded cursor-pointer"
-                        onClick={() => setPreviewImg(selected.idFrontUrl)}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-400">No photo uploaded</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Back ID */}
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">National ID (Back)</p>
-                    {selected.idBackUrl && (
-                      <button
-                        onClick={() => setPreviewImg(selected.idBackUrl)}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        🔍 Zoom
-                      </button>
-                    )}
-                  </div>
-                  <div className="p-4 h-48 flex items-center justify-center bg-gray-50">
-                    {selected.idBackUrl ? (
-                      <img
-                        src={selected.idBackUrl}
-                        className="max-h-full max-w-full object-contain rounded cursor-pointer"
-                        onClick={() => setPreviewImg(selected.idBackUrl)}
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-400">No photo uploaded</p>
-                    )}
-                  </div>
-                </div>
+                <PhotoCard label="National ID (Front)" url={selected.idFrontUrl || ''} />
+                <PhotoCard label="National ID (Back)"  url={selected.idBackUrl  || ''} />
               </div>
             </div>
 
-            {/* Driver Info */}
+            {/* ── Car photos ───────────────────────────────────────────────── */}
+            <div className="mb-8">
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Vehicle Photos</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <PhotoCard label="Car (Front)" url={(selected as any).carFrontUrl || ''} />
+                <PhotoCard label="Car (Back)"  url={(selected as any).carBackUrl  || ''} />
+              </div>
+            </div>
+
+            {/* ── Driver & vehicle details ─────────────────────────────────── */}
             <div className="bg-white rounded-xl border border-gray-100 p-6">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Driver Details</h2>
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Driver & Vehicle Details</h2>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Phone', value: selected.phone || '—' },
-                  { label: 'Car Make', value: selected.carMake || '—' },
-                  { label: 'Car Model', value: selected.carModel || '—' },
-                  { label: 'Car Year', value: selected.carYear || '—' },
-                  { label: 'Car Color', value: selected.carColor || '—' },
+                  { label: 'Phone',        value: selected.phone       || '—' },
+                  { label: 'Car Make',     value: selected.carMake     || '—' },
+                  { label: 'Car Model',    value: selected.carModel    || '—' },
+                  { label: 'Car Year',     value: selected.carYear     || '—' },
+                  { label: 'Car Color',    value: selected.carColor    || '—' },
                   { label: 'Plate Number', value: selected.plateNumber || '—' },
                 ].map(item => (
                   <div key={item.label} className="bg-gray-50 rounded-lg p-3">
@@ -298,9 +373,11 @@ export default function Verification() {
                 ))}
               </div>
             </div>
+
           </div>
         )}
       </div>
+
     </div>
   )
 }

@@ -116,32 +116,38 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
             DriverProfileScreen(),
           ],
         ),
-        bottomNavigationBar: AppBottomNavBar(
-          currentIndex: navProvider.driverTabIndex,
-          onTap: (index) =>
-              context.read<NavigationProvider>().setDriverTab(index),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: context.l10n.home.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.directions_car_outlined),
-              activeIcon: const Icon(Icons.directions_car),
-              label: context.l10n.myRides.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.chat_bubble_outline),
-              activeIcon: const Icon(Icons.chat_bubble),
-              label: context.l10n.chat.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: context.l10n.profile.toUpperCase(),
-            ),
-          ],
+        bottomNavigationBar: StreamBuilder<int>(
+          stream: context.read<ChatProvider>().totalUnreadStream,
+          builder: (context, snap) {
+            return AppBottomNavBar(
+              currentIndex: navProvider.driverTabIndex,
+              onTap: (index) =>
+                  context.read<NavigationProvider>().setDriverTab(index),
+              unreadCount: snap.data ?? 0,
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home),
+                  label: context.l10n.home.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.directions_car_outlined),
+                  activeIcon: const Icon(Icons.directions_car),
+                  label: context.l10n.myRides.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  activeIcon: const Icon(Icons.chat_bubble),
+                  label: context.l10n.chat.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.person_outline),
+                  activeIcon: const Icon(Icons.person),
+                  label: context.l10n.profile.toUpperCase(),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

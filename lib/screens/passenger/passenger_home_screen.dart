@@ -151,32 +151,38 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
             PassengerProfileScreen(),
           ],
         ),
-        bottomNavigationBar: AppBottomNavBar(
-          currentIndex: navProvider.passengerTabIndex,
-          onTap: (index) =>
-              context.read<NavigationProvider>().setPassengerTab(index),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: context.l10n.home.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.history_outlined),
-              activeIcon: const Icon(Icons.history),
-              label: context.l10n.myTrips.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.chat_bubble_outline),
-              activeIcon: const Icon(Icons.chat_bubble),
-              label: context.l10n.chat.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: context.l10n.profile.toUpperCase(),
-            ),
-          ],
+        bottomNavigationBar: StreamBuilder<int>(
+          stream: context.read<ChatProvider>().totalUnreadStream,
+          builder: (context, snap) {
+            return AppBottomNavBar(
+              currentIndex: navProvider.passengerTabIndex,
+              onTap: (index) =>
+                  context.read<NavigationProvider>().setPassengerTab(index),
+              unreadCount: snap.data ?? 0,
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home),
+                  label: context.l10n.home.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.history_outlined),
+                  activeIcon: const Icon(Icons.history),
+                  label: context.l10n.myTrips.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  activeIcon: const Icon(Icons.chat_bubble),
+                  label: context.l10n.chat.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.person_outline),
+                  activeIcon: const Icon(Icons.person),
+                  label: context.l10n.profile.toUpperCase(),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

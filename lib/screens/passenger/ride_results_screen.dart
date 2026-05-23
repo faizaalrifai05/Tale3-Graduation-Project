@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/ride_provider.dart';
+import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/theme/app_styles.dart';
@@ -737,32 +738,90 @@ class _RideCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              SizedBox(
-                height: 36,
-                width: 80,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => RideDetailsScreen(ride: ride)),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppStyles.darkMaroon,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    padding: EdgeInsets.zero,
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    context.l10n.book,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ),
+              _BookingButton(ride: ride),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Booking-aware button ─────────────────────────────────────────────────────
+/// Reads the passenger's current bookings from [BookingProvider] and shows:
+///   • "Booked"  — confirmed booking exists for this ride
+///   • "Pending" — pending booking exists for this ride
+///   • "Book"    — no active booking → navigates to RideDetailsScreen
+class _BookingButton extends StatelessWidget {
+  final RideModel ride;
+  const _BookingButton({required this.ride});
+
+  @override
+  Widget build(BuildContext context) {
+    final myBookings = context.watch<BookingProvider>().lastMyBookings;
+
+    // Find any non-cancelled booking for this ride.
+    final booking = myBookings.where((b) =>
+      b.rideId == ride.id &&
+      b.status != 'cancelled' &&
+      b.status != 'rejected',
+    ).firstOrNull;
+
+    // Already booked — show status badge, still tappable to view details.
+    if (booking != null) {
+      final isConfirmed = booking.status == 'confirmed';
+      final label = isConfirmed ? 'Booked' : 'Pending';
+      final bg = isConfirmed
+          ? const Color(0xFFE8F5E9)
+          : const Color(0xFFFFF8E1);
+      final fg = isConfirmed
+          ? const Color(0xFF2E7D32)
+          : const Color(0xFFE65100);
+
+      return GestureDetector(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+        ),
+        child: Container(
+          height: 36,
+          width: 80,
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: fg,
+            ),
+          ),
+        ),
+      );
+    }
+
+    // No active booking — standard "Book" button.
+    return SizedBox(
+      height: 36,
+      width: 80,
+      child: ElevatedButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => RideDetailsScreen(ride: ride)),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppStyles.darkMaroon,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8)),
+          padding: EdgeInsets.zero,
+          elevation: 0,
+        ),
+        child: Text(
+          context.l10n.book,
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+        ),
       ),
     );
   }
