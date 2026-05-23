@@ -56,35 +56,43 @@ export default function Fleet() {
 
   const getVerificationBadge = (status: string) => {
     switch (status) {
-      case 'verified': return 'bg-green-100 text-green-700'
-      case 'pending': return 'bg-yellow-100 text-yellow-700'
-      case 'rejected': return 'bg-red-100 text-red-700'
-      default: return 'bg-gray-100 text-gray-500'
+      case 'verified':    return 'bg-green-100 text-green-700'
+      case 'pending':     return 'bg-yellow-100 text-yellow-700'
+      case 'rejected':    return 'bg-red-100 text-red-700'
+      default:            return 'bg-gray-100 text-gray-500'
     }
   }
 
-  const totalCars = drivers.filter(d => d.carMake).length
+  const totalCars    = drivers.filter(d => d.carMake).length
   const verifiedCars = drivers.filter(d => d.verificationStatus === 'verified').length
-  const pendingCars = drivers.filter(d => d.verificationStatus === 'pending').length
+  const pendingCars  = drivers.filter(d => d.verificationStatus === 'pending').length
 
   if (loading) return (
     <div className="flex items-center justify-center h-full">
-      <div className="text-primary font-semibold">Loading fleet...</div>
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin mx-auto mb-3"
+          style={{ borderColor: '#8B1A1A', borderTopColor: 'transparent' }} />
+        <p className="font-semibold text-sm" style={{ color: '#8B1A1A' }}>Loading fleet...</p>
+      </div>
     </div>
   )
 
   return (
     <div className="flex h-full">
 
-      {/* Image Preview Modal */}
+      {/* ── Image Preview Modal ── */}
       {previewImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
           onClick={() => setPreviewImg(null)}
         >
-          <img src={previewImg} className="max-w-3xl max-h-screen rounded-xl shadow-2xl object-contain" />
+          <img
+            src={previewImg}
+            className="max-w-3xl max-h-screen rounded-xl shadow-2xl object-contain"
+            alt="Preview"
+          />
           <button
-            className="absolute top-4 right-4 text-white text-3xl hover:opacity-70"
+            className="absolute top-4 right-4 text-white text-3xl font-bold hover:opacity-70"
             onClick={() => setPreviewImg(null)}
           >
             ✕
@@ -92,7 +100,7 @@ export default function Fleet() {
         </div>
       )}
 
-      {/* ── Left Panel — Car List ── */}
+      {/* ── Left Panel — Fleet List ── */}
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
 
         {/* Header */}
@@ -119,9 +127,7 @@ export default function Fleet() {
                 key={f}
                 onClick={() => { setFilter(f); setSelected(null) }}
                 className={`flex-1 text-xs py-1 rounded-lg font-medium capitalize transition ${
-                  filter === f
-                    ? 'text-white'
-                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                  filter === f ? 'text-white' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
                 style={filter === f ? { backgroundColor: '#8B1A1A' } : {}}
               >
@@ -131,10 +137,13 @@ export default function Fleet() {
           </div>
         </div>
 
-        {/* Car list */}
+        {/* Vehicle list */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-400 text-sm">No vehicles found</div>
+            <div className="text-center py-12 px-4">
+              <p className="text-3xl mb-2">🚗</p>
+              <p className="text-gray-400 text-sm font-medium">No vehicles found</p>
+            </div>
           ) : filtered.map(driver => (
             <div
               key={driver.uid}
@@ -143,13 +152,14 @@ export default function Fleet() {
                 selected?.uid === driver.uid ? 'bg-red-50 border-l-4 border-l-primary' : ''
               }`}
             >
-              {/* Car photo or placeholder */}
+              {/* Car photo thumbnail or placeholder */}
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-14 h-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-gray-200">
-                  {(driver as any).carPhotoUrl ? (
+                  {(driver as any).carFrontUrl ? (
                     <img
-                      src={(driver as any).carPhotoUrl}
+                      src={(driver as any).carFrontUrl}
                       className="w-full h-full object-cover"
+                      alt="Car"
                     />
                   ) : (
                     <span className="text-xl">🚗</span>
@@ -195,7 +205,7 @@ export default function Fleet() {
         </div>
       </div>
 
-      {/* ── Right Panel — Car Detail ── */}
+      {/* ── Right Panel — Vehicle Detail ── */}
       <div className="flex-1 overflow-auto p-8">
         {!selected ? (
           <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -206,7 +216,7 @@ export default function Fleet() {
         ) : (
           <div>
 
-            {/* Header */}
+            {/* ── Header ── */}
             <div className="flex items-start justify-between mb-8">
               <div>
                 <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Vehicle Profile</p>
@@ -223,72 +233,37 @@ export default function Fleet() {
                 </div>
               </div>
 
-              {/* Driver quick info */}
+              {/* Driver quick-info card */}
               <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl px-4 py-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
-                  style={{ backgroundColor: '#8B1A1A' }}>
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0"
+                  style={{ backgroundColor: '#8B1A1A' }}
+                >
                   {selected.name?.charAt(0).toUpperCase() || 'D'}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-gray-900">{selected.name}</p>
                   <p className="text-xs text-gray-400">{selected.email}</p>
-                  {selected.phone && <p className="text-xs text-gray-400">📱 {selected.phone}</p>}
+                  {selected.phone && (
+                    <p className="text-xs text-gray-400">📱 {selected.phone}</p>
+                  )}
                 </div>
               </div>
             </div>
 
-            {/* ── Photos Section ── */}
+            {/* ── Vehicle Photos ── */}
             <div className="mb-8">
-              <h2 className="text-base font-semibold text-gray-900 mb-4">Vehicle & Documents</h2>
-
-              {/* Car photo — large */}
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-4">
-                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                    🚗 Vehicle Photo
-                  </p>
-                  {(selected as any).carPhotoUrl && (
-                    <button
-                      onClick={() => setPreviewImg((selected as any).carPhotoUrl)}
-                      className="text-xs text-primary hover:underline"
-                      style={{ color: '#8B1A1A' }}
-                    >
-                      🔍 Zoom
-                    </button>
-                  )}
-                </div>
-                <div className="h-64 flex items-center justify-center bg-gray-50 p-4">
-                  {(selected as any).carPhotoUrl ? (
-                    <img
-                      src={(selected as any).carPhotoUrl}
-                      className="max-h-full max-w-full object-contain rounded cursor-pointer hover:opacity-90 transition"
-                      onClick={() => setPreviewImg((selected as any).carPhotoUrl)}
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <span className="text-6xl mb-3 block">🚗</span>
-                      <p className="text-sm text-gray-400">No vehicle photo uploaded</p>
-                      <p className="text-xs text-gray-300 mt-1">
-                        Enable Firebase Storage to upload photos
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* ID photos */}
+              <h2 className="text-base font-semibold text-gray-900 mb-4">Vehicle Photos</h2>
               <div className="grid grid-cols-2 gap-4">
-                <PhotoCard
-                  label="🪪 National ID (Front)"
-                  url={selected.idFrontUrl}
+                <CarPhotoCard
+                  label="🚗 Front of Car"
+                  url={(selected as any).carFrontUrl || ''}
                   onZoom={setPreviewImg}
-                  placeholder="No ID front photo"
                 />
-                <PhotoCard
-                  label="🪪 National ID (Back)"
-                  url={selected.idBackUrl}
+                <CarPhotoCard
+                  label="🚗 Back of Car"
+                  url={(selected as any).carBackUrl || ''}
                   onZoom={setPreviewImg}
-                  placeholder="No ID back photo"
                 />
               </div>
             </div>
@@ -298,12 +273,12 @@ export default function Fleet() {
               <h2 className="text-base font-semibold text-gray-900 mb-4">Vehicle Details</h2>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { label: 'Make', value: selected.carMake || '—', icon: '🏭' },
-                  { label: 'Model', value: selected.carModel || '—', icon: '🚘' },
-                  { label: 'Year', value: selected.carYear || '—', icon: '📅' },
-                  { label: 'Color', value: selected.carColor || '—', icon: '🎨' },
-                  { label: 'Plate Number', value: selected.plateNumber || '—', icon: '🔢' },
-                  { label: 'Verification', value: selected.verificationStatus, icon: '✅' },
+                  { label: 'Make',         value: selected.carMake        || '—', icon: '🏭' },
+                  { label: 'Model',        value: selected.carModel       || '—', icon: '🚘' },
+                  { label: 'Year',         value: selected.carYear        || '—', icon: '📅' },
+                  { label: 'Color',        value: selected.carColor       || '—', icon: '🎨' },
+                  { label: 'Plate Number', value: selected.plateNumber    || '—', icon: '🔢' },
+                  { label: 'Verification', value: selected.verificationStatus,    icon: '✅' },
                 ].map(item => (
                   <div key={item.label} className="bg-gray-50 rounded-xl p-4">
                     <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">
@@ -376,17 +351,15 @@ export default function Fleet() {
   )
 }
 
-// ── Reusable Photo Card ────────────────────────────────────────────────────
-function PhotoCard({
+// ── Car Photo Card ─────────────────────────────────────────────────────────
+function CarPhotoCard({
   label,
   url,
   onZoom,
-  placeholder,
 }: {
   label: string
-  url?: string
+  url: string
   onZoom: (url: string) => void
-  placeholder: string
 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -402,18 +375,20 @@ function PhotoCard({
           </button>
         )}
       </div>
-      <div className="p-4 h-44 flex items-center justify-center bg-gray-50">
+      <div className="h-52 flex items-center justify-center bg-gray-50 p-4">
         {url ? (
           <img
             src={url}
             className="max-h-full max-w-full object-contain rounded cursor-pointer hover:opacity-90 transition"
             onClick={() => onZoom(url)}
+            alt={label}
+            onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
           />
         ) : (
           <div className="text-center">
-            <span className="text-4xl mb-2 block">🪪</span>
-            <p className="text-sm text-gray-400">{placeholder}</p>
-            <p className="text-xs text-gray-300 mt-1">Storage not enabled</p>
+            <span className="text-5xl mb-3 block">🚗</span>
+            <p className="text-sm text-gray-400">No photo uploaded</p>
+            <p className="text-xs text-gray-300 mt-1">Firebase Storage may be disabled</p>
           </div>
         )}
       </div>
