@@ -518,7 +518,10 @@ class DriverCreateRideScreen extends StatelessWidget {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: rideProvider.isPublishing
+                                ? null
+                                : () async {
+                              // 1. Synchronous field validation
                               final error = rideProvider.validate();
                               if (error != null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -534,6 +537,8 @@ class DriverCreateRideScreen extends StatelessWidget {
                                 );
                                 return;
                               }
+
+                              // 2. Price check
                               if (!rideProvider.hasAdminPrice) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
@@ -552,6 +557,27 @@ class DriverCreateRideScreen extends StatelessWidget {
                                 );
                                 return;
                               }
+
+                              // 3. Schedule conflict check (async Firestore query)
+                              final conflictError =
+                                  await rideProvider.checkScheduleConflict();
+                              if (!context.mounted) return;
+                              if (conflictError != null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(conflictError),
+                                    backgroundColor: Colors.red,
+                                    behavior: SnackBarBehavior.floating,
+                                    duration: const Duration(seconds: 6),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(12)),
+                                    margin: const EdgeInsets.all(16),
+                                  ),
+                                );
+                                return;
+                              }
+
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (context) =>
