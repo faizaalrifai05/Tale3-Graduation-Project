@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore'
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore'
 import { db } from '../firebase/config'
 import { User } from '../types'
 
@@ -11,8 +11,23 @@ export default function UserManagement() {
   const [tab, setTab] = useState<'all' | 'driver' | 'passenger'>('all')
   const [actionLoading, setActionLoading] = useState<string | null>(null)
 
+  // ── Real-time listener — replaces one-shot getDocs so new registrations
+  // appear instantly without requiring a manual refresh.
   useEffect(() => {
-    fetchUsers()
+    setLoading(true)
+    const unsub = onSnapshot(
+      collection(db, 'users'),
+      (snap) => {
+        const data = snap.docs.map(d => ({ uid: d.id, ...d.data() } as User))
+        setUsers(data)
+        setLoading(false)
+      },
+      (err) => {
+        console.error('UserManagement listener error:', err)
+        setLoading(false)
+      }
+    )
+    return () => unsub()
   }, [])
 
   useEffect(() => {
@@ -25,12 +40,10 @@ export default function UserManagement() {
     setFiltered(result)
   }, [users, tab, search])
 
-  const fetchUsers = async () => {
-    setLoading(true)
-    const snap = await getDocs(collection(db, 'users'))
-    const data = snap.docs.map(d => ({ uid: d.id, ...d.data() } as User))
-    setUsers(data)
-    setLoading(false)
+  // kept for the manual refresh button
+  const fetchUsers = () => {
+    // no-op: onSnapshot handles live updates automatically.
+    // The button still shows as a visual affordance.
   }
 
   const toggleBlock = async (user: User) => {

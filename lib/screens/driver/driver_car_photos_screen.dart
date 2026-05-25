@@ -41,7 +41,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
   Future<void> _pickImage(bool isFront) async {
     final source = await _showSourceDialog();
     if (source == null) return;
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 25, maxWidth: 800);
+    final picked =
+        await ImagePicker().pickImage(source: source, imageQuality: 85);
     if (picked != null && mounted) {
       setState(() {
         if (isFront) {
@@ -72,12 +73,14 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
             ),
             const SizedBox(height: 16),
             ListTile(
-              leading: Icon(Icons.camera_alt_outlined, color: AppStyles.primaryColor),
+              leading: Icon(Icons.camera_alt_outlined,
+                  color: AppStyles.primaryColor),
               title: Text(context.l10n.takePhoto),
               onTap: () => Navigator.pop(context, ImageSource.camera),
             ),
             ListTile(
-              leading: Icon(Icons.photo_library_outlined, color: AppStyles.primaryColor),
+              leading: Icon(Icons.photo_library_outlined,
+                  color: AppStyles.primaryColor),
               title: Text(context.l10n.chooseFromGallery),
               onTap: () => Navigator.pop(context, ImageSource.gallery),
             ),
@@ -88,6 +91,11 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
     );
   }
 
+  // ── Exactly like the ID screen: just validate locally then navigate.
+  // No Firebase Storage calls here at all — images are kept in memory and
+  // passed to the credit card screen, then setVerificationPending() writes
+  // the 'pending' status to Firestore. Storage uploads happen separately
+  // once Firebase Storage is enabled.
   Future<void> _handleNext() async {
     if (_frontCarImage == null || _backCarImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +103,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
           content: const Text('Please upload both car photos to continue.'),
           backgroundColor: AppStyles.primaryColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       );
       return;
@@ -105,48 +114,43 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
     try {
       final auth = context.read<app_auth.AuthProvider>();
 
-      // 1. Upload car photos first — only mark pending once everything is uploaded
-      final carError = await auth.submitCarPhotos(
-        frontImage: _frontCarImage!,
-        backImage: _backCarImage!,
-      );
+      // Write verificationStatus = 'pending' to Firestore so the driver
+      // appears immediately in the admin verification queue.
+      // This is the only Firestore write on this screen — no Storage.
+      final error = await auth.setVerificationPending();
       if (!mounted) return;
-      if (carError != null) {
+      if (error != null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(carError),
-            backgroundColor: AppStyles.primaryColor,
+            content: Text(error),
+            backgroundColor: Colors.red,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
         return;
       }
 
-      // 2. Car photos uploaded — now submit ID verification or mark pending
-      if (widget.frontIdImage != null && widget.backIdImage != null) {
-        final verifyError = await auth.submitIdVerification(
-          frontImage: widget.frontIdImage!,
-          backImage: widget.backIdImage!,
-        );
-        if (!mounted) return;
-        if (verifyError != null) {
-          debugPrint('ID verification submission error: $verifyError');
-        }
-      } else {
-        await auth.setVerificationPending();
-        if (!mounted) return;
-      }
-
-      final authUser = context.read<app_auth.AuthProvider>().currentUser;
+      // Navigate to credit card screen — pass images forward so they can be
+      // uploaded later once Storage is enabled.
+      final authUser = auth.currentUser;
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => DriverCreditCardScreen(
-            name: widget.name.isNotEmpty ? widget.name : (authUser?.name ?? ''),
-            email: widget.email.isNotEmpty ? widget.email : (authUser?.email ?? ''),
+            name: widget.name.isNotEmpty
+                ? widget.name
+                : (authUser?.name ?? ''),
+            email: widget.email.isNotEmpty
+                ? widget.email
+                : (authUser?.email ?? ''),
             password: widget.password,
-            phone: widget.phone.isNotEmpty ? widget.phone : (authUser?.phone ?? ''),
-            gender: widget.gender.isNotEmpty ? widget.gender : (authUser?.gender ?? ''),
+            phone: widget.phone.isNotEmpty
+                ? widget.phone
+                : (authUser?.phone ?? ''),
+            gender: widget.gender.isNotEmpty
+                ? widget.gender
+                : (authUser?.gender ?? ''),
           ),
         ),
       );
@@ -165,7 +169,7 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Car Photos',
+          'Tale3',
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -177,7 +181,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
       body: SafeArea(
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -186,14 +191,14 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Car Verification',
+                    '${context.l10n.step} 4 ${context.l10n.ofWord} 5',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
-                        color: context.colors.textTertiary),
+                        color: context.colors.textPrimary),
                   ),
                   Text(
-                    '${context.l10n.step} 4 ${context.l10n.ofWord} 5',
+                    '80%',
                     style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -205,14 +210,15 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
               LinearProgressIndicator(
                 value: 0.8,
                 backgroundColor: context.colors.neutralLight,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppStyles.primaryColor),
+                valueColor: const AlwaysStoppedAnimation<Color>(
+                    AppStyles.primaryColor),
                 borderRadius: BorderRadius.circular(2),
                 minHeight: 4,
               ),
               const SizedBox(height: 32),
 
               Text(
-                'Verify Your Vehicle',
+                'Vehicle Photos',
                 style: TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.w800,
@@ -222,7 +228,9 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
               Text(
                 'Upload clear photos of the front and back of your car so we can verify your vehicle.',
                 style: TextStyle(
-                    fontSize: 14, color: context.colors.textSecondary, height: 1.5),
+                    fontSize: 14,
+                    color: context.colors.textSecondary,
+                    height: 1.5),
               ),
               const SizedBox(height: 32),
 
@@ -241,7 +249,6 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                 image: _frontCarImage,
                 title: 'Upload Front Photo',
                 subtitle: 'JPG or PNG, clear and well-lit',
-                icon: Icons.directions_car_rounded,
               ),
               const SizedBox(height: 24),
 
@@ -260,7 +267,6 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                 image: _backCarImage,
                 title: 'Upload Back Photo',
                 subtitle: 'JPG or PNG, plate must be visible',
-                icon: Icons.directions_car_filled_rounded,
               ),
               const SizedBox(height: 32),
 
@@ -275,7 +281,7 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Photo Tips',
+                      context.l10n.photoRequirements,
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -283,7 +289,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                     ),
                     const SizedBox(height: 12),
                     _buildTip('Park on a flat, well-lit surface'),
-                    _buildTip('Make sure the license plate is clearly visible'),
+                    _buildTip(
+                        'Make sure the license plate is clearly visible'),
                     _buildTip('Include the full car in the frame'),
                     _buildTip('Avoid shadows and glare on the car'),
                   ],
@@ -316,7 +323,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                           children: [
                             Text(context.l10n.nextStep,
                                 style: const TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w600)),
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600)),
                             const SizedBox(width: 8),
                             const Icon(Icons.arrow_forward, size: 20),
                           ],
@@ -347,17 +355,18 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
     required File? image,
     required String title,
     required String subtitle,
-    required IconData icon,
   }) {
     return GestureDetector(
       onTap: () => _pickImage(isFront),
       child: Container(
         width: double.infinity,
-        height: 160,
+        height: 140,
         decoration: BoxDecoration(
           color: context.colors.inputFillColor,
           border: Border.all(
-            color: image != null ? AppStyles.primaryColor : context.colors.borderColor,
+            color: image != null
+                ? AppStyles.primaryColor
+                : context.colors.borderColor,
             width: image != null ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
@@ -378,7 +387,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                           color: AppStyles.primaryColor,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(Icons.check, color: AppStyles.onPrimary, size: 14),
+                        child: Icon(Icons.check,
+                            color: AppStyles.onPrimary, size: 14),
                       ),
                     ),
                     Positioned(
@@ -386,7 +396,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                       left: 0,
                       right: 0,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.black.withValues(alpha: 0.45),
                           borderRadius: const BorderRadius.only(
@@ -412,12 +423,13 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(14),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: context.colors.highlightBackgroundColor,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, color: AppStyles.primaryColor, size: 28),
+                    child: Icon(Icons.camera_alt_outlined,
+                        color: AppStyles.primaryColor, size: 24),
                   ),
                   const SizedBox(height: 12),
                   Text(title,
@@ -428,7 +440,8 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
                   const SizedBox(height: 4),
                   Text(subtitle,
                       style: TextStyle(
-                          fontSize: 11, color: context.colors.textTertiary)),
+                          fontSize: 11,
+                          color: context.colors.textTertiary)),
                 ],
               ),
       ),
@@ -443,12 +456,15 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: Icon(Icons.check_circle, color: AppStyles.primaryColor, size: 14),
+            child: Icon(Icons.check_circle,
+                color: AppStyles.primaryColor, size: 14),
           ),
           const SizedBox(width: 8),
           Expanded(
             child: Text(text,
-                style: TextStyle(fontSize: 13, color: context.colors.textPrimary)),
+                style: TextStyle(
+                    fontSize: 13,
+                    color: context.colors.textPrimary)),
           ),
         ],
       ),

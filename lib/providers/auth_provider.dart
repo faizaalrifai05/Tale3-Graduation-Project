@@ -13,8 +13,6 @@ class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    // Required on Android (google_sign_in v6+) to get an idToken back,
-    // which Firebase Auth needs. Use the web client ID from google-services.json.
     serverClientId:
         '290962167334-5dgdt7he5aeh9ua5p9vqkd8cmbejqib5.apps.googleusercontent.com',
   );
@@ -24,6 +22,15 @@ class AuthProvider extends ChangeNotifier {
   bool _isInitialized = false;
   bool _wasBlocked = false;
   bool _isSendingVerificationEmail = false;
+
+  // ── Registration guard ────────────────────────────────────────────────────
+  // Set to true while registerWithEmail() is running. This tells the
+  // real-time Firestore listener NOT to overwrite the doc being created.
+  // Without this flag, the listener fires the instant the Firebase Auth user
+  // is created (before the Firestore doc is written) and recreates the doc
+  // with role='passenger', causing the driver to be stored as a passenger.
+  bool _isRegistering = false;
+
   final List<SavedAccount> _savedAccounts = [];
   StreamSubscription? _userSubscription;
 
@@ -42,13 +49,18 @@ class AuthProvider extends ChangeNotifier {
     _auth.authStateChanges().listen(_onAuthStateChanged);
   }
 
-  /// Clears the blocked flag after the UI has shown the blocked dialog.
   void clearBlockedFlag() {
     _wasBlocked = false;
   }
 
   Future<void> _onAuthStateChanged(User? firebaseUser) async {
+    // Don't react to auth changes triggered by our own registration flow.
+    // registerWithEmail() sets _isRegistering=true, writes the Firestore doc
+    // itself, then sets it back to false — so we skip this whole block.
+    if (_isRegistering) return;
+
     if (_isSendingVerificationEmail) return;
+
     if (firebaseUser == null) {
       _currentUser = null;
       _userSubscription?.cancel();
@@ -57,7 +69,6 @@ class AuthProvider extends ChangeNotifier {
       await _fetchUserData(firebaseUser.uid);
       FCMService.registerToken(firebaseUser.uid);
 
-      // Save to saved accounts list if not already there
       if (_currentUser != null) {
         final exists = _savedAccounts.any((a) => a.uid == _currentUser!.uid);
         if (!exists) {
@@ -71,16 +82,23 @@ class AuthProvider extends ChangeNotifier {
         }
       }
 
-      // Listen to user document in real-time
+      // Real-time listener on the user's Firestore doc.
       _userSubscription?.cancel();
       _userSubscription = _db
           .collection('users')
           .doc(firebaseUser.uid)
           .snapshots()
           .listen((doc) async {
+        // Guard: if we are mid-registration, ignore snapshot events entirely.
+        // The doc may not exist yet or may be in a partial state.
+        if (_isRegistering) return;
+
         if (!doc.exists) {
-          // User document missing — recreate it from Firebase Auth info so the
-          // app doesn't end up in a broken state (e.g. after manual deletion).
+          // Doc is missing for an already-authenticated user (e.g. manually
+          // deleted in Firebase Console). Recreate it, but ONLY if we are NOT
+          // in the registration flow (guarded above). Use role='passenger' as
+          // a safe default for recovery — a newly registered driver will have
+          // their doc written by registerWithEmail() before this path runs.
           try {
             await _db.collection('users').doc(firebaseUser.uid).set({
               'name': firebaseUser.displayName ?? '',
@@ -104,6 +122,7 @@ class AuthProvider extends ChangeNotifier {
           }
           return;
         }
+
         final data = doc.data()!;
         final blocked = data['isBlocked'] as bool? ?? false;
 
@@ -218,7 +237,6 @@ class AuthProvider extends ChangeNotifier {
           creditCardCvc: data['creditCardCvc'] as String? ?? '',
         );
 
-        // Block check on initial fetch
         if (_currentUser!.isBlocked) {
           _wasBlocked = true;
           await _auth.signOut();
@@ -228,8 +246,6 @@ class AuthProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  /// Sign in with email and password.
-  /// Returns null on success, error message on failure.
   Future<String?> signInWithEmail(
     String email,
     String password,
@@ -270,7 +286,12 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Register a new user with email and password.
-  /// Returns null on success, error message on failure.
+  ///
+  /// FIX: We set _isRegistering = true before creating the Firebase Auth user.
+  /// This suppresses the _onAuthStateChanged listener so it cannot race with
+  /// our Firestore doc write. We write the Firestore doc immediately after
+  /// createUserWithEmailAndPassword (before anything else), then clear the
+  /// flag and manually set up the state.
   Future<String?> registerWithEmail({
     required String email,
     required String password,
@@ -279,58 +300,115 @@ class AuthProvider extends ChangeNotifier {
     String phone = '',
     String gender = '',
   }) async {
+    _isRegistering = true; // ← suppress _onAuthStateChanged during registration
     try {
       final cred = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
-      await cred.user!.updateDisplayName(name);
+      final uid = cred.user!.uid;
+
+      // ── Step 1: Write the Firestore doc IMMEDIATELY ───────────────────────
+      // This must happen before anything that yields control back to the event
+      // loop (including notifyListeners), otherwise the real-time snapshot
+      // listener can fire first and recreate the doc with role='passenger'.
+      await _db.collection('users').doc(uid).set({
+        'name': name,
+        'email': email,
+        'role': _roleToString(role),
+        'phone': phone,
+        'gender': gender,
+        'photoUrl': '',
+        'verificationStatus': 'unsubmitted',
+        'idFrontUrl': '',
+        'idBackUrl': '',
+        'carFrontUrl': '',
+        'carBackUrl': '',
+        'isBlocked': false,
+        'averageRating': 0.0,
+        'ratingCount': 0,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      debugPrint('✅ Firestore user doc written successfully (role: ${_roleToString(role)})');
+
+      // ── Step 2: Secondary setup ───────────────────────────────────────────
+      try {
+        await cred.user!.updateDisplayName(name);
+      } catch (e) {
+        debugPrint('updateDisplayName failed (non-fatal): $e');
+      }
 
       try {
         await cred.user!.sendEmailVerification();
-      } catch (_) {}
+      } catch (e) {
+        debugPrint('sendEmailVerification failed (non-fatal): $e');
+      }
 
+      // ── Step 3: Set local state ───────────────────────────────────────────
       _currentUser = UserModel(
-        uid: cred.user!.uid,
+        uid: uid,
         name: name,
         email: email,
         role: role,
+        phone: phone,
+        gender: gender,
+        verificationStatus: VerificationStatus.unsubmitted,
       );
+
+      // Set up the real-time listener now that the doc exists.
+      _userSubscription?.cancel();
+      _userSubscription = _db
+          .collection('users')
+          .doc(uid)
+          .snapshots()
+          .listen((doc) async {
+        if (_isRegistering) return; // still guard until flag is cleared below
+        if (!doc.exists) return;    // doc was just created, shouldn't be missing
+        final data = doc.data()!;
+        _currentUser = UserModel(
+          uid: doc.id,
+          name: data['name'] ?? '',
+          email: data['email'] ?? '',
+          role: _roleFromString(data['role'] as String?),
+          phone: data['phone'] ?? '',
+          photoUrl: data['photoUrl'],
+          carMake: data['carMake'] ?? '',
+          carModel: data['carModel'] ?? '',
+          carYear: data['carYear'] ?? '',
+          carColor: data['carColor'] ?? '',
+          plateNumber: data['plateNumber'] ?? '',
+          verificationStatus: _verificationStatusFromString(
+              data['verificationStatus'] as String?),
+          idFrontUrl: data['idFrontUrl'] ?? '',
+          idBackUrl: data['idBackUrl'] ?? '',
+          carFrontUrl: data['carFrontUrl'] ?? '',
+          carBackUrl: data['carBackUrl'] ?? '',
+          isBlocked: false,
+          averageRating: (data['averageRating'] as num?)?.toDouble() ?? 0.0,
+          ratingCount: (data['ratingCount'] as num?)?.toInt() ?? 0,
+          createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
+          gender: data['gender'] as String? ?? '',
+          creditCardNumber: data['creditCardNumber'] as String? ?? '',
+          creditCardHolder: data['creditCardHolder'] as String? ?? '',
+          creditCardExpiry: data['creditCardExpiry'] as String? ?? '',
+          creditCardCvc: data['creditCardCvc'] as String? ?? '',
+        );
+        notifyListeners();
+      });
+
       notifyListeners();
-
-      try {
-        await _db.collection('users').doc(cred.user!.uid).set({
-          'name': name,
-          'email': email,
-          'role': _roleToString(role),
-          'phone': phone,
-          'gender': gender,
-          'photoUrl': '',
-          'verificationStatus': 'unsubmitted',
-          'idFrontUrl': '',
-          'idBackUrl': '',
-          'carFrontUrl': '',
-          'carBackUrl': '',
-          'isBlocked': false,
-          'averageRating': 0.0,
-          'ratingCount': 0,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-        debugPrint('✅ Firestore write SUCCESS');
-      } catch (e) {
-        debugPrint('❌ Firestore write FAILED: $e');
-      }
-
       return null;
     } on FirebaseAuthException catch (e) {
       return _friendlyError(e.code);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('registerWithEmail unexpected error: $e');
       return 'Something went wrong. Please try again.';
+    } finally {
+      // Always clear the flag so _onAuthStateChanged resumes normal operation.
+      _isRegistering = false;
     }
   }
 
-  /// Sign in with Google.
-  /// Returns null on success, error message on failure.
   Future<String?> signInWithGoogle(UserRole role) async {
     try {
       await _googleSignIn.signOut();
@@ -393,7 +471,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sets verificationStatus to pending in Firestore without uploading images.
+  /// Attempts to upload ID photos to Firebase Storage and sets verificationStatus
+  /// to 'pending' in Firestore.
+  ///
+  /// The Firestore 'pending' write is guaranteed even if Storage upload fails.
   Future<String?> submitIdVerification({
     required File frontImage,
     required File backImage,
@@ -401,43 +482,110 @@ class AuthProvider extends ChangeNotifier {
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) return 'Not logged in.';
     final uid = firebaseUser.uid;
+
+    // Ensure user doc exists before updating.
     try {
       final userDoc = await _db.collection('users').doc(uid).get();
       if (!userDoc.exists) {
+        debugPrint('⚠️ submitIdVerification: user doc missing, attempting re-create');
         await _db.collection('users').doc(uid).set({
           'name': _currentUser?.name ?? firebaseUser.displayName ?? '',
           'email': _currentUser?.email ?? firebaseUser.email ?? '',
           'role': 'driver',
           'phone': _currentUser?.phone ?? '',
+          'gender': _currentUser?.gender ?? '',
           'photoUrl': '',
           'verificationStatus': 'unsubmitted',
           'idFrontUrl': '',
           'idBackUrl': '',
+          'carFrontUrl': '',
+          'carBackUrl': '',
           'isBlocked': false,
           'averageRating': 0.0,
           'ratingCount': 0,
           'createdAt': FieldValue.serverTimestamp(),
         });
       }
+    } catch (e) {
+      debugPrint('submitIdVerification: user doc check/create failed: $e');
+    }
 
+    // Best-effort Storage upload.
+    String frontUrl = '';
+    String backUrl = '';
+    try {
+      final storage = FirebaseStorage.instance;
+      final meta = SettableMetadata(contentType: 'image/jpeg');
+      final frontRef = storage.ref('verification/$uid/id_front.jpg');
+      await frontRef.putFile(frontImage, meta);
+      frontUrl = await frontRef.getDownloadURL();
+      final backRef = storage.ref('verification/$uid/id_back.jpg');
+      await backRef.putFile(backImage, meta);
+      backUrl = await backRef.getDownloadURL();
+      debugPrint('✅ ID photos uploaded successfully.');
+    } catch (e) {
+      debugPrint('⚠️ ID photo upload skipped (Storage may be disabled): $e');
+    }
+
+    // ── Step A: Set verificationStatus to 'pending' ─────────────────────────
+    // This is the CRITICAL write — it makes the driver appear in the admin queue.
+    // Done as a SEPARATE update from the URL writes because the Firestore rule
+    // for the driver-pending path does not whitelist idFrontUrl/idBackUrl in the
+    // same operation. Combining them causes a silent rule rejection.
+    try {
       await _db.collection('users').doc(uid).update({
         'verificationStatus': 'pending',
-        'idFrontUrl': '',
-        'idBackUrl': '',
       });
-
       _currentUser = _currentUser?.copyWith(
         verificationStatus: VerificationStatus.pending,
       );
       notifyListeners();
-      return null;
+      debugPrint('✅ verificationStatus set to pending in Firestore.');
     } catch (e) {
-      debugPrint('submitIdVerification error: $e');
-      return 'Failed to submit verification. Please try again.';
+      debugPrint('❌ submitIdVerification — pending status write failed: $e');
+      // Try the fallback direct write (no rule restriction on admin-SDK style set)
+      try {
+        await _db.collection('users').doc(uid).set(
+          {'verificationStatus': 'pending'},
+          SetOptions(merge: true),
+        );
+        _currentUser = _currentUser?.copyWith(
+          verificationStatus: VerificationStatus.pending,
+        );
+        notifyListeners();
+        debugPrint('✅ verificationStatus set to pending via merge set fallback.');
+      } catch (e2) {
+        debugPrint('❌ Fallback also failed: $e2');
+        return 'Failed to submit verification. Please try again.';
+      }
     }
+
+    // ── Step B: Write photo URLs (best-effort, non-blocking) ─────────────────
+    // Uses the first self-update rule which allows any field EXCEPT the protected
+    // ones. idFrontUrl and idBackUrl are now NOT in the blocklist because
+    // verificationStatus is already 'pending' (not changing in this update).
+    if (frontUrl.isNotEmpty || backUrl.isNotEmpty) {
+      try {
+        await _db.collection('users').doc(uid).update({
+          'idFrontUrl': frontUrl,
+          'idBackUrl': backUrl,
+        });
+        _currentUser = _currentUser?.copyWith(
+          idFrontUrl: frontUrl,
+          idBackUrl: backUrl,
+        );
+        notifyListeners();
+        debugPrint('✅ ID photo URLs saved.');
+      } catch (e) {
+        // Non-fatal — admin will see "no photo" placeholder but can still approve.
+        debugPrint('⚠️ ID photo URL save failed (non-fatal): $e');
+      }
+    }
+
+    return null;
   }
 
-  /// Uploads car photos to Firebase Storage and saves download URLs to Firestore.
+  /// Best-effort car photo upload. Callers do NOT block on failure.
   Future<String?> submitCarPhotos({
     required File frontImage,
     required File backImage,
@@ -448,15 +596,12 @@ class AuthProvider extends ChangeNotifier {
     try {
       final storage = FirebaseStorage.instance;
       final meta = SettableMetadata(contentType: 'image/jpeg');
-
       final frontRef = storage.ref('verification/$uid/car_front.jpg');
       await frontRef.putFile(frontImage, meta);
       final frontUrl = await frontRef.getDownloadURL();
-
       final backRef = storage.ref('verification/$uid/car_back.jpg');
       await backRef.putFile(backImage, meta);
       final backUrl = await backRef.getDownloadURL();
-
       await _db.collection('users').doc(uid).update({
         'carFrontUrl': frontUrl,
         'carBackUrl': backUrl,
@@ -466,15 +611,15 @@ class AuthProvider extends ChangeNotifier {
         carBackUrl: backUrl,
       );
       notifyListeners();
+      debugPrint('✅ Car photos uploaded successfully.');
       return null;
     } catch (e) {
-      debugPrint('submitCarPhotos error: $e');
-      return 'Upload failed: $e';
+      debugPrint('⚠️ submitCarPhotos failed (Storage may be disabled): $e');
+      return 'Car photo upload failed: $e';
     }
   }
 
-  /// Sets verificationStatus to pending without requiring image files.
-  /// Used for the registration resume flow when image files are no longer in memory.
+  /// Guaranteed fallback: write verificationStatus='pending' with no image uploads.
   Future<String?> setVerificationPending() async {
     final firebaseUser = _auth.currentUser;
     if (firebaseUser == null) return 'Not logged in.';
@@ -486,14 +631,14 @@ class AuthProvider extends ChangeNotifier {
         verificationStatus: VerificationStatus.pending,
       );
       notifyListeners();
+      debugPrint('✅ setVerificationPending: Firestore updated to pending.');
       return null;
     } catch (e) {
-      debugPrint('setVerificationPending error: $e');
+      debugPrint('❌ setVerificationPending failed: $e');
       return 'Failed to update status. Please try again.';
     }
   }
 
-  /// Signs out the current user and cancels the real-time listener.
   Future<void> signOut() async {
     final uid = _currentUser?.uid;
     _userSubscription?.cancel();
@@ -505,13 +650,11 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Removes a saved account from the local list.
   void removeSavedAccount(String uid) {
     _savedAccounts.removeWhere((a) => a.uid == uid);
     notifyListeners();
   }
 
-  /// Updates the user's name and phone locally and in Firestore.
   Future<void> updateProfile({
     required String name,
     required String phone,
@@ -526,7 +669,6 @@ class AuthProvider extends ChangeNotifier {
     await _auth.currentUser?.updateDisplayName(name);
   }
 
-  /// Saves vehicle details to Firestore and updates local state.
   Future<void> saveVehicleDetails({
     required String make,
     required String model,
@@ -552,7 +694,6 @@ class AuthProvider extends ChangeNotifier {
     }).catchError((_) {});
   }
 
-  /// Saves credit card details to Firestore (driver only).
   Future<void> saveCreditCard({
     required String cardNumber,
     required String cardHolder,
@@ -575,8 +716,6 @@ class AuthProvider extends ChangeNotifier {
     }).catchError((_) {});
   }
 
-  /// Changes the user's password. Requires current password to reauthenticate.
-  /// Returns null on success, error message on failure.
   Future<String?> changePassword({
     required String currentPassword,
     required String newPassword,
@@ -599,13 +738,10 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Permanently deletes the account from Firebase Auth and Firestore.
-  /// Returns null on success, error message on failure.
   Future<String?> deleteAccount({String? password}) async {
     final user = _auth.currentUser;
     if (user == null) return 'Not logged in.';
     try {
-      // Re-authenticate — required by Firebase before sensitive operations.
       final isGoogleUser = user.providerData
           .any((p) => p.providerId == 'google.com');
 
@@ -627,12 +763,9 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final uid = user.uid;
-
-      // Stop listening to the user document before we delete it.
       _userSubscription?.cancel();
       _userSubscription = null;
 
-      // Delete savedPlaces subcollection first (Firestore doesn't cascade).
       final placesSnap = await _db
           .collection('users')
           .doc(uid)
@@ -646,13 +779,8 @@ class AuthProvider extends ChangeNotifier {
         await batch.commit();
       }
 
-      // Delete the user Firestore document.
       await _db.collection('users').doc(uid).delete();
-
-      // Delete the Firebase Auth account — frees the email for re-registration.
       await user.delete();
-
-      // Clean up Google session if applicable.
       await _googleSignIn.signOut();
 
       _currentUser = null;
@@ -671,7 +799,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Returns true if the email is already registered, false if not.
   Future<bool?> checkEmailInUse(String email) async {
     try {
       await _auth.signInWithEmailAndPassword(
@@ -697,7 +824,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Sends or resends the email verification link.
   Future<String?> sendVerificationEmail({String? email, String? password}) async {
     try {
       if (_auth.currentUser != null) {
@@ -736,7 +862,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Reloads the Firebase Auth user and returns whether the email is verified.
   Future<bool> checkEmailVerified() async {
     try {
       await _auth.currentUser?.reload();
@@ -746,7 +871,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Alias for signOut — kept for backwards compatibility.
   Future<void> logout() => signOut();
 
   String _friendlyError(String code) {
