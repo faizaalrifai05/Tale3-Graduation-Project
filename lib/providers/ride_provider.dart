@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../models/ride_model.dart';
 import '../models/user_model.dart';
 import 'auth_provider.dart';
+import '../Services/maps_service.dart';
 
 class RideProvider extends ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -179,12 +180,122 @@ class RideProvider extends ChangeNotifier {
 
   // ── Validation ────────────────────────────────────────────────────────────
 
+  /// Synchronous validation — checks required fields and obvious date/time issues.
   String? validate() {
     if (_origin.trim().isEmpty) return 'Please enter the origin city.';
     if (_destination.trim().isEmpty) return 'Please enter the destination city.';
+    if (_origin.trim().toLowerCase() == _destination.trim().toLowerCase()) {
+      return 'Origin and destination cannot be the same city.';
+    }
     if (_selectedDate == null) return 'Please select a departure date.';
     if (_selectedTime == null) return 'Please select a departure time.';
+
+    // Reject dates in the past.
+    final now = DateTime.now();
+    final departure = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+    if (departure.isBefore(now)) {
+      return 'Departure time cannot be in the past. Please select a future date and time.';
+    }
+
     return null;
+  }
+
+  /// Async schedule conflict check.
+  ///
+  /// A conflict exists when:
+  ///   [new departure] falls within the window of an existing ride, OR
+  ///   an existing ride's window overlaps with the [new departure] window.
+  ///
+  /// The window for any ride is:
+  ///   departure time  →  departure time + travel duration + 30 min buffer
+  ///
+  /// Only rides with status in [active, live] are considered (cancelled /
+  /// completed rides no longer block the driver's schedule).
+  Future<String?> checkScheduleConflict() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null || _selectedDate == null || _selectedTime == null) return null;
+
+    final newDeparture = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _selectedTime!.hour,
+      _selectedTime!.minute,
+    );
+
+    // Estimated travel time for the NEW ride + 30 min buffer.
+    final newTravelMins = MapsService.estimatedDurationMinutes(
+        _origin.trim(), _destination.trim());
+    final newArrival = newDeparture.add(Duration(minutes: newTravelMins + 30));
+
+    try {
+      // Fetch all of this driver's active/live rides on the same date.
+      final snap = await _db
+          .collection('rides')
+          .where('driverId', isEqualTo: uid)
+          .where('date', isEqualTo: dateIso)
+          .where('status', whereIn: ['active', 'live'])
+          .get();
+
+      for (final doc in snap.docs) {
+        final existing = RideModel.fromDoc(doc);
+
+        // Parse existing ride departure.
+        // time is stored as "HH:mm" from timeLabel.
+        final parts = existing.time.split(':');
+        if (parts.length < 2) continue;
+        final exHour = int.tryParse(parts[0]) ?? 0;
+        final exMin  = int.tryParse(parts[1]) ?? 0;
+
+        final exDeparture = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          exHour,
+          exMin,
+        );
+
+        // Estimated arrival of the existing ride + 30 min buffer.
+        final exTravelMins = MapsService.estimatedDurationMinutes(
+            existing.origin, existing.destination);
+        final exArrival = exDeparture.add(Duration(minutes: exTravelMins + 30));
+
+        // Overlap test: two intervals [A_start, A_end] and [B_start, B_end]
+        // overlap when A_start < B_end AND B_start < A_end.
+        final overlaps =
+            newDeparture.isBefore(exArrival) && exDeparture.isBefore(newArrival);
+
+        if (overlaps) {
+          final exTotalH = exTravelMins ~/ 60;
+          final exTotalM = exTravelMins % 60;
+          final durationStr = exTotalH > 0
+              ? '${exTotalH}h ${exTotalM}m'
+              : '${exTotalM}m';
+
+          // Format existing ride times for the error message.
+          final exDepStr =
+              '${exHour.toString().padLeft(2, '0')}:${exMin.toString().padLeft(2, '0')}';
+          final exArrH = exArrival.hour.toString().padLeft(2, '0');
+          final exArrM = exArrival.minute.toString().padLeft(2, '0');
+
+          return 'Schedule conflict: you already have a ride from '
+              '${existing.origin} to ${existing.destination} '
+              'departing at $exDepStr (estimated travel: $durationStr, '
+              'free again around $exArrH:$exArrM). '
+              'Please choose a departure time after $exArrH:$exArrM.';
+        }
+      }
+      return null; // No conflict
+    } catch (e) {
+      debugPrint('checkScheduleConflict error: $e');
+      return null; // On error, allow — don't silently block the driver
+    }
   }
 
   // ── Reset ─────────────────────────────────────────────────────────────────

@@ -38,7 +38,7 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       context.read<app_auth.AuthProvider>().addListener(_checkIfBlocked);
-      _subscribeToCompletedBookings();
+      await _subscribeToCompletedBookings();
     });
   }
 
@@ -49,9 +49,43 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
     super.dispose();
   }
 
-  void _subscribeToCompletedBookings() {
+  /// Sets up a real-time listener that triggers the rating prompt ONLY when a
+  /// booking transitions to 'completed' during the current app session.
+  ///
+  /// The fix for the premature-popup bug:
+  ///   Firestore's onSnapshot always fires ALL matching documents as
+  ///   DocumentChangeType.added on the very first emission, regardless of
+  ///   whether they existed before the listener was attached. This caused the
+  ///   rating dialog to appear on every app launch for any past unrated ride.
+  ///
+  ///   The solution is a two-phase start:
+  ///   1. Fetch all already-completed booking IDs and pre-populate
+  ///      _seenCompletedBookings BEFORE the listener is attached.
+  ///   2. Only then attach the snapshot listener. Any document that arrives
+  ///      as DocumentChangeType.added from this point forward is genuinely new
+  ///      (i.e. it just transitioned to 'completed' in this session).
+  Future<void> _subscribeToCompletedBookings() async {
     final uid = context.read<app_auth.AuthProvider>().currentUser?.uid;
     if (uid == null) return;
+
+    // Phase 1 — snapshot all existing completed bookings so we can ignore them.
+    try {
+      final existing = await FirebaseFirestore.instance
+          .collection('bookings')
+          .where('passengerId', isEqualTo: uid)
+          .where('status', isEqualTo: 'completed')
+          .get();
+      for (final doc in existing.docs) {
+        _seenCompletedBookings.add(doc.id);
+      }
+    } catch (e) {
+      debugPrint('_subscribeToCompletedBookings pre-fetch error: $e');
+    }
+
+    if (!mounted) return;
+
+    // Phase 2 — now attach the live listener. Every DocumentChangeType.added
+    // that arrives from here on is a booking that JUST became completed.
     _completedBookingsSub = FirebaseFirestore.instance
         .collection('bookings')
         .where('passengerId', isEqualTo: uid)
@@ -151,32 +185,38 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
             PassengerProfileScreen(),
           ],
         ),
-        bottomNavigationBar: AppBottomNavBar(
-          currentIndex: navProvider.passengerTabIndex,
-          onTap: (index) =>
-              context.read<NavigationProvider>().setPassengerTab(index),
-          items: [
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.home_outlined),
-              activeIcon: const Icon(Icons.home),
-              label: context.l10n.home.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.history_outlined),
-              activeIcon: const Icon(Icons.history),
-              label: context.l10n.myTrips.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.chat_bubble_outline),
-              activeIcon: const Icon(Icons.chat_bubble),
-              label: context.l10n.chat.toUpperCase(),
-            ),
-            BottomNavigationBarItem(
-              icon: const Icon(Icons.person_outline),
-              activeIcon: const Icon(Icons.person),
-              label: context.l10n.profile.toUpperCase(),
-            ),
-          ],
+        bottomNavigationBar: StreamBuilder<int>(
+          stream: context.read<ChatProvider>().totalUnreadStream,
+          builder: (context, snap) {
+            return AppBottomNavBar(
+              currentIndex: navProvider.passengerTabIndex,
+              onTap: (index) =>
+                  context.read<NavigationProvider>().setPassengerTab(index),
+              unreadCount: snap.data ?? 0,
+              items: [
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.home_outlined),
+                  activeIcon: const Icon(Icons.home),
+                  label: context.l10n.home.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.history_outlined),
+                  activeIcon: const Icon(Icons.history),
+                  label: context.l10n.myTrips.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  activeIcon: const Icon(Icons.chat_bubble),
+                  label: context.l10n.chat.toUpperCase(),
+                ),
+                BottomNavigationBarItem(
+                  icon: const Icon(Icons.person_outline),
+                  activeIcon: const Icon(Icons.person),
+                  label: context.l10n.profile.toUpperCase(),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

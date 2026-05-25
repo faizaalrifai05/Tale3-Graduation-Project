@@ -538,6 +538,8 @@ class AuthProvider extends ChangeNotifier {
       });
       _currentUser = _currentUser?.copyWith(
         verificationStatus: VerificationStatus.pending,
+        idFrontUrl: frontUrl,
+        idBackUrl: backUrl,
       );
       notifyListeners();
       debugPrint('✅ verificationStatus set to pending in Firestore.');

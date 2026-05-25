@@ -101,6 +101,31 @@ class MapsService {
     return '${h}h ${m}m';
   }
 
+  /// Returns the estimated travel time in **minutes** between two cities.
+  /// Same lookup logic as [estimatedDuration] but returns a raw integer
+  /// so callers can do arithmetic (e.g. conflict detection in RideProvider).
+  /// Returns a conservative fallback of 60 minutes when the route is unknown.
+  static int estimatedDurationMinutes(String origin, String destination) {
+    final from = origin.toLowerCase().trim();
+    final to = destination.toLowerCase().trim();
+    if (from == to) return 0;
+
+    int? minutes = _cityPairMinutes['$from-$to'] ?? _cityPairMinutes['$to-$from'];
+
+    if (minutes == null) {
+      final a = cityCoords(from);
+      final b = cityCoords(to);
+      if (a != null && b != null) {
+        final km = distanceKm(a, b);
+        minutes = (km / 90 * 60 + 15).round();
+      }
+    }
+
+    // Unknown route — use 60 min as a safe fallback so we never block
+    // the driver due to a missing table entry.
+    return minutes ?? 60;
+  }
+
   /// Haversine distance in km between two points.
   static double distanceKm(LatLng a, LatLng b) {
     const r = 6371.0;
