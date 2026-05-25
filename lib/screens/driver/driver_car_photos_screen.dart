@@ -130,9 +130,7 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
           ),
         );
         if (!mounted) return;
-        if (carError != null) {
-          debugPrint('⚠️ Car photo upload skipped (Storage may be disabled): $carError');
-        }
+        
       }
 
       // Navigate to credit card screen — pass images forward so they can be
