@@ -358,11 +358,18 @@ class BookingProvider extends ChangeNotifier {
   }
 
   /// Driver accepts a pending booking — marks it confirmed and reserves seats.
+  ///
+  /// After confirming, automatically withdraws every OTHER pending booking the
+  /// same passenger made for rides on the same date + time + origin +
+  /// destination (duplicate requests). This prevents a passenger from being
+  /// on multiple rides at the same time once one driver accepts them.
+  ///
   /// Returns true on success, false if seats are full or an error occurs.
   Future<bool> acceptBooking(BookingModel booking) async {
     final rideRef = _db.collection('rides').doc(booking.rideId);
     final bookingRef = _db.collection('bookings').doc(booking.id);
     try {
+      // ── Step 1: Confirm this booking (existing transaction logic) ──────────
       await _db.runTransaction((tx) async {
         final rideSnap = await tx.get(rideRef);
         final rideStatus = rideSnap.data()!['status'] as String? ?? 'active';
@@ -379,9 +386,87 @@ class BookingProvider extends ChangeNotifier {
           'pendingGenderEntries.${booking.id}': FieldValue.delete(),
         });
       });
+
+      // ── Step 2: Auto-withdraw conflicting duplicate requests ────────────────
+      // Find all OTHER pending bookings by this passenger for rides on the
+      // same date, same time, same origin, same destination.
+      // We query by passengerId + date + origin + destination then filter
+      // for status=pending and rideId != this ride in Dart (avoids needing
+      // a composite Firestore index on 5 fields).
+      await _cancelConflictingBookings(booking);
+
       return true;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Cancels all pending booking requests made by [acceptedBooking.passengerId]
+  /// that overlap with the just-accepted booking (same date, origin, destination)
+  /// but belong to a DIFFERENT ride.
+  ///
+  /// For each cancelled booking we also decrement pendingSeats on its ride
+  /// so the seat counts stay accurate.
+  Future<void> _cancelConflictingBookings(BookingModel acceptedBooking) async {
+    try {
+      // Query: same passenger, same date, same origin, same destination.
+      // Firestore requires an index for multi-field queries; using the minimum
+      // set of indexed fields and filtering the rest in Dart.
+      final snap = await _db
+          .collection('bookings')
+          .where('passengerId', isEqualTo: acceptedBooking.passengerId)
+          .where('date', isEqualTo: acceptedBooking.date)
+          .where('origin', isEqualTo: acceptedBooking.origin)
+          .where('destination', isEqualTo: acceptedBooking.destination)
+          .get();
+
+      // Keep only: pending status + different ride + same time.
+      final conflicts = snap.docs.where((d) {
+        final s = d.data()['status'] as String? ?? '';
+        final rid = d.data()['rideId'] as String? ?? '';
+        final t = d.data()['time'] as String? ?? '';
+        return s == 'pending' &&
+            rid != acceptedBooking.rideId &&
+            t == acceptedBooking.time;
+      }).toList();
+
+      if (conflicts.isEmpty) return;
+
+      // Cancel each conflicting booking and decrement pendingSeats on its ride.
+      // Use individual transactions so a failure on one doesn't roll back others.
+      for (final doc in conflicts) {
+        final conflictBooking = BookingModel.fromDoc(doc);
+        final conflictRideRef =
+            _db.collection('rides').doc(conflictBooking.rideId);
+        final conflictBookingRef =
+            _db.collection('bookings').doc(conflictBooking.id);
+        try {
+          await _db.runTransaction((tx) async {
+            final rideSnap = await tx.get(conflictRideRef);
+            tx.update(conflictBookingRef, {
+              'status': 'cancelled',
+              'cancellationReason': 'auto_withdrawn_accepted_elsewhere',
+            });
+            if (rideSnap.exists) {
+              tx.update(conflictRideRef, {
+                'pendingSeats': FieldValue.increment(-conflictBooking.seatsBooked),
+                'pendingGenderEntries.${conflictBooking.id}':
+                    FieldValue.delete(),
+              });
+            }
+          });
+          debugPrint(
+              '✅ Auto-withdrawn conflicting booking ${conflictBooking.id} '
+              'on ride ${conflictBooking.rideId}');
+        } catch (e) {
+          debugPrint(
+              '⚠️ Failed to auto-withdraw booking ${conflictBooking.id}: $e');
+        }
+      }
+    } catch (e) {
+      // Non-fatal: the main booking was already confirmed.
+      // Log but don't surface to the driver.
+      debugPrint('_cancelConflictingBookings error: \$e');
     }
   }
 
@@ -594,5 +679,19 @@ class BookingProvider extends ChangeNotifier {
               .map((b) => b.totalPrice)
               .reduce((a, b) => a + b);
         });
+  }
+
+  /// Live count of ALL pending booking requests across every ride this driver owns.
+  /// Used to show a badge on the "My Trips" nav bar tab.
+  /// Emits 0 when there are no pending requests (badge is hidden).
+  Stream<int> get totalPendingRequestsStream {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value(0);
+    return _db
+        .collection('bookings')
+        .where('driverId', isEqualTo: uid)
+        .where('status', isEqualTo: 'pending')
+        .snapshots()
+        .map((snap) => snap.docs.length);
   }
 }
