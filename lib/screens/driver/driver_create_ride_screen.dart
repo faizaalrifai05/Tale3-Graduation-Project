@@ -294,7 +294,8 @@ class DriverCreateRideScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text(
                                         context.l10n.availableSeats,
@@ -316,34 +317,45 @@ class DriverCreateRideScreen extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 8),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 10),
                                     decoration: BoxDecoration(
                                       color: context.colors.inputFillColor,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: context.colors.borderColor),
+                                      border: Border.all(
+                                          color: context.colors.borderColor),
                                     ),
                                     child: Column(
                                       children: [
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
                                             _buildDriverSeatDot(context),
-                                            _buildPassengerSeatDot(context, 1, rideProvider),
+                                            _buildPassengerSeatDot(
+                                                context, 1, rideProvider),
                                           ],
                                         ),
                                         const SizedBox(height: 8),
                                         Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
                                           children: [
-                                            _buildPassengerSeatDot(context, 2, rideProvider),
-                                            _buildPassengerSeatDot(context, 3, rideProvider),
-                                            _buildPassengerSeatDot(context, 4, rideProvider),
+                                            _buildPassengerSeatDot(
+                                                context, 2, rideProvider),
+                                            _buildPassengerSeatDot(
+                                                context, 3, rideProvider),
+                                            _buildPassengerSeatDot(
+                                                context, 4, rideProvider),
                                           ],
                                         ),
                                         const SizedBox(height: 6),
                                         Text(
                                           'Tap to include/exclude',
-                                          style: TextStyle(fontSize: 10, color: context.colors.textTertiary),
+                                          style: TextStyle(
+                                              fontSize: 10,
+                                              color:
+                                                  context.colors.textTertiary),
                                         ),
                                       ],
                                     ),
@@ -449,25 +461,29 @@ class DriverCreateRideScreen extends StatelessWidget {
                               icon: Icons.ac_unit_rounded,
                               label: context.l10n.airConditioning,
                               value: rideProvider.acChecked,
-                              onTap: () => rideProvider.toggleAc(!rideProvider.acChecked),
+                              onTap: () => rideProvider
+                                  .toggleAc(!rideProvider.acChecked),
                             ),
                             _PrefTile(
                               icon: Icons.luggage_rounded,
                               label: context.l10n.luggage,
                               value: rideProvider.luggageChecked,
-                              onTap: () => rideProvider.toggleLuggage(!rideProvider.luggageChecked),
+                              onTap: () => rideProvider
+                                  .toggleLuggage(!rideProvider.luggageChecked),
                             ),
                             _PrefTile(
                               icon: Icons.pets_rounded,
                               label: context.l10n.petsAllowed,
                               value: rideProvider.petsChecked,
-                              onTap: () => rideProvider.togglePets(!rideProvider.petsChecked),
+                              onTap: () => rideProvider
+                                  .togglePets(!rideProvider.petsChecked),
                             ),
                             _PrefTile(
                               icon: Icons.smoke_free_rounded,
                               label: context.l10n.noSmoking,
                               value: rideProvider.noSmokingChecked,
-                              onTap: () => rideProvider.toggleNoSmoking(!rideProvider.noSmokingChecked),
+                              onTap: () => rideProvider.toggleNoSmoking(
+                                  !rideProvider.noSmokingChecked),
                             ),
                           ],
                         ),
@@ -495,13 +511,13 @@ class DriverCreateRideScreen extends StatelessWidget {
                             fillColor: context.colors.inputFillColor,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: context.colors.borderColor),
+                              borderSide: BorderSide(
+                                  color: context.colors.borderColor),
                             ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide:
-                                  BorderSide(color: context.colors.borderColor),
+                              borderSide: BorderSide(
+                                  color: context.colors.borderColor),
                             ),
                             focusedBorder: const OutlineInputBorder(
                               borderRadius:
@@ -521,70 +537,242 @@ class DriverCreateRideScreen extends StatelessWidget {
                             onPressed: rideProvider.isPublishing
                                 ? null
                                 : () async {
-                              // 1. Synchronous field validation
-                              final error = rideProvider.validate();
-                              if (error != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(error),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    margin: const EdgeInsets.all(16),
-                                  ),
-                                );
-                                return;
-                              }
+                                    // 1. Synchronous field validation
+                                    final error = rideProvider.validate();
+                                    if (error != null) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(error),
+                                          backgroundColor: Colors.red,
+                                          behavior:
+                                              SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          margin: const EdgeInsets.all(16),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                              // 2. Price check
-                              if (!rideProvider.hasAdminPrice) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      rideProvider.priceError.isNotEmpty
-                                          ? rideProvider.priceError
-                                          : 'Please wait for route price to load.',
-                                    ),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    margin: const EdgeInsets.all(16),
-                                  ),
-                                );
-                                return;
-                              }
+                                    // 2. Price check
+                                    if (!rideProvider.hasAdminPrice) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            rideProvider
+                                                    .priceError.isNotEmpty
+                                                ? rideProvider.priceError
+                                                : 'Please wait for route price to load.',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                          behavior:
+                                              SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12)),
+                                          margin: const EdgeInsets.all(16),
+                                        ),
+                                      );
+                                      return;
+                                    }
 
-                              // 3. Schedule conflict check (async Firestore query)
-                              final conflictError =
-                                  await rideProvider.checkScheduleConflict();
-                              if (!context.mounted) return;
-                              if (conflictError != null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(conflictError),
-                                    backgroundColor: Colors.red,
-                                    behavior: SnackBarBehavior.floating,
-                                    duration: const Duration(seconds: 6),
-                                    shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(12)),
-                                    margin: const EdgeInsets.all(16),
-                                  ),
-                                );
-                                return;
-                              }
+                                    // 3. Schedule conflict check
+                                    final conflictError = await rideProvider
+                                        .checkScheduleConflict();
+                                    if (!context.mounted) return;
+                                    if (conflictError != null) {
+                                      showDialog(
+                                        context: context,
+                                        barrierDismissible: false,
+                                        builder: (_) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                          ),
+                                          contentPadding: EdgeInsets.zero,
+                                          content: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              // ── Red header ──────────
+                                              Container(
+                                                width: double.infinity,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 24,
+                                                        horizontal: 20),
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFFFFEBEE),
+                                                  borderRadius:
+                                                      BorderRadius.only(
+                                                    topLeft:
+                                                        Radius.circular(20),
+                                                    topRight:
+                                                        Radius.circular(20),
+                                                  ),
+                                                ),
+                                                child: Column(
+                                                  children: [
+                                                    Container(
+                                                      width: 56,
+                                                      height: 56,
+                                                      decoration:
+                                                          const BoxDecoration(
+                                                        color: Colors.white,
+                                                        shape:
+                                                            BoxShape.circle,
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons
+                                                            .directions_car_rounded,
+                                                        color:
+                                                            Color(0xFF8B1A2B),
+                                                        size: 28,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                        height: 12),
+                                                    const Text(
+                                                      'Ride Already Scheduled',
+                                                      style: TextStyle(
+                                                        fontSize: 17,
+                                                        fontWeight:
+                                                            FontWeight.w800,
+                                                        color:
+                                                            Color(0xFF8B1A2B),
+                                                      ),
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
 
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const RideConfirmationScreen(),
-                                ),
-                              );
-                            },
+                                              // ── Body ────────────────
+                                              Padding(
+                                                padding:
+                                                    const EdgeInsets.fromLTRB(
+                                                        20, 16, 20, 8),
+                                                child: Column(
+                                                  children: [
+                                                    Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        const Icon(
+                                                          Icons.info_outline,
+                                                          color: Color(
+                                                              0xFF9E9E9E),
+                                                          size: 16,
+                                                        ),
+                                                        const SizedBox(
+                                                            width: 6),
+                                                        Expanded(
+                                                          child: Text(
+                                                            'You can only have one active ride at a time.',
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color: context
+                                                                  .colors
+                                                                  .textSecondary,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(
+                                                        height: 12),
+                                                    Container(
+                                                      width: double.infinity,
+                                                      padding:
+                                                          const EdgeInsets
+                                                              .all(14),
+                                                      decoration:
+                                                          BoxDecoration(
+                                                        color: context.colors
+                                                            .cardBackgroundColor,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(12),
+                                                        border: Border.all(
+                                                            color: context
+                                                                .colors
+                                                                .borderColor),
+                                                      ),
+                                                      child: Text(
+                                                        conflictError,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          color: context
+                                                              .colors
+                                                              .textPrimary,
+                                                          height: 1.6,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                        height: 16),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          actions: [
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.fromLTRB(
+                                                      16, 0, 16, 16),
+                                              child: SizedBox(
+                                                width: double.infinity,
+                                                height: 48,
+                                                child: ElevatedButton(
+                                                  onPressed: () =>
+                                                      Navigator.pop(
+                                                          context),
+                                                  style: ElevatedButton
+                                                      .styleFrom(
+                                                    backgroundColor:
+                                                        _darkMaroon,
+                                                    foregroundColor:
+                                                        Colors.white,
+                                                    shape:
+                                                        RoundedRectangleBorder(
+                                                      borderRadius:
+                                                          BorderRadius
+                                                              .circular(12),
+                                                    ),
+                                                    elevation: 0,
+                                                  ),
+                                                  child: const Text(
+                                                    'Got it',
+                                                    style: TextStyle(
+                                                      fontSize: 15,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      return;
+                                    }
+
+                                    Navigator.of(context).push(
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const RideConfirmationScreen(),
+                                      ),
+                                    );
+                                  },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _darkMaroon,
                               foregroundColor: Colors.white,
@@ -639,7 +827,9 @@ class DriverCreateRideScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: available ? _primaryColor : context.colors.inputFillColor,
           borderRadius: BorderRadius.circular(8),
-          border: available ? null : Border.all(color: context.colors.borderColor),
+          border: available
+              ? null
+              : Border.all(color: context.colors.borderColor),
         ),
         child: Center(
           child: Icon(
@@ -805,7 +995,9 @@ class _PrefTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: value ? _primary : context.colors.textTertiary),
+            Icon(icon,
+                size: 20,
+                color: value ? _primary : context.colors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
