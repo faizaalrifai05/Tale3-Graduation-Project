@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import '../../providers/auth_provider.dart' as app_auth;
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -34,15 +35,15 @@ class _ReportScreenState extends State<ReportScreen> {
   String? _selectedReason;
   bool _isSubmitting = false;
 
-  static const List<String> _reasons = [
-    'Inappropriate behavior',
-    'No show / cancelled without notice',
-    'Unsafe driving',
-    'Harassment',
-    'Scam or fraud',
-    'Wrong vehicle information',
-    'Rude or disrespectful',
-    'Other',
+  List<String> _getReasons(BuildContext context) => [
+    context.l10n.reasonInappropriate,
+    context.l10n.reasonNoShow,
+    context.l10n.reasonUnsafeDriving,
+    context.l10n.reasonHarassment,
+    context.l10n.reasonScamFraud,
+    context.l10n.reasonWrongVehicle,
+    context.l10n.reasonRude,
+    context.l10n.reasonOtherReport,
   ];
 
   @override
@@ -55,7 +56,7 @@ class _ReportScreenState extends State<ReportScreen> {
     if (_selectedReason == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select a reason for your report.'),
+          content: Text(context.l10n.selectReasonError),
           backgroundColor: AppStyles.errorColor,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -95,13 +96,13 @@ class _ReportScreenState extends State<ReportScreen> {
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 26),
-              SizedBox(width: 10),
+              const Icon(Icons.check_circle, color: Colors.green, size: 26),
+              const SizedBox(width: 10),
               Text(
-                'Report Submitted',
-                style: TextStyle(
+                context.l10n.reportSubmitted,
+                style: const TextStyle(
                     fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ],
@@ -117,9 +118,9 @@ class _ReportScreenState extends State<ReportScreen> {
                 Navigator.pop(context); // close dialog
                 Navigator.pop(context); // go back to rating screen
               },
-              child: const Text(
-                'OK',
-                style: TextStyle(
+              child: Text(
+                context.l10n.ok,
+                style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppStyles.primaryColor),
               ),
@@ -131,7 +132,7 @@ class _ReportScreenState extends State<ReportScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Failed to submit report. Please try again.'),
+          content: Text(context.l10n.reportFailed),
           backgroundColor: AppStyles.errorColor,
           behavior: SnackBarBehavior.floating,
           shape:
@@ -156,7 +157,7 @@ class _ReportScreenState extends State<ReportScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Report Driver',
+          context.l10n.reportDriver,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -276,7 +277,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
               // ── Reason ────────────────────────────────────────
               Text(
-                'What happened?',
+                context.l10n.whatHappened,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -285,7 +286,7 @@ class _ReportScreenState extends State<ReportScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Select the reason that best describes the issue.',
+                context.l10n.selectReason,
                 style: TextStyle(
                   fontSize: 13,
                   color: context.colors.textSecondary,
@@ -296,7 +297,7 @@ class _ReportScreenState extends State<ReportScreen> {
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: _reasons.map((reason) {
+                children: _getReasons(context).map((reason) {
                   final isSelected = _selectedReason == reason;
                   return GestureDetector(
                     onTap: () =>
@@ -335,7 +336,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
               // ── Description ───────────────────────────────────
               Text(
-                'Tell us more (optional)',
+                context.l10n.tellUsMore,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -348,8 +349,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 maxLines: 5,
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
-                  hintText:
-                      'Describe what happened in detail...',
+                  hintText: context.l10n.describeWhatHappened,
                   hintStyle: TextStyle(
                       color: context.colors.inputHintColor,
                       fontSize: 14),
@@ -427,9 +427,9 @@ class _ReportScreenState extends State<ReportScreen> {
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         )
-                      : const Text(
-                          'Submit Report',
-                          style: TextStyle(
+                      : Text(
+                          context.l10n.reportDriver,
+                          style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600),
                         ),

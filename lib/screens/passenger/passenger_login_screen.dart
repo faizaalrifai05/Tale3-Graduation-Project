@@ -272,7 +272,7 @@ class _PassengerLoginScreenState extends State<PassengerLoginScreen> {
                                     color: Color(0xFF8B1A2B)))
                             : const Icon(Icons.email_outlined,
                                 size: 16, color: Color(0xFF8B1A2B)),
-                        label: const Text('Resend Verification Email',
+                        label: Text(context.l10n.resendVerificationEmail,
                             style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,

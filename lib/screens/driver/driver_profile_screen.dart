@@ -581,13 +581,7 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
                       // ── Verification Status ──────────────────────────
                       _buildSection(
                         title: context.l10n.verification,
-                        child: Column(
-                          children: [
-                            _buildVerificationItem(context.l10n.identityVerified, authUser?.isVerified ?? false),
-                            const SizedBox(height: 10),
-                            _buildVerificationItem(context.l10n.backgroundCheck, authUser?.isVerified ?? false),
-                          ],
-                        ),
+                        child: _buildVerificationItem(context.l10n.identityVerified, authUser?.isVerified ?? false),
                       ),
                       const SizedBox(height: 24),
 
@@ -815,12 +809,12 @@ class _DriverProfileScreenState extends State<DriverProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: isVerified
-            ? AppStyles.successBgVerified
+            ? context.colors.successBgVerified
             : context.colors.inputFillColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: isVerified
-              ? AppStyles.successBorder
+              ? context.colors.successBorder
               : context.colors.borderColor,
         ),
       ),

@@ -36,7 +36,7 @@ class _MyTripsScreenState extends State<MyTripsScreen>
     return Column(
       children: [
         Container(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +138,7 @@ class _BookingList extends StatelessWidget {
     if (bookings.isEmpty) {
       return Center(
         child: Text(emptyMessage,
-            style: const TextStyle(color: AppStyles.textSecondary)),
+            style: TextStyle(color: context.colors.textSecondary)),
       );
     }
     return ListView.separated(
@@ -169,23 +169,23 @@ class _BookingCard extends StatelessWidget {
     Color badgeText;
     String badgeLabel;
     if (isPending) {
-      badgeBg = const Color(0xFFFFF3E0);
-      badgeText = const Color(0xFFF57F17);
-      badgeLabel = 'Pending';
+      badgeBg = context.colors.starRatingLightBg;
+      badgeText = context.colors.starRatingDarkText;
+      badgeLabel = context.l10n.pending;
     } else if (isRejected) {
-      badgeBg = const Color(0xFFFFEBEE);
-      badgeText = const Color(0xFFB71C1C);
-      badgeLabel = 'Rejected';
+      badgeBg = context.colors.errorLightBg;
+      badgeText = AppStyles.errorColor;
+      badgeLabel = context.l10n.rejected;
     } else if (isCancelled) {
-      badgeBg = const Color(0xFFF5F5F5);
-      badgeText = AppStyles.textTertiary;
+      badgeBg = context.colors.cardBackgroundColor;
+      badgeText = context.colors.textTertiary;
       badgeLabel = context.l10n.cancelled;
     } else if (isCompleted) {
-      badgeBg = const Color(0xFFE8F5E9);
-      badgeText = const Color(0xFF2E7D32);
-      badgeLabel = 'Completed';
+      badgeBg = context.colors.successLightBg;
+      badgeText = AppStyles.successDarkText;
+      badgeLabel = context.l10n.completed;
     } else {
-      badgeBg = AppStyles.highlightBackgroundColor;
+      badgeBg = context.colors.highlightBackgroundColor;
       badgeText = AppStyles.primaryColor;
       badgeLabel = context.l10n.confirmed;
     }
@@ -195,15 +195,18 @@ class _BookingCard extends StatelessWidget {
           ? null
           : () {
               Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => BookingStatusScreen(booking: booking),
+                builder: (_) => BookingStatusScreen(
+                  booking: booking,
+                  showLiveTracking: false,
+                ),
               ));
             },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: context.colors.surfaceColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppStyles.borderColor),
+          border: Border.all(color: context.colors.borderColor),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -239,7 +242,7 @@ class _BookingCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: isDim ? AppStyles.textTertiary : AppStyles.primaryColor,
+                    color: isDim ? context.colors.textTertiary : AppStyles.primaryColor,
                   ),
                 ),
               ],
@@ -247,23 +250,21 @@ class _BookingCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               '${booking.origin} → ${booking.destination}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppStyles.textPrimary,
+                color: context.colors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               '${booking.date}  •  ${booking.time}',
-              style: const TextStyle(
-                  fontSize: 12, color: AppStyles.textSecondary),
+              style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               '${booking.seatsBooked} seat${booking.seatsBooked > 1 ? 's' : ''}  •  ${booking.driverName}',
-              style: const TextStyle(
-                  fontSize: 12, color: AppStyles.textTertiary),
+              style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
             ),
           ],
         ),

@@ -129,20 +129,18 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
         builder: (_) => AlertDialog(
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20)),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.block_rounded, color: Colors.red, size: 26),
-              SizedBox(width: 10),
-              Text('Account Blocked',
-                  style: TextStyle(
+              const Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              const SizedBox(width: 10),
+              Text(context.l10n.accountBlocked,
+                  style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.w700)),
             ],
           ),
-          content: const Text(
-            'Your account has been blocked by the admin. '
-            'If you believe this is a mistake, please contact '
-            'support at support@tale3.app.',
-            style: TextStyle(fontSize: 14, height: 1.5),
+          content: Text(
+            context.l10n.accountBlockedDesc,
+            style: const TextStyle(fontSize: 14, height: 1.5),
           ),
           actions: [
             TextButton(
@@ -154,8 +152,8 @@ class _PassengerHomeScreenState extends State<PassengerHomeScreen> {
                   (route) => false,
                 );
               },
-              child: const Text('OK',
-                  style: TextStyle(
+              child: Text(context.l10n.ok,
+                  style: const TextStyle(
                       fontWeight: FontWeight.w600, color: Colors.red)),
             ),
           ],
@@ -608,7 +606,7 @@ class _HomeTabState extends State<_HomeTab> {
                       _buildLocationButton(
                         icon: Icons.radio_button_checked,
                         iconColor: AppStyles.primaryColor,
-                        label: _pickupLabel ?? 'Select pickup location',
+                        label: _pickupLabel ?? context.l10n.selectPickupLocation,
                         isSet: _pickupLabel != null,
                         isLoading: false,
                         onTap: () => _pickCity(isPickup: true),
@@ -630,7 +628,7 @@ class _HomeTabState extends State<_HomeTab> {
                       _buildLocationButton(
                         icon: Icons.location_on,
                         iconColor: AppStyles.successColor,
-                        label: _destinationLabel ?? 'Select destination',
+                        label: _destinationLabel ?? context.l10n.selectDestination,
                         isSet: _destinationLabel != null,
                         isLoading: false,
                         onTap: () => _pickCity(isPickup: false),
@@ -647,7 +645,7 @@ class _HomeTabState extends State<_HomeTab> {
                             children: [
                               const SizedBox(height: 10),
                               Text(
-                                'My Places',
+                                context.l10n.myPlaces,
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -1039,7 +1037,7 @@ class _HomeTabState extends State<_HomeTab> {
             ListTile(
               leading: Icon(Icons.radio_button_checked,
                   color: AppStyles.primaryColor),
-              title: const Text('Set as Pickup',
+              title: Text(context.l10n.setAsPickup,
                   style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);
@@ -1054,7 +1052,7 @@ class _HomeTabState extends State<_HomeTab> {
             ListTile(
               leading:
                   Icon(Icons.location_on, color: AppStyles.successColor),
-              title: const Text('Set as Destination',
+              title: Text(context.l10n.setAsDestination,
                   style: TextStyle(fontWeight: FontWeight.w600)),
               onTap: () {
                 Navigator.pop(ctx);

@@ -1,0 +1,306 @@
+TALE3 - SYSTEM INSTALLATION GUIDE
+================================================================================
+
+OVERVIEW
+Tale3 consists of three components that must be set up separately:
+  1. Flutter Mobile App     — Passenger and Driver Android/iOS application
+  2. React Admin Dashboard  — Web-based admin control panel (tale3-admin)
+  3. Firebase Backend       — Shared cloud backend for both components
+
+================================================================================
+SECTION 1 — SYSTEM REQUIREMENTS
+================================================================================
+
+HARDWARE REQUIREMENTS
+-------------------------------------------------
+Component             | Minimum Requirement
+-------------------------------------------------
+RAM                   | 8 GB (16 GB recommended)
+Storage               | 10 GB free disk space
+Operating System      | Windows 10/11, macOS 12+, or Ubuntu 20.04+
+Internet Connection   | Required for Firebase and Google Maps
+
+MOBILE DEVICE FOR TESTING
+-------------------------------------------------
+Platform              | Minimum Version
+-------------------------------------------------
+Android               | Android 5.0 (API Level 21) or higher
+iOS                   | iOS 13.0 or higher
+
+================================================================================
+SECTION 2 — PREREQUISITES
+================================================================================
+
+Install the following tools before proceeding:
+
+  1. Flutter SDK
+     - Version  : 3.11.0 or higher
+     - Download : https://flutter.dev/docs/get-started/install
+     - Verify   : Run  flutter --version  in terminal
+
+  2. Dart SDK
+     - Included automatically with Flutter SDK
+     - Verify   : Run  dart --version  in terminal
+
+  3. Android Studio
+     - Required for Android emulator and SDK tools
+     - Download : https://developer.android.com/studio
+     - During setup install: Android SDK, Android Emulator, Android SDK Platform-Tools
+
+  4. Node.js
+     - Version  : 18.0.0 or higher (required for Admin Dashboard and Cloud Functions)
+     - Download : https://nodejs.org
+     - Verify   : Run  node --version  and  npm --version  in terminal
+
+  5. Firebase CLI
+     - Install  : Run  npm install -g firebase-tools  in terminal
+     - Verify   : Run  firebase --version  in terminal
+     - Login    : Run  firebase login  and sign in with the project Google account
+
+  6. Git
+     - Download : https://git-scm.com
+     - Verify   : Run  git --version  in terminal
+
+================================================================================
+SECTION 3 — FIREBASE PROJECT SETUP
+================================================================================
+
+The Firebase project must be configured before running either application.
+
+STEP 1 — Create Firebase Project
+  1. Go to https://console.firebase.google.com
+  2. Click Add Project and enter the project name: tale3
+  3. Disable Google Analytics if not needed and click Create Project
+
+STEP 2 — Enable Firebase Services
+  Enable the following services from the Firebase Console:
+  - Authentication     : Email/Password provider + Google Sign-In provider
+  - Cloud Firestore    : Create database in Production mode
+  - Firebase Storage   : Create storage bucket
+  - Cloud Messaging    : Enabled automatically with the project
+
+STEP 3 — Add Android App to Firebase
+  1. In Firebase Console click Add App and select Android
+  2. Enter package name: com.example.testtale3
+  3. Download the generated  google-services.json  file
+  4. Place the file at:  android/app/google-services.json
+
+STEP 4 — Add iOS App to Firebase (optional)
+  1. In Firebase Console click Add App and select iOS
+  2. Enter bundle ID from your Xcode project
+  3. Download the generated  GoogleService-Info.plist  file
+  4. Place the file at:  ios/Runner/GoogleService-Info.plist
+
+STEP 5 — Add Web App to Firebase (for Admin Dashboard)
+  1. In Firebase Console click Add App and select Web
+  2. Enter app nickname: tale3-admin
+  3. Copy the Firebase config object shown (apiKey, authDomain, projectId, etc.)
+  4. This config will be used in Section 5
+
+STEP 6 — Deploy Firestore Security Rules
+  1. Open terminal in the project root directory
+  2. Run:  firebase deploy --only firestore:rules
+  3. Confirm the rules from  firestore.rules  are deployed successfully
+
+STEP 7 — Deploy Storage Security Rules
+  1. From the project root directory run:  firebase deploy --only storage
+  2. Confirm the rules from  storage.rules  are deployed successfully
+
+================================================================================
+SECTION 4 — FLUTTER MOBILE APP INSTALLATION
+================================================================================
+
+STEP 1 — Clone the Repository
+  git clone <repository-url>
+  cd testtale3
+
+STEP 2 — Install Flutter Dependencies
+  Run the following command in the project root:
+  flutter pub get
+
+  This will install all required packages including:
+  - provider ^6.1.2            (state management)
+  - firebase_core ^3.15.2      (Firebase initialization)
+  - firebase_auth ^5.7.0       (authentication)
+  - cloud_firestore ^5.6.12    (real-time database)
+  - firebase_storage ^12.4.5   (file storage)
+  - firebase_messaging ^15.2.6 (push notifications)
+  - google_maps_flutter ^2.9.0 (maps and tracking)
+  - geolocator ^13.0.0         (GPS location)
+  - image_picker ^1.2.1        (photo uploads)
+  - shared_preferences ^2.3.5  (local storage)
+  - permission_handler ^11.4.0 (device permissions)
+  - google_sign_in ^6.2.1      (Google authentication)
+  - app_links ^6.3.3           (deep linking)
+
+STEP 3 — Add Google Maps API Key
+
+  Android:
+  1. Open  android/app/src/main/AndroidManifest.xml
+  2. Find the meta-data tag for Google Maps
+  3. Replace YOUR_API_KEY with your Google Maps API key:
+     <meta-data android:name="com.google.android.geo.API_KEY"
+                android:value="YOUR_GOOGLE_MAPS_API_KEY"/>
+
+  iOS:
+  1. Open  ios/Runner/AppDelegate.swift
+  2. Add your Google Maps API key in the didFinishLaunchingWithOptions method
+
+  To get an API key:
+  - Go to https://console.cloud.google.com
+  - Enable: Maps SDK for Android, Maps SDK for iOS, Geocoding API, Directions API
+
+STEP 4 — Verify Flutter Environment
+  Run:  flutter doctor
+  Resolve any issues shown before proceeding
+
+STEP 5 — Run on Android Emulator
+  1. Open Android Studio and start an Android Virtual Device (AVD)
+  2. Run:  flutter run
+  3. Select the running emulator from the device list
+
+STEP 6 — Run on Physical Android Device
+  1. Enable Developer Options on the device
+  2. Enable USB Debugging
+  3. Connect device via USB
+  4. Run:  flutter run
+  5. Select the connected device
+
+STEP 7 — Build Release APK (for distribution)
+  Run:  flutter build apk --release
+  Output file location:  build/app/outputs/flutter-apk/app-release.apk
+
+================================================================================
+SECTION 5 — REACT ADMIN DASHBOARD INSTALLATION
+================================================================================
+
+STEP 1 — Navigate to Admin Directory
+  cd tale3-admin
+
+STEP 2 — Install Node Dependencies
+  Run:  npm install
+
+  This will install all required packages including:
+  - react ^19.2.5           (UI framework)
+  - react-dom ^19.2.5       (DOM rendering)
+  - react-router-dom ^7.14.2 (page routing)
+  - firebase ^12.12.1       (Firebase Web SDK)
+  - recharts ^3.8.1         (charts and graphs)
+  - lucide-react ^1.11.0    (icons)
+  - tailwindcss ^3.4.19     (CSS styling)
+  - vite ^8.0.10            (build tool)
+
+STEP 3 — Configure Firebase for Admin Dashboard
+  1. Open or create the file:  tale3-admin/src/firebase.js
+  2. Paste the Firebase Web config copied in Section 3 Step 5:
+
+     import { initializeApp } from "firebase/app";
+
+     const firebaseConfig = {
+       apiKey: "YOUR_API_KEY",
+       authDomain: "YOUR_PROJECT.firebaseapp.com",
+       projectId: "YOUR_PROJECT_ID",
+       storageBucket: "YOUR_PROJECT.appspot.com",
+       messagingSenderId: "YOUR_SENDER_ID",
+       appId: "YOUR_APP_ID"
+     };
+
+     export const app = initializeApp(firebaseConfig);
+
+STEP 4 — Set Admin Role in Firestore
+  For a user to access the admin dashboard, their Firestore user document
+  must have the field:  role: "admin"
+  Set this manually in the Firebase Console under Firestore > users > {user_id}
+
+STEP 5 — Run Admin Dashboard in Development Mode
+  Run:  npm run dev
+  Open browser at:  http://localhost:5173
+
+STEP 6 — Build Admin Dashboard for Production
+  Run:  npm run build
+  Output folder:  tale3-admin/dist/
+
+STEP 7 — Deploy Admin Dashboard to Firebase Hosting (optional)
+  1. From the tale3-admin directory run:  firebase deploy --only hosting
+  2. The dashboard will be accessible at:  https://YOUR_PROJECT.web.app
+
+================================================================================
+SECTION 6 — CLOUD FUNCTIONS INSTALLATION
+================================================================================
+
+STEP 1 — Navigate to Functions Directory
+  cd "functions 2"
+
+STEP 2 — Install Functions Dependencies
+  Run:  npm install
+
+STEP 3 — Deploy Cloud Functions to Firebase
+  Run:  firebase deploy --only functions
+
+  This deploys the following event-driven functions:
+  - onBookingCreated      : Notifies driver when a new booking is made
+  - onBookingCancelled    : Notifies driver when a booking is cancelled
+  - onRideCancelled       : Notifies all passengers when a ride is cancelled
+  - onDriverArrived       : Notifies passenger when driver reaches pickup point
+  - onIdVerificationSubmitted : Notifies admin of new driver verification request
+  - onNewMessage          : Notifies recipient of a new chat message
+
+STEP 4 — Verify Functions Deployment
+  Run:  firebase functions:list
+  All 6 functions should appear with a status of ACTIVE
+
+================================================================================
+SECTION 7 — ENVIRONMENT CONFIGURATION SUMMARY
+================================================================================
+
+File                                        | Purpose
+--------------------------------------------|-----------------------------------------------
+android/app/google-services.json            | Firebase config for Android app
+ios/Runner/GoogleService-Info.plist         | Firebase config for iOS app
+tale3-admin/src/firebase.js                 | Firebase config for Admin Dashboard
+android/app/src/main/AndroidManifest.xml    | Google Maps API key for Android
+firestore.rules                             | Firestore database security rules
+storage.rules                               | Firebase Storage security rules
+
+================================================================================
+SECTION 8 — RUNNING THE FULL SYSTEM
+================================================================================
+
+To run the complete Tale3 system, open three separate terminal windows:
+
+  Terminal 1 — Flutter Mobile App
+  --------------------------------
+  cd testtale3
+  flutter run
+
+  Terminal 2 — React Admin Dashboard
+  ------------------------------------
+  cd testtale3/tale3-admin
+  npm run dev
+
+  Terminal 3 — Firebase Emulator (optional for local testing)
+  ------------------------------------------------------------
+  cd testtale3
+  firebase emulators:start
+
+  Access Points:
+  - Mobile App      : Running on connected device or emulator
+  - Admin Dashboard : http://localhost:5173
+  - Firebase Console: https://console.firebase.google.com
+
+================================================================================
+SECTION 9 — COMMON INSTALLATION ISSUES
+================================================================================
+
+Issue                              | Cause                              | Fix
+-----------------------------------|------------------------------------|-------------------------------------------
+flutter pub get fails              | Outdated Flutter SDK               | Run: flutter upgrade
+google-services.json not found     | File not placed correctly          | Place file at android/app/google-services.json
+Maps not showing on emulator       | API key missing or restricted      | Check API key in AndroidManifest.xml
+Admin login fails with valid creds | role field not set in Firestore    | Set role: admin on the user document in Firestore Console
+Cloud Functions deploy fails       | Node version mismatch              | Use Node.js 18 or higher
+npm install fails in tale3-admin   | Node modules conflict              | Delete node_modules folder and run npm install again
+Firebase rules deploy fails        | Not logged in to Firebase CLI      | Run: firebase login
+
+================================================================================
+END OF INSTALLATION GUIDE

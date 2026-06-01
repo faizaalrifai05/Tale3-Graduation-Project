@@ -1,5 +1,6 @@
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:testtale3/screens/welcome_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 
@@ -94,80 +95,6 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                       description: context.l10n.guidelineCarpooling,
                     ),
 
-                    const SizedBox(height: 28),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Divider(color: context.colors.borderColor),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── Seats Order ───────────────────────────────────
-                    _buildSectionHeader(context,
-                      icon: Icons.event_seat,
-                      title: context.l10n.seatsOrder,
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Visual seat diagram
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: context.colors.highlightBackgroundColor,
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          children: [
-                            // Front row: driver + front passenger
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildSeatIcon(Icons.directions_car,
-                                    color: context.colors.borderColor),
-                                _buildSeatIcon(Icons.person,
-                                    color: AppStyles.primaryColor, isHighlighted: true),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-                            // Back row: 3 passengers
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                              children: [
-                                _buildSeatIcon(Icons.person,
-                                    color: AppStyles.primaryColor, isHighlighted: true),
-                                _buildSeatIcon(Icons.person,
-                                    color: AppStyles.primaryColor, isHighlighted: true),
-                                _buildSeatIcon(Icons.person,
-                                    color: AppStyles.primaryColor, isHighlighted: true),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Seat rule explanations
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Column(
-                        children: [
-                          _buildSeatRule(context,
-                            icon: Icons.looks_one,
-                            title: context.l10n.backRowSelection,
-                            desc: context.l10n.backRowSelectionDesc,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildSeatRule(context,
-                            icon: Icons.group,
-                            title: context.l10n.fullCarSelection,
-                            desc: context.l10n.fullCarSelectionDesc,
-                          ),
-                        ],
-                      ),
-                    ),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -181,7 +108,10 @@ class CommunityGuidelinesScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('seen_guidelines', true);
+                    if (!context.mounted) return;
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(
                         builder: (context) => const WelcomeScreen(),
@@ -292,60 +222,4 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSeatIcon(IconData icon,
-      {required Color color, bool isHighlighted = false}) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: isHighlighted ? color : Colors.transparent, // intentional
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Center(
-        child: Icon(
-          icon,
-          color: isHighlighted ? AppStyles.onPrimary : color,
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSeatRule(BuildContext context, {
-    required IconData icon,
-    required String title,
-    required String desc,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, color: AppStyles.primaryColor, size: 20),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: context.colors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                desc,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: context.colors.textSecondary,
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 }

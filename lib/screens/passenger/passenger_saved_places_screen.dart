@@ -93,7 +93,7 @@ class _PassengerSavedPlacesScreenState
     final picked = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          title: 'Pick Location',
+          title: context.l10n.pickLocation,
           instruction: 'Drag the map to your saved place',
           initialPosition: _amman,
           confirmLabel: 'Use This Location',

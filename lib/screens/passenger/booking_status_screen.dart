@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/navigation_provider.dart';
@@ -11,13 +12,20 @@ import 'package:testtale3/screens/passenger/passenger_live_ride_screen.dart';
 import 'package:testtale3/screens/passenger/rate_driver_screen.dart';
 import 'package:testtale3/screens/shared/conversation_screen.dart';
 import 'package:testtale3/screens/shared/route_map_widget.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/theme/app_styles.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
 class BookingStatusScreen extends StatefulWidget {
   final BookingModel booking;
-  const BookingStatusScreen({super.key, required this.booking});
+  final bool showLiveTracking;
+  const BookingStatusScreen({
+    super.key,
+    required this.booking,
+    this.showLiveTracking = true,
+  });
 
   @override
   State<BookingStatusScreen> createState() => _BookingStatusScreenState();
@@ -93,18 +101,18 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
       canPop: false,
       onPopInvokedWithResult: (_, __) => _goHome(),
       child: Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: _goHome,
         ),
         title: Text(
           context.l10n.bookingStatus,
-          style: const TextStyle(
-            color: Color(0xFF1A1A1A),
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -125,32 +133,32 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: context.colors.successLightBg,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFF81C784)),
+                    border: Border.all(color: context.colors.successBorder),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.directions_car_rounded,
-                          color: Color(0xFF2E7D32), size: 22),
+                      Icon(Icons.directions_car_rounded,
+                          color: context.colors.successDarkText, size: 22),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Your driver has arrived!',
+                              context.l10n.driverArrived,
                               style: TextStyle(
-                                color: Color(0xFF1B5E20),
+                                color: context.colors.successDarkText,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Head to your pickup point — your driver is waiting.',
+                              context.l10n.driverArrivedDesc,
                               style: TextStyle(
-                                color: Color(0xFF2E7D32),
+                                color: context.colors.successColor,
                                 fontSize: 13,
                               ),
                             ),
@@ -215,35 +223,35 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
 
               Text(
                 _isPending
-                    ? 'Awaiting Driver Approval'
+                    ? context.l10n.awaitingDriverApproval
                     : _isRejected
-                        ? 'Request Rejected'
+                        ? context.l10n.requestRejected
                         : _isCompleted
-                            ? 'Ride Completed'
+                            ? context.l10n.rideCompleted
                             : isRideLive
-                                ? 'Your Ride is Live!'
+                                ? context.l10n.yourRideIsLive
                                 : context.l10n.bookingConfirmed,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 _isPending
-                    ? 'Your request has been sent. The driver will review and confirm shortly.'
+                    ? context.l10n.requestSentToDriver
                     : _isRejected
-                        ? 'The driver could not accommodate your pickup location. You can search for another ride.'
+                        ? context.l10n.driverDeclinedRequest
                         : _isCompleted
-                            ? 'Thanks for travelling with Tale3! Don\'t forget to rate your driver.'
+                            ? context.l10n.thanksTravelling
                             : isRideLive
-                                ? 'Your driver has started the ride. Tap the button below to track it.'
+                                ? context.l10n.rideConfirmedDesc
                                 : context.l10n.bookingConfirmedDesc,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -253,19 +261,19 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F9F9),
+                  color: context.colors.cardBackgroundColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  border: Border.all(color: context.colors.borderColor),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       context.l10n.tripDetails,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF9E9E9E),
+                        color: context.colors.textTertiary,
                         letterSpacing: 1,
                       ),
                     ),
@@ -292,17 +300,17 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                         Expanded(
                           child: Text(
                             '${_booking.seatsBooked} Seat${_booking.seatsBooked > 1 ? 's' : ''}',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xFF1A1A1A),
+                              color: context.colors.textPrimary,
                             ),
                           ),
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFDF2F4),
+                            color: context.colors.highlightBackgroundColor,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -345,18 +353,18 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                             horizontal: 14, vertical: 12),
                         margin: const EdgeInsets.only(bottom: 8),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF9F6E0),
+                          color: context.colors.starRatingLightBg,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE8C94F)),
+                          border: Border.all(color: context.colors.starRatingColor.withValues(alpha: 0.5)),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.star_rounded,
+                            const Icon(Icons.star_rounded,
                                 color: Color(0xFFE8A800), size: 18),
-                            SizedBox(width: 8),
-                            Text('You rated this ride',
-                                style: TextStyle(
+                            const SizedBox(width: 8),
+                            Text(context.l10n.youRatedThisRide,
+                                style: const TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w600,
                                     color: Color(0xFF7A5A00))),
@@ -374,8 +382,8 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                           ),
                         ),
                         icon: const Icon(Icons.star_rounded, size: 20),
-                        label: const Text('Rate Your Driver',
-                            style: TextStyle(
+                        label: Text(context.l10n.rateYourDriver,
+                            style: const TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFE8A800),
@@ -391,17 +399,26 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
               if (_isCompleted) const SizedBox(height: 8),
 
               // Track Live Ride button
-              if (isRideLive) ...[
+              if (isRideLive && widget.showLiveTracking) ...[
                 SizedBox(
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton.icon(
-                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => PassengerLiveRideScreen(booking: _booking),
-                    )),
+                    onPressed: () async {
+                      final perm = await Geolocator.checkPermission();
+                      if (!mounted) return;
+                      if (perm == LocationPermission.denied ||
+                          perm == LocationPermission.deniedForever) {
+                        await showLocationSettingsReminder(context);
+                        return;
+                      }
+                      Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => PassengerLiveRideScreen(booking: _booking),
+                      ));
+                    },
                     icon: const Icon(Icons.my_location_rounded, size: 20),
-                    label: const Text('Track Live Ride',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    label: Text(context.l10n.trackLiveRide,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFE53935),
                       foregroundColor: Colors.white,
@@ -438,7 +455,7 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                     elevation: 0,
                   ),
                   child: Text(
-                    context.l10n.myTrips,
+                    context.l10n.viewMyTrips,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -457,9 +474,9 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
                     ));
                   },
                   icon: const Icon(Icons.chat_bubble_outline_rounded, size: 18),
-                  label: const Text(
-                    'Message Driver',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  label: Text(
+                    context.l10n.messageDriver,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: _primaryColor,
@@ -512,10 +529,10 @@ class _BookingStatusScreenState extends State<BookingStatusScreen> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
+              color: context.colors.textPrimary,
             ),
           ),
         ),

@@ -365,17 +365,19 @@ class BookingProvider extends ChangeNotifier {
   /// on multiple rides at the same time once one driver accepts them.
   ///
   /// Returns true on success, false if seats are full or an error occurs.
-  Future<bool> acceptBooking(BookingModel booking) async {
+  /// Returns null on success, or an error key string on failure.
+  Future<String?> acceptBooking(BookingModel booking) async {
     final rideRef = _db.collection('rides').doc(booking.rideId);
     final bookingRef = _db.collection('bookings').doc(booking.id);
     try {
-      // ── Step 1: Confirm this booking (existing transaction logic) ──────────
       await _db.runTransaction((tx) async {
         final rideSnap = await tx.get(rideRef);
-        final rideStatus = rideSnap.data()!['status'] as String? ?? 'active';
+        if (!rideSnap.exists) throw Exception('ride_not_found');
+        final data = rideSnap.data()!;
+        final rideStatus = data['status'] as String? ?? 'active';
         if (rideStatus != 'active') throw Exception('ride_not_accepting');
-        final booked = (rideSnap.data()!['bookedSeats'] as num?)?.toInt() ?? 0;
-        final total = (rideSnap.data()!['totalSeats'] as num?)?.toInt() ?? 0;
+        final booked = (data['bookedSeats'] as num?)?.toInt() ?? 0;
+        final total = (data['totalSeats'] as num?)?.toInt() ?? 0;
         if (total > 0 && booked + booking.seatsBooked > total) {
           throw Exception('not_enough_seats');
         }
@@ -387,17 +389,16 @@ class BookingProvider extends ChangeNotifier {
         });
       });
 
-      // ── Step 2: Auto-withdraw conflicting duplicate requests ────────────────
-      // Find all OTHER pending bookings by this passenger for rides on the
-      // same date, same time, same origin, same destination.
-      // We query by passengerId + date + origin + destination then filter
-      // for status=pending and rideId != this ride in Dart (avoids needing
-      // a composite Firestore index on 5 fields).
       await _cancelConflictingBookings(booking);
-
-      return true;
-    } catch (_) {
-      return false;
+      return null;
+    } catch (e) {
+      final msg = e.toString();
+      debugPrint('❌ acceptBooking error: $msg');
+      if (msg.contains('not_enough_seats')) return 'not_enough_seats';
+      if (msg.contains('ride_not_accepting')) return 'ride_not_accepting';
+      if (msg.contains('ride_not_found')) return 'ride_not_found';
+      if (msg.contains('permission-denied') || msg.contains('PERMISSION_DENIED')) return 'permission_denied';
+      return 'unknown';
     }
   }
 

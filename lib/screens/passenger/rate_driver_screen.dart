@@ -4,6 +4,7 @@ import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/screens/shared/report_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -59,7 +60,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
           onPressed: () => Navigator.of(context).pop(false),
         ),
         title: Text(
-          'Rate Your Driver',
+          context.l10n.rateYourDriver,
           style: TextStyle(
             color: context.colors.textPrimary,
             fontSize: 16,
@@ -108,7 +109,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
 
               // ── How was your ride ──────────────────────────────
               Text(
-                'How was your ride?',
+                context.l10n.howWasYourRide,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -159,7 +160,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   maxLines: 3,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
-                    hintText: 'Leave a comment (optional)…',
+                    hintText: context.l10n.leaveCommentHint,
                     hintStyle: TextStyle(
                         color: context.colors.textTertiary, fontSize: 14),
                     border: InputBorder.none,
@@ -176,7 +177,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF0F0),
+                    color: context.colors.errorLightBg,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: const Color(0xFFFFCDD2)),
                   ),
@@ -216,8 +217,8 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         )
-                      : const Text('Submit Rating',
-                          style: TextStyle(
+                      : Text(context.l10n.submitRating,
+                          style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600)),
                 ),
@@ -228,7 +229,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 child: Text(
-                  'Skip for now',
+                  context.l10n.skipForNow,
                   style: TextStyle(
                       color: context.colors.textSecondary, fontSize: 14),
                 ),
@@ -244,7 +245,7 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      'Had a problem?',
+                      context.l10n.hadAProblem,
                       style: TextStyle(
                           fontSize: 12,
                           color: context.colors.textTertiary),
@@ -277,9 +278,9 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
                   },
                   icon: const Icon(Icons.flag_outlined,
                       size: 18, color: Colors.red),
-                  label: const Text(
-                    'Report Driver',
-                    style: TextStyle(
+                  label: Text(
+                    context.l10n.reportDriver,
+                    style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.red,
@@ -304,15 +305,15 @@ class _RateDriverScreenState extends State<RateDriverScreen> {
   String _starLabel(int stars) {
     switch (stars) {
       case 1:
-        return 'Terrible';
+        return context.l10n.ratingTerrible;
       case 2:
-        return 'Bad';
+        return context.l10n.ratingBad;
       case 3:
-        return 'Okay';
+        return context.l10n.ratingOkay;
       case 4:
-        return 'Good';
+        return context.l10n.ratingGood;
       default:
-        return 'Excellent!';
+        return context.l10n.ratingExcellent;
     }
   }
 }

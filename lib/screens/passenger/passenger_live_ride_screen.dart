@@ -5,6 +5,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/theme/app_styles.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class PassengerLiveRideScreen extends StatefulWidget {
   final BookingModel booking;
@@ -120,7 +121,7 @@ class _PassengerLiveRideScreenState extends State<PassengerLiveRideScreen>
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFEBEE),
+                color: context.colors.errorLightBg,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -133,7 +134,7 @@ class _PassengerLiveRideScreenState extends State<PassengerLiveRideScreen>
                     ),
                   ),
                   const SizedBox(width: 6),
-                  const Text('LIVE',
+                  Text(context.l10n.liveLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
@@ -394,7 +395,7 @@ class _PassengerLiveRideScreenState extends State<PassengerLiveRideScreen>
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Back',
+                  child: Text(context.l10n.back,
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                 ),
               ),

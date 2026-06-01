@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/screens/choose_role_screen.dart';
+import 'package:testtale3/widgets/language_toggle_button.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -23,30 +24,39 @@ class WelcomeScreen extends StatelessWidget {
               SizedBox(height: isSmall ? 12 : 20),
 
               // ── Top logo bar ─────────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              Stack(
+                alignment: Alignment.center,
                 children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: BoxDecoration(
-                      color: AppStyles.primaryColor,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: const Icon(
-                      Icons.directions_car,
-                      color: AppStyles.onPrimary,
-                      size: 16,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: AppStyles.primaryColor,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Icon(
+                          Icons.directions_car,
+                          color: AppStyles.onPrimary,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        l10n.appName,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: context.colors.textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    l10n.appName,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: context.colors.textPrimary,
-                    ),
+                  const Positioned(
+                    right: 0,
+                    child: LanguageToggleButton(),
                   ),
                 ],
               ),

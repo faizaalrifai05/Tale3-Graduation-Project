@@ -11,6 +11,7 @@ import 'package:testtale3/screens/passenger/booking_status_screen.dart';
 import 'package:testtale3/screens/passenger/location_picker_screen.dart';
 import 'package:testtale3/Services/maps_service.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/theme/app_styles.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
@@ -225,7 +226,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     final LatLng? pickup = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          title: 'Set Pickup Location',
+          title: context.l10n.setPickupLocation,
           instruction: 'Drag map to your pickup point',
           initialPosition: origin,
           confirmLabel: 'Confirm Pickup →',
@@ -241,7 +242,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
     final LatLng? dropoff = await Navigator.of(context).push<LatLng>(
       MaterialPageRoute(
         builder: (_) => LocationPickerScreen(
-          title: 'Set Drop-off Location',
+          title: context.l10n.setDropoffLocation,
           instruction: 'Drag map to your drop-off point',
           initialPosition: dest,
           confirmLabel: 'Confirm Booking',
@@ -287,11 +288,11 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) {
+      builder: (ctx) {
         return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: ctx.colors.surfaceColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
           child: Column(
@@ -304,18 +305,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0E0),
+                    color: ctx.colors.borderColor,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
+              Text(
                 'Booking Summary',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: ctx.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 20),
@@ -364,12 +365,12 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Total',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1A1A),
+                      color: ctx.colors.textPrimary,
                     ),
                   ),
                   Text(
@@ -389,15 +390,15 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                     child: OutlinedButton(
                       onPressed: () => Navigator.of(context).pop(false),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF757575),
-                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        foregroundColor: ctx.colors.textSecondary,
+                        side: BorderSide(color: ctx.colors.borderColor),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
-                      child: const Text('Cancel',
-                          style: TextStyle(fontWeight: FontWeight.w600)),
+                      child: Text(context.l10n.cancel,
+                          style: const TextStyle(fontWeight: FontWeight.w600)),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -447,19 +448,19 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF9E9E9E),
+                    color: context.colors.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1A1A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
               ],
@@ -473,18 +474,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           context.l10n.selectYourSeat,
-          style: const TextStyle(
-            color: Color(0xFF1A1A1A),
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -505,18 +506,18 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                       children: [
                         Text(
                           widget.ride.carShortInfo,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           '${widget.ride.date}  •  ${widget.ride.time}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF757575),
+                            color: context.colors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 48),
@@ -526,10 +527,10 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           width: 250,
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: context.colors.surfaceColor,
                             borderRadius: BorderRadius.circular(40),
                             border: Border.all(
-                                color: const Color(0xFFEEEEEE), width: 3),
+                                color: context.colors.borderColor, width: 3),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.05),
@@ -602,13 +603,13 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                 // Bottom Summary & Action
                 Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: context.colors.surfaceColor,
                     boxShadow: [
                       BoxShadow(
-                        color: Color(0x0A000000),
+                        color: Colors.black.withValues(alpha: 0.04),
                         blurRadius: 10,
-                        offset: Offset(0, -5),
+                        offset: const Offset(0, -5),
                       ),
                     ],
                   ),
@@ -623,16 +624,16 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                             children: [
                               Text(
                                 context.l10n.selectedSeats,
-                                style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF757575)),
+                                style: TextStyle(
+                                    fontSize: 12, color: context.colors.textSecondary),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 '${bookingProvider.selectedCount}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1A1A1A),
+                                  color: context.colors.textPrimary,
                                 ),
                               ),
                             ],
@@ -642,8 +643,8 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                             children: [
                               Text(
                                 context.l10n.totalPrice,
-                                style: const TextStyle(
-                                    fontSize: 12, color: Color(0xFF757575)),
+                                style: TextStyle(
+                                    fontSize: 12, color: context.colors.textSecondary),
                               ),
                               const SizedBox(height: 4),
                               Text(
@@ -665,7 +666,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 14, vertical: 10),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF0F0),
+                            color: context.colors.errorLightBg,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                                 color: const Color(0xFFFFCDD2)),
@@ -696,7 +697,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                           padding: const EdgeInsets.symmetric(
                               vertical: 14, horizontal: 16),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
+                            color: context.colors.pendingLightBg,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(color: const Color(0xFFFFB300)),
                           ),
@@ -791,9 +792,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFFF0F0F0),
+          color: context.colors.cardBackgroundColor,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: const Color(0xFFE0E0E0)),
+          border: Border.all(color: context.colors.borderColor),
         ),
         child: const Center(
           child: Icon(Icons.block, color: Color(0xFFCCCCCC), size: 18),
@@ -863,7 +864,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         iconColor = Colors.white;
       }
     } else {
-      bgColor = const Color(0xFFF5F5F5);
+      bgColor = context.colors.cardBackgroundColor;
       iconColor = const Color(0xFFBDBDBD);
     }
 
@@ -889,7 +890,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         decoration: BoxDecoration(
           color: bgColor,
           borderRadius: BorderRadius.circular(8),
-          border: state == 0 ? Border.all(color: const Color(0xFFE0E0E0)) : null,
+          border: state == 0 ? Border.all(color: context.colors.borderColor) : null,
         ),
         child: Center(child: Icon(genderIcon, color: iconColor, size: 24)),
       ),
@@ -911,7 +912,7 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
                 ? null
                 : isBordered
                     ? Border.all(color: iconColor.withValues(alpha: 0.6), width: 1.5)
-                    : Border.all(color: const Color(0xFFE0E0E0)),
+                    : Border.all(color: context.colors.borderColor),
           ),
           child: iconColor != Colors.transparent
               ? Icon(icon ?? Icons.person, size: 10, color: iconColor.withValues(alpha: isBordered ? 0.7 : 1.0))
@@ -920,9 +921,9 @@ class _SelectSeatScreenState extends State<SelectSeatScreen> {
         const SizedBox(width: 6),
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF757575),
+            color: context.colors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -961,9 +962,9 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(
           24, 16, 24, MediaQuery.of(context).viewInsets.bottom + 32),
@@ -975,23 +976,23 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
             child: Container(
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
+                color: context.colors.borderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
           const SizedBox(height: 20),
-          const Text(
+          Text(
             "Who's joining?",
             style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1A1A1A),
+              fontSize: 18, fontWeight: FontWeight.w800, color: context.colors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Select the gender for each seat so the driver knows who to expect.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 13, color: Color(0xFF757575)),
+            style: TextStyle(fontSize: 13, color: context.colors.textSecondary),
           ),
           const SizedBox(height: 24),
 
@@ -1006,13 +1007,13 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
                     width: 80,
                     padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF5F5F5),
+                      color: context.colors.cardBackgroundColor,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       isYou ? 'You' : 'Seat ${i + 1}',
-                      style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242),
+                      style: TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textDeep,
                       ),
                     ),
                   ),
@@ -1027,10 +1028,10 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
                         decoration: BoxDecoration(
                           color: _genders[i] == 'male'
                               ? _male.withValues(alpha: 0.12)
-                              : const Color(0xFFF5F5F5),
+                              : context.colors.cardBackgroundColor,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: _genders[i] == 'male' ? _male : const Color(0xFFE0E0E0),
+                            color: _genders[i] == 'male' ? _male : context.colors.borderColor,
                             width: _genders[i] == 'male' ? 1.5 : 1,
                           ),
                         ),
@@ -1046,7 +1047,7 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: _genders[i] == 'male' ? _male : const Color(0xFF9E9E9E),
+                                color: _genders[i] == 'male' ? _male : context.colors.textTertiary,
                               ),
                             ),
                           ],
@@ -1065,10 +1066,10 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
                         decoration: BoxDecoration(
                           color: _genders[i] == 'female'
                               ? _female.withValues(alpha: 0.12)
-                              : const Color(0xFFF5F5F5),
+                              : context.colors.cardBackgroundColor,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                            color: _genders[i] == 'female' ? _female : const Color(0xFFE0E0E0),
+                            color: _genders[i] == 'female' ? _female : context.colors.borderColor,
                             width: _genders[i] == 'female' ? 1.5 : 1,
                           ),
                         ),
@@ -1084,7 +1085,7 @@ class _GenderSelectionSheetState extends State<_GenderSelectionSheet> {
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: _genders[i] == 'female' ? _female : const Color(0xFF9E9E9E),
+                                color: _genders[i] == 'female' ? _female : context.colors.textTertiary,
                               ),
                             ),
                           ],

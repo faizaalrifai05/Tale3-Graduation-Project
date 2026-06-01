@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/theme/app_styles.dart';
 import 'package:testtale3/providers/settings_provider.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 enum PermissionType { notifications, location }
 
@@ -48,15 +49,15 @@ Future<void> showLocationSettingsReminder(BuildContext context) {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Location Required',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            Text(
+              context.l10n.locationRequired,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 10),
-            const Text(
-              'Location access is disabled for Tale3.\n\nTo use this feature, open your phone\'s Settings → Apps → Tale3 → Permissions → Location, and enable it.',
+            Text(
+              context.l10n.locationPermissionDesc,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, height: 1.5),
+              style: const TextStyle(fontSize: 14, height: 1.5),
             ),
             const SizedBox(height: 28),
             SizedBox(
@@ -70,9 +71,9 @@ Future<void> showLocationSettingsReminder(BuildContext context) {
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('OK',
+                child: Text(context.l10n.ok,
                     style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                        const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -117,7 +118,7 @@ Future<bool> showPermissionDialog(
             ),
             const SizedBox(height: 20),
             Text(
-              isNotif ? 'Enable Notifications' : 'Enable Location',
+              isNotif ? context.l10n.enableNotifications : context.l10n.enableLocation,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -127,8 +128,8 @@ Future<bool> showPermissionDialog(
             const SizedBox(height: 10),
             Text(
               isNotif
-                  ? 'Stay updated on your ride status, messages from drivers, and important alerts.'
-                  : 'Tale3 uses your location to find nearby rides and calculate accurate pickup points.',
+                  ? context.l10n.notificationsReason
+                  : context.l10n.locationReason,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
@@ -151,8 +152,8 @@ Future<bool> showPermissionDialog(
                   ),
                 ),
                 child: Text(
-                  'Allow',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  context.l10n.allow,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ),
             ),
@@ -166,7 +167,7 @@ Future<bool> showPermissionDialog(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 child: Text(
-                  'Not Now',
+                  context.l10n.notNow,
                   style: TextStyle(
                     fontSize: 14,
                     color: context.colors.textSecondary,

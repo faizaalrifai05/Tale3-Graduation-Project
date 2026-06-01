@@ -219,15 +219,30 @@ class AppColorProxy {
   Color get progressGold => AppStyles.progressGold;
   Color get errorColor => AppStyles.errorColor;
   Color get successColor => AppStyles.successColor;
-  Color get successLightBg => AppStyles.successLightBg;
-  Color get successDarkText => AppStyles.successDarkText;
-  Color get successBorder => AppStyles.successBorder;
-  Color get successBgVerified => AppStyles.successBgVerified;
+  Color get successLightBg =>
+      _isDark ? const Color(0xFF1B2B1B) : AppStyles.successLightBg;
+  Color get successDarkText =>
+      _isDark ? const Color(0xFF81C784) : AppStyles.successDarkText;
+  Color get successBorder =>
+      _isDark ? const Color(0xFF2E7D32) : AppStyles.successBorder;
+  Color get successBgVerified =>
+      _isDark ? const Color(0xFF1B2B1B) : AppStyles.successBgVerified;
   Color get pendingColor => AppStyles.pendingColor;
   Color get deepOrange => AppStyles.deepOrange;
   Color get notificationDot => AppStyles.notificationDot;
   Color get cameraButtonColor => AppStyles.cameraButtonColor;
-  Color get starRatingLightBg => AppStyles.starRatingLightBg;
+  Color get starRatingLightBg =>
+      _isDark ? const Color(0xFF2A2000) : AppStyles.starRatingLightBg;
   Color get starRatingDarkText => AppStyles.starRatingDarkText;
+  Color get pendingLightBg =>
+      _isDark ? const Color(0xFF2A1A00) : const Color(0xFFFFF3E0);
+  Color get pendingBadgeBg =>
+      _isDark ? const Color(0xFF2A1F00) : const Color(0xFFFFFDE7);
+  Color get pendingBadgeBorder =>
+      _isDark ? const Color(0xFF4A3800) : const Color(0xFFFFE082);
+  Color get infoLinkBg =>
+      _isDark ? const Color(0xFF0D1F35) : const Color(0xFFE3F2FD);
+  Color get infoLinkColor =>
+      _isDark ? const Color(0xFF90CAF9) : const Color(0xFF1565C0);
   Color get googleBorder => AppStyles.googleBorder;
 }

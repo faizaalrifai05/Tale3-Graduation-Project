@@ -16,6 +16,7 @@ import 'package:testtale3/screens/driver/driver_chat_screen.dart';
 import 'package:testtale3/providers/rating_provider.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/providers/chat_provider.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:testtale3/screens/community_guidelines_screen.dart';
 import 'package:testtale3/widgets/permission_dialog.dart';
 
@@ -54,21 +55,19 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
-          title: const Row(
+          title: Row(
             children: [
-              Icon(Icons.block_rounded, color: Colors.red, size: 26),
-              SizedBox(width: 10),
+              const Icon(Icons.block_rounded, color: Colors.red, size: 26),
+              const SizedBox(width: 10),
               Text(
-                'Account Blocked',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                context.l10n.accountBlocked,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
               ),
             ],
           ),
-          content: const Text(
-            'Your account has been blocked by the admin. '
-            'If you believe this is a mistake, please contact '
-            'support at support@tale3.app.',
-            style: TextStyle(fontSize: 14, height: 1.5),
+          content: Text(
+            context.l10n.accountBlockedDesc,
+            style: const TextStyle(fontSize: 14, height: 1.5),
           ),
           actions: [
             TextButton(
@@ -80,8 +79,8 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                   (route) => false,
                 );
               },
-              child: const Text('OK',
-                  style: TextStyle(
+              child: Text(context.l10n.ok,
+                  style: const TextStyle(
                       fontWeight: FontWeight.w600, color: Colors.red)),
             ),
           ],
@@ -343,10 +342,19 @@ class _DriverHomeTab extends StatelessWidget {
                 elevation: 4,
                 shadowColor: AppStyles.primaryColor.withValues(alpha: 0.3),
                 child: InkWell(
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const DriverCreateRideScreen()),
-                  ),
+                  onTap: () async {
+                    final perm = await Geolocator.checkPermission();
+                    if (!context.mounted) return;
+                    if (perm == LocationPermission.denied ||
+                        perm == LocationPermission.deniedForever) {
+                      await showLocationSettingsReminder(context);
+                      return;
+                    }
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          builder: (_) => const DriverCreateRideScreen()),
+                    );
+                  },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
                     width: double.infinity,
@@ -619,7 +627,7 @@ class _DriverHomeTab extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       reviews.isEmpty
-                          ? 'No reviews yet'
+                          ? context.l10n.noReviewsYet
                           : '${reviews.length} ${reviews.length == 1 ? 'review' : 'reviews'} from passengers',
                       style: TextStyle(
                           fontSize: 13,
@@ -662,13 +670,13 @@ class _DriverHomeTab extends StatelessWidget {
                 size: 64,
                 color: context.colors.textTertiary.withValues(alpha: 0.4)),
             const SizedBox(height: 16),
-            Text('No reviews yet',
+            Text(context.l10n.noReviewsYet,
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: context.colors.textSecondary)),
             const SizedBox(height: 8),
-            Text('Complete trips and passengers will leave\nreviews here.',
+            Text(context.l10n.noReviewsDesc,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                     fontSize: 13,

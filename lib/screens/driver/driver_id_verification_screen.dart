@@ -141,21 +141,11 @@ class _DriverIdVerificationScreenState
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('${context.l10n.step} 2 ${context.l10n.ofWord} 5',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: context.colors.textPrimary)),
-                  Text('50%',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: AppStyles.primaryColor)),
-                ],
-              ),
+              Text('${context.l10n.step} 2 ${context.l10n.ofWord} 5',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: context.colors.textPrimary)),
               const SizedBox(height: 8),
               LinearProgressIndicator(
                 value: 0.4,

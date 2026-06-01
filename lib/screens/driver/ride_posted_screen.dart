@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
+import 'package:testtale3/theme/app_styles.dart';
 
 
 class RidePostedScreen extends StatefulWidget {
@@ -42,21 +44,90 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
     super.dispose();
   }
 
+  void _showShareSheet(BuildContext context) {
+    final shareText =
+        'Check out this ride on Tale3!\n🚗 ${widget.origin} → ${widget.destination}\nBook now on Tale3 — the trusted carpool app.';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: ctx.colors.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              ctx.l10n.shareRide,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              shareText,
+              style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.copy, size: 18),
+                label: Text(
+                  ctx.l10n.copyRideDetails,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+                ),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: shareText));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(context.l10n.rideCopied),
+                    backgroundColor: AppStyles.successColor,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppStyles.darkMaroon,
+                  foregroundColor: AppStyles.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.close, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
         ),
         title: Text(
           context.l10n.ridePosted,
-          style: const TextStyle(
-            color: Color(0xFF1A1A1A),
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -118,19 +189,19 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
               // Status Text
               Text(
                 context.l10n.rideIsLive,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
               Text(
                 context.l10n.matchingPassengers,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -140,16 +211,16 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF9F9F9),
+                  color: context.colors.inputFillColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  border: Border.all(color: context.colors.borderColor),
                 ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFDF2F4),
+                      decoration: BoxDecoration(
+                        color: context.colors.highlightBackgroundColor,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(Icons.route, color: _primaryColor, size: 20),
@@ -160,29 +231,29 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                       children: [
                         Text(
                           context.l10n.departure,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                          style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.origin.isEmpty ? 'Origin' : widget.origin,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                         ),
                       ],
                     ),
                     const Spacer(),
-                    const Icon(Icons.arrow_forward, color: Color(0xFFBDBDBD), size: 16),
+                    Icon(Icons.arrow_forward, color: context.colors.textTertiary, size: 16),
                     const Spacer(),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           context.l10n.destination,
-                          style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                          style: TextStyle(fontSize: 12, color: context.colors.textSecondary),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.destination.isEmpty ? 'Destination' : widget.destination,
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1A1A)),
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: context.colors.textPrimary),
                         ),
                       ],
                     ),
@@ -196,7 +267,7 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showShareSheet(context),
                   icon: const Icon(Icons.share, size: 20),
                   label: Text(
                     context.l10n.shareTrip,
@@ -229,8 +300,8 @@ class _RidePostedScreenState extends State<RidePostedScreen> with SingleTickerPr
                     );
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF1A1A1A),
-                    backgroundColor: const Color(0xFFF5F5F5),
+                    foregroundColor: context.colors.textPrimary,
+                    backgroundColor: context.colors.cardBackgroundColor,
                     side: BorderSide.none,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),

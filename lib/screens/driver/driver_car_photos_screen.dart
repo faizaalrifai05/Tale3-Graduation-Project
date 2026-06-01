@@ -188,24 +188,12 @@ class _DriverCarPhotosScreenState extends State<DriverCarPhotosScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Step indicator
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '${context.l10n.step} 4 ${context.l10n.ofWord} 5',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: context.colors.textPrimary),
-                  ),
-                  Text(
-                    '80%',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: AppStyles.primaryColor),
-                  ),
-                ],
+              Text(
+                '${context.l10n.step} 4 ${context.l10n.ofWord} 5',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: context.colors.textPrimary),
               ),
               const SizedBox(height: 8),
               LinearProgressIndicator(

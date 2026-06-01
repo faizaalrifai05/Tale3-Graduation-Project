@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/screens/driver/ride_confirmation_screen.dart';
@@ -30,18 +32,18 @@ class DriverCreateRideScreen extends StatelessWidget {
     final isBlocked = user?.isBlocked ?? false;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.surfaceColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           context.l10n.createRide,
-          style: const TextStyle(
-            color: Color(0xFF1A1A1A),
+          style: TextStyle(
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -60,8 +62,8 @@ class DriverCreateRideScreen extends StatelessWidget {
               if (isBlocked)
                 _StatusBanner(
                   icon: Icons.block_rounded,
-                  color: Colors.red,
-                  bgColor: const Color(0xFFFFEBEE),
+                  color: AppStyles.errorColor,
+                  bgColor: context.colors.errorLightBg,
                   title: 'Account Blocked',
                   message:
                       'Your account has been blocked. You cannot create rides. Please contact support at support@tale3.app.',
@@ -76,12 +78,12 @@ class DriverCreateRideScreen extends StatelessWidget {
                           ? Icons.cancel_outlined
                           : Icons.verified_user_outlined,
                   color: user?.verificationStatus == VerificationStatus.rejected
-                      ? Colors.red
-                      : const Color(0xFF8B1A2B),
+                      ? AppStyles.errorColor
+                      : AppStyles.primaryColor,
                   bgColor:
                       user?.verificationStatus == VerificationStatus.rejected
-                          ? const Color(0xFFFFEBEE)
-                          : const Color(0xFFFDF2F4),
+                          ? context.colors.errorLightBg
+                          : context.colors.highlightBackgroundColor,
                   title: user?.verificationStatus == VerificationStatus.pending
                       ? 'Verification Pending'
                       : user?.verificationStatus == VerificationStatus.rejected
@@ -117,7 +119,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         _buildDropdownField(
                           context: context,
                           label: context.l10n.date == 'Date' ? 'From' : 'من',
-                          hint: 'Select origin city',
+                          hint: context.l10n.selectOriginCity,
                           icon: Icons.radio_button_unchecked,
                           value: rideProvider.origin.isEmpty
                               ? null
@@ -132,7 +134,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                         _buildDropdownField(
                           context: context,
                           label: context.l10n.date == 'Date' ? 'To' : 'إلى',
-                          hint: 'Select destination city',
+                          hint: context.l10n.selectDestinationCity,
                           icon: Icons.location_on,
                           value: rideProvider.destination.isEmpty
                               ? null
@@ -153,18 +155,18 @@ class DriverCreateRideScreen extends StatelessWidget {
                                 horizontal: 14, vertical: 10),
                             decoration: BoxDecoration(
                               color: rideProvider.hasAdminPrice
-                                  ? const Color(0xFFFDF2F4)
+                                  ? context.colors.highlightBackgroundColor
                                   : rideProvider.priceError.isNotEmpty
-                                      ? const Color(0xFFFFEBEE)
-                                      : const Color(0xFFF5F5F5),
+                                      ? context.colors.errorLightBg
+                                      : context.colors.cardBackgroundColor,
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: rideProvider.hasAdminPrice
-                                    ? const Color(0xFF8B1A2B)
+                                    ? AppStyles.primaryColor
                                         .withValues(alpha: 0.3)
                                     : rideProvider.priceError.isNotEmpty
-                                        ? Colors.red.withValues(alpha: 0.3)
-                                        : const Color(0xFFE0E0E0),
+                                        ? AppStyles.errorColor.withValues(alpha: 0.3)
+                                        : context.colors.borderColor,
                               ),
                             ),
                             child: Row(
@@ -175,7 +177,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                                     height: 16,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Color(0xFF8B1A2B),
+                                      color: AppStyles.primaryColor,
                                     ),
                                   )
                                 else
@@ -186,10 +188,10 @@ class DriverCreateRideScreen extends StatelessWidget {
                                             ? Icons.warning_amber_rounded
                                             : Icons.info_outline,
                                     color: rideProvider.hasAdminPrice
-                                        ? _primaryColor
+                                        ? context.colors.primaryColor
                                         : rideProvider.priceError.isNotEmpty
-                                            ? Colors.red
-                                            : const Color(0xFF9E9E9E),
+                                            ? AppStyles.errorColor
+                                            : context.colors.textTertiary,
                                     size: 18,
                                   ),
                                 const SizedBox(width: 10),
@@ -206,10 +208,10 @@ class DriverCreateRideScreen extends StatelessWidget {
                                       fontSize: 12,
                                       fontWeight: FontWeight.w500,
                                       color: rideProvider.hasAdminPrice
-                                          ? _primaryColor
+                                          ? context.colors.primaryColor
                                           : rideProvider.priceError.isNotEmpty
-                                              ? Colors.red
-                                              : const Color(0xFF9E9E9E),
+                                              ? AppStyles.errorColor
+                                              : context.colors.textTertiary,
                                     ),
                                   ),
                                 ),
@@ -384,33 +386,33 @@ class DriverCreateRideScreen extends StatelessWidget {
                                     padding: const EdgeInsets.symmetric(
                                         horizontal: 16),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFFF0F0F0),
+                                      color: context.colors.inputFillColor,
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
                                           color: context.colors.borderColor),
                                     ),
                                     child: Row(
                                       children: [
-                                        const Icon(Icons.sell_outlined,
-                                            color: Color(0xFF8B1A2B),
+                                        Icon(Icons.sell_outlined,
+                                            color: AppStyles.primaryColor,
                                             size: 18),
                                         const SizedBox(width: 10),
                                         if (rideProvider.loadingPrice)
-                                          const SizedBox(
+                                          SizedBox(
                                             width: 16,
                                             height: 16,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2,
-                                              color: Color(0xFF8B1A2B),
+                                              color: AppStyles.primaryColor,
                                             ),
                                           )
                                         else if (rideProvider.hasAdminPrice)
                                           Text(
                                             '${rideProvider.adminPrice} JOD',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w700,
-                                              color: Color(0xFF8B1A2B),
+                                              color: AppStyles.primaryColor,
                                             ),
                                           )
                                         else
@@ -420,14 +422,14 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                         .isNotEmpty
                                                 ? 'Not set'
                                                 : 'Auto-filled',
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                               fontSize: 13,
-                                              color: Color(0xFF9E9E9E),
+                                              color: context.colors.textTertiary,
                                             ),
                                           ),
                                         const Spacer(),
-                                        const Icon(Icons.lock_outline,
-                                            color: Color(0xFF9E9E9E),
+                                        Icon(Icons.lock_outline,
+                                            color: context.colors.textTertiary,
                                             size: 16),
                                       ],
                                     ),
@@ -537,6 +539,15 @@ class DriverCreateRideScreen extends StatelessWidget {
                             onPressed: rideProvider.isPublishing
                                 ? null
                                 : () async {
+                                    // 0. Location permission check
+                                    final perm = await Geolocator.checkPermission();
+                                    if (!context.mounted) return;
+                                    if (perm == LocationPermission.denied ||
+                                        perm == LocationPermission.deniedForever) {
+                                      await showLocationSettingsReminder(context);
+                                      return;
+                                    }
+
                                     // 1. Synchronous field validation
                                     final error = rideProvider.validate();
                                     if (error != null) {
@@ -544,7 +555,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                                           .showSnackBar(
                                         SnackBar(
                                           content: Text(error),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: AppStyles.errorColor,
                                           behavior:
                                               SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
@@ -567,7 +578,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                 ? rideProvider.priceError
                                                 : 'Please wait for route price to load.',
                                           ),
-                                          backgroundColor: Colors.red,
+                                          backgroundColor: AppStyles.errorColor,
                                           behavior:
                                               SnackBarBehavior.floating,
                                           shape: RoundedRectangleBorder(
@@ -603,10 +614,10 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                     const EdgeInsets.symmetric(
                                                         vertical: 24,
                                                         horizontal: 20),
-                                                decoration: const BoxDecoration(
-                                                  color: Color(0xFFFFEBEE),
+                                                decoration: BoxDecoration(
+                                                  color: context.colors.errorLightBg,
                                                   borderRadius:
-                                                      BorderRadius.only(
+                                                      const BorderRadius.only(
                                                     topLeft:
                                                         Radius.circular(20),
                                                     topRight:
@@ -619,29 +630,29 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                       width: 56,
                                                       height: 56,
                                                       decoration:
-                                                          const BoxDecoration(
-                                                        color: Colors.white,
+                                                          BoxDecoration(
+                                                        color: context.colors.surfaceColor,
                                                         shape:
                                                             BoxShape.circle,
                                                       ),
-                                                      child: const Icon(
+                                                      child: Icon(
                                                         Icons
                                                             .directions_car_rounded,
                                                         color:
-                                                            Color(0xFF8B1A2B),
+                                                            AppStyles.primaryColor,
                                                         size: 28,
                                                       ),
                                                     ),
                                                     const SizedBox(
                                                         height: 12),
-                                                    const Text(
+                                                    Text(
                                                       'Ride Already Scheduled',
                                                       style: TextStyle(
                                                         fontSize: 17,
                                                         fontWeight:
                                                             FontWeight.w800,
                                                         color:
-                                                            Color(0xFF8B1A2B),
+                                                            AppStyles.primaryColor,
                                                       ),
                                                       textAlign:
                                                           TextAlign.center,
@@ -662,10 +673,11 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                           CrossAxisAlignment
                                                               .start,
                                                       children: [
-                                                        const Icon(
+                                                        Icon(
                                                           Icons.info_outline,
-                                                          color: Color(
-                                                              0xFF9E9E9E),
+                                                          color: context
+                                                              .colors
+                                                              .textTertiary,
                                                           size: 16,
                                                         ),
                                                         const SizedBox(
@@ -740,7 +752,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                                                     backgroundColor:
                                                         _darkMaroon,
                                                     foregroundColor:
-                                                        Colors.white,
+                                                        AppStyles.onPrimary,
                                                     shape:
                                                         RoundedRectangleBorder(
                                                       borderRadius:
@@ -775,7 +787,7 @@ class DriverCreateRideScreen extends StatelessWidget {
                                   },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: _darkMaroon,
-                              foregroundColor: Colors.white,
+                              foregroundColor: AppStyles.onPrimary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -807,11 +819,11 @@ class DriverCreateRideScreen extends StatelessWidget {
       width: 40,
       height: 40,
       decoration: BoxDecoration(
-        color: const Color(0xFFE8EAF6),
+        color: context.colors.cardBackgroundColor,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Center(
-        child: Icon(Icons.drive_eta, color: Color(0xFF9FA8DA), size: 20),
+      child: Center(
+        child: Icon(Icons.drive_eta, color: context.colors.textTertiary, size: 20),
       ),
     );
   }
@@ -835,7 +847,7 @@ class DriverCreateRideScreen extends StatelessWidget {
           child: Icon(
             Icons.person,
             size: 20,
-            color: available ? Colors.white : context.colors.textTertiary,
+            color: available ? AppStyles.onPrimary : context.colors.textTertiary,
           ),
         ),
       ),

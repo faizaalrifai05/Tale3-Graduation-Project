@@ -8,6 +8,7 @@ import 'package:testtale3/providers/navigation_provider.dart';
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/screens/driver/driver_car_photos_screen.dart';
 import 'package:testtale3/screens/passenger/passenger_home_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -85,30 +86,28 @@ class _SplashScreenState extends State<SplashScreen>
               borderRadius: BorderRadius.circular(20),
             ),
             title: Row(
-              children: const [
-                Icon(Icons.block_rounded, color: Colors.red, size: 26),
-                SizedBox(width: 10),
+              children: [
+                const Icon(Icons.block_rounded, color: Colors.red, size: 26),
+                const SizedBox(width: 10),
                 Text(
-                  'Account Blocked',
-                  style: TextStyle(
+                  context.l10n.accountBlocked,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ],
             ),
-            content: const Text(
-              'Your account has been blocked by the admin. '
-              'If you believe this is a mistake, please contact '
-              'support at support@tale3.app.',
-              style: TextStyle(fontSize: 14, height: 1.5),
+            content: Text(
+              context.l10n.accountBlockedDesc,
+              style: const TextStyle(fontSize: 14, height: 1.5),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  'OK',
-                  style: TextStyle(
+                child: Text(
+                  context.l10n.ok,
+                  style: const TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.red,
                   ),
@@ -157,9 +156,9 @@ class _SplashScreenState extends State<SplashScreen>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'Preparing your journey...',
-                          style: TextStyle(
+                        Text(
+                          context.l10n.preparingJourney,
+                          style: const TextStyle(
                             fontSize: 13,
                             color: Color(0xFF5C0A1A),
                           ),

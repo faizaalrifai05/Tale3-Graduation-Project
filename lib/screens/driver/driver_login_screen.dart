@@ -25,7 +25,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
 
   bool _obscurePassword = true;
   bool _isLoading = false;
-  bool _isGoogleLoading = false;
   bool _sendingVerification = false;
   String? _errorMessage;
 
@@ -42,29 +41,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  Future<void> _handleGoogleSignIn() async {
-    setState(() { _isGoogleLoading = true; _errorMessage = null; });
-    try {
-      final error = await context
-          .read<app_auth.AuthProvider>()
-          .signInWithGoogle(UserRole.driver);
-      if (!mounted) return;
-      if (error != null) {
-        setState(() => _errorMessage = error);
-      } else {
-        // pushAndRemoveUntil clears the entire back stack so pressing
-        // back cannot return to the login/welcome/guidelines screens.
-        context.read<NavigationProvider>().resetTabs();
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const DriverHomeScreen()),
-          (route) => false,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isGoogleLoading = false);
-    }
   }
 
   Future<void> _resendVerification() async {
@@ -282,7 +258,7 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                                     color: Color(0xFF8B1A2B)))
                             : const Icon(Icons.email_outlined,
                                 size: 16, color: Color(0xFF8B1A2B)),
-                        label: const Text('Resend Verification Email',
+                        label: Text(context.l10n.resendVerificationEmail,
                             style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
@@ -319,65 +295,6 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
                             l10n.loginAsDriver,
                             style: TextStyle(
                                 fontSize: 16, fontWeight: FontWeight.w600),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                Row(
-                  children: [
-                    Expanded(
-                        child: Container(
-                            height: 1, color: context.colors.dividerColor)),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        l10n.orContinueWith,
-                        style: TextStyle(fontSize: 12, color: context.colors.textTertiary),
-                      ),
-                    ),
-                    Expanded(
-                        child: Container(
-                            height: 1, color: context.colors.dividerColor)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: OutlinedButton(
-                    onPressed: _isGoogleLoading ? null : _handleGoogleSignIn,
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: context.colors.surfaceColor,
-                      side: BorderSide(color: AppStyles.googleBorder),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: _isGoogleLoading
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppStyles.googleBlue,
-                            ),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _GoogleLogo(),
-                              const SizedBox(width: 12),
-                              Text(
-                                l10n.signInWithGoogle,
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppStyles.googleText,
-                                ),
-                              ),
-                            ],
                           ),
                   ),
                 ),
@@ -448,48 +365,3 @@ class _DriverLoginScreenState extends State<DriverLoginScreen> {
   }
 }
 
-class _GoogleLogo extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 22,
-      height: 22,
-      child: CustomPaint(painter: _GoogleLogoPainter()),
-    );
-  }
-}
-
-class _GoogleLogoPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
-    const startAngle = -0.35;
-
-    void drawArc(Color color, double start, double sweep) {
-      final paint = Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = size.width * 0.18
-        ..strokeCap = StrokeCap.butt;
-      canvas.drawArc(rect, start, sweep, false, paint);
-    }
-
-    drawArc(AppStyles.googleBlue, startAngle, 1.75);
-    drawArc(AppStyles.googleGreen, startAngle + 1.75, 1.05);
-    drawArc(AppStyles.googleYellow, startAngle + 2.8, 0.85);
-    drawArc(AppStyles.googleRed, startAngle + 3.65, 0.92);
-
-    final barPaint = Paint()
-      ..color = AppStyles.googleBlue
-      ..strokeWidth = size.width * 0.18
-      ..strokeCap = StrokeCap.square;
-    canvas.drawLine(
-      Offset(size.width * 0.5, size.height * 0.5),
-      Offset(size.width * 0.97, size.height * 0.5),
-      barPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

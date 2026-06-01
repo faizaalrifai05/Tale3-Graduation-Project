@@ -4,6 +4,7 @@ import 'package:testtale3/models/user_model.dart';
 import 'package:testtale3/providers/auth_provider.dart' as app_auth;
 import 'package:testtale3/screens/driver/driver_home_screen.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
+import 'package:testtale3/theme/app_styles.dart';
 
 class DriverVerificationStatusScreen extends StatelessWidget {
   const DriverVerificationStatusScreen({super.key});
@@ -50,18 +51,18 @@ class DriverVerificationStatusScreen extends StatelessWidget {
         carUploaded ? idStatusColor : const Color(0xFF9E9E9E);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: context.colors.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: context.colors.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+          icon: Icon(Icons.arrow_back, color: context.colors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           context.l10n.verificationStatus,
           style: TextStyle(
-            color: Color(0xFF1A1A1A),
+            color: context.colors.textPrimary,
             fontSize: 16,
             fontWeight: FontWeight.w800,
           ),
@@ -79,8 +80,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               Container(
                 width: 80,
                 height: 80,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFDF2F4),
+                decoration: BoxDecoration(
+                  color: context.colors.highlightBackgroundColor,
                   shape: BoxShape.circle,
                 ),
                 child: const Center(
@@ -92,24 +93,24 @@ class DriverVerificationStatusScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Title
               Text(
                 context.l10n.identityVerification,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1A1A),
+                  color: context.colors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
-              
+
               Text(
                 context.l10n.verificationDocsBeingReviewed,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF757575),
+                  color: context.colors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -117,14 +118,7 @@ class DriverVerificationStatusScreen extends StatelessWidget {
 
               // Status Cards
               _buildStatusCard(
-                icon: Icons.security,
-                title: context.l10n.backgroundCheck,
-                status: context.l10n.statusActive,
-                statusIcon: Icons.check_circle,
-                statusColor: const Color(0xFF4CAF50),
-              ),
-              const SizedBox(height: 16),
-              _buildStatusCard(
+                context: context,
                 icon: Icons.badge_outlined,
                 title: context.l10n.idVerification,
                 status: idStatusLabel,
@@ -133,6 +127,7 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
               _buildStatusCard(
+                context: context,
                 icon: Icons.directions_car_outlined,
                 title: context.l10n.vehicleInspection,
                 status: vehicleStatusLabel,
@@ -155,8 +150,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
 );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEDF1F5),
-                    foregroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: context.colors.cardBackgroundColor,
+                    foregroundColor: context.colors.textPrimary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -205,6 +200,7 @@ class DriverVerificationStatusScreen extends StatelessWidget {
   }
 
   Widget _buildStatusCard({
+    required BuildContext context,
     required IconData icon,
     required String title,
     required String status,
@@ -214,8 +210,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: const Color(0xFFEEEEEE)),
+        color: context.colors.surfaceColor,
+        border: Border.all(color: context.colors.borderColor),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -229,8 +225,8 @@ class DriverVerificationStatusScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFDF2F4),
+            decoration: BoxDecoration(
+              color: context.colors.highlightBackgroundColor,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -246,10 +242,10 @@ class DriverVerificationStatusScreen extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1A1A),
+                    color: context.colors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 4),

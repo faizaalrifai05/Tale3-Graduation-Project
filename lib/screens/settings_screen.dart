@@ -7,7 +7,7 @@ import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/models/saved_account.dart';
 import 'package:testtale3/screens/passenger/passenger_login_screen.dart';
 import 'package:testtale3/screens/driver/driver_login_screen.dart';
-import 'package:testtale3/screens/choose_role_screen.dart';
+import 'package:testtale3/screens/welcome_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -710,7 +710,7 @@ class _SettingsScreenState extends State<SettingsScreen>
     await context.read<AuthProvider>().signOut();
     if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
+      MaterialPageRoute(builder: (_) => const WelcomeScreen()),
       (route) => false,
     );
   }
@@ -782,14 +782,14 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                 _sheetTextField(
                   controller: _nameController,
-                  label: 'FULL NAME',
-                  hint: 'Your full name',
+                  label: context.l10n.fullName.toUpperCase(),
+                  hint: context.l10n.yourFullName,
                   icon: Icons.person_outline,
                 ),
                 const SizedBox(height: 16),
                 _sheetTextField(
                   controller: _emailController,
-                  label: 'EMAIL ADDRESS',
+                  label: context.l10n.emailAddress.toUpperCase(),
                   hint: 'name@example.com',
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
@@ -797,7 +797,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 const SizedBox(height: 16),
                 _sheetTextField(
                   controller: _phoneController,
-                  label: 'PHONE NUMBER',
+                  label: context.l10n.phoneNumber.toUpperCase(),
                   hint: '+966 5X XXX XXXX',
                   icon: Icons.phone_outlined,
                   keyboardType: TextInputType.phone,
@@ -806,7 +806,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                 _sheetButton(context.l10n.saveChanges, () {
                   Navigator.pop(ctx);
-                  _showSnackBar('Personal information updated');
+                  _showSnackBar(context.l10n.personalInfoUpdated);
                 }),
                 const SizedBox(height: 12),
               ],
@@ -863,7 +863,7 @@ class _SettingsScreenState extends State<SettingsScreen>
 
                     _sheetTextField(
                       controller: _currentPasswordController,
-                      label: 'CURRENT PASSWORD',
+                      label: context.l10n.currentPassword.toUpperCase(),
                       hint: '••••••••',
                       icon: Icons.lock_outline,
                       obscureText: _obscureCurrent,
@@ -882,7 +882,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 16),
                     _sheetTextField(
                       controller: _newPasswordController,
-                      label: 'NEW PASSWORD',
+                      label: context.l10n.newPasswordLabel.toUpperCase(),
                       hint: '••••••••',
                       icon: Icons.lock_outline,
                       obscureText: _obscureNew,
@@ -901,7 +901,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     const SizedBox(height: 16),
                     _sheetTextField(
                       controller: _confirmPasswordController,
-                      label: 'CONFIRM NEW PASSWORD',
+                      label: context.l10n.confirmNewPassword.toUpperCase(),
                       hint: '••••••••',
                       icon: Icons.lock_outline,
                       obscureText: _obscureConfirm,
@@ -922,13 +922,13 @@ class _SettingsScreenState extends State<SettingsScreen>
                     _sheetButton(context.l10n.updatePassword, () async {
                       if (_newPasswordController.text.isEmpty ||
                           _currentPasswordController.text.isEmpty) {
-                        _showSnackBar('Please fill in all fields',
+                        _showSnackBar(context.l10n.fillAllFields,
                             isError: true);
                         return;
                       }
                       if (_newPasswordController.text !=
                           _confirmPasswordController.text) {
-                        _showSnackBar('Passwords do not match',
+                        _showSnackBar(context.l10n.passwordsDoNotMatch,
                             isError: true);
                         return;
                       }
@@ -948,7 +948,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       if (error != null) {
                         _showSnackBar(error, isError: true);
                       } else {
-                        _showSnackBar('Password updated successfully');
+                        _showSnackBar(context.l10n.passwordUpdated);
                       }
                     }),
                     const SizedBox(height: 12),
@@ -1468,7 +1468,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 _showSnackBar(error, isError: true);
               } else {
                 navigator.pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const ChooseRoleScreen()),
+                  MaterialPageRoute(builder: (_) => const WelcomeScreen()),
                   (route) => false,
                 );
               }
@@ -1515,7 +1515,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                     obscureText: true,
                     enabled: !deleting,
                     decoration: InputDecoration(
-                      labelText: 'Enter your password to confirm',
+                      labelText: context.l10n.enterPasswordToConfirm,
                       labelStyle: TextStyle(
                           fontSize: 13,
                           color: context.colors.textSecondary),

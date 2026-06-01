@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:testtale3/theme/app_styles.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/models/ride_model.dart';
@@ -269,7 +271,14 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                       width: double.infinity,
                       height: 52,
                       child: ElevatedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          final perm = await Geolocator.checkPermission();
+                          if (!context.mounted) return;
+                          if (perm == LocationPermission.denied ||
+                              perm == LocationPermission.deniedForever) {
+                            await showLocationSettingsReminder(context);
+                            return;
+                          }
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => DriverRideLiveScreen(
@@ -334,14 +343,14 @@ class _DriverRideDetailsScreenState extends State<DriverRideDetailsScreen> {
                       width: double.infinity,
                       height: 52,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF5F5F5),
+                        color: context.colors.cardBackgroundColor,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         _ride?.status == 'cancelled'
-                            ? 'Ride Cancelled'
-                            : 'Ride Completed',
+                            ? context.l10n.rideCancelled
+                            : context.l10n.rideCompleted,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -659,17 +668,27 @@ class _RequestsSection extends StatefulWidget {
 
 class _RequestsSectionState extends State<_RequestsSection> {
   final Set<String> _processing = {};
+  final Map<String, String> _errors = {};
 
   Future<void> _accept(BuildContext context, BookingModel booking) async {
-    setState(() => _processing.add(booking.id));
-    final ok = await context.read<BookingProvider>().acceptBooking(booking);
+    setState(() {
+      _processing.add(booking.id);
+      _errors.remove(booking.id);
+    });
+    final error = await context.read<BookingProvider>().acceptBooking(booking);
     if (!mounted) return;
-    setState(() => _processing.remove(booking.id));
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No seats left — cannot accept this request.')),
-      );
-    }
+    setState(() {
+      _processing.remove(booking.id);
+      if (error != null) {
+        _errors[booking.id] = switch (error) {
+          'not_enough_seats'   => context.l10n.noSeatsAvailable,
+          'ride_not_accepting' => context.l10n.rideAlreadyStarted,
+          'ride_not_found'     => context.l10n.rideNotFound,
+          'permission_denied'  => context.l10n.permissionDenied,
+          _                    => context.l10n.somethingWentWrong,
+        };
+      }
+    });
   }
 
   Future<void> _reject(BuildContext context, BookingModel booking) async {
@@ -702,7 +721,7 @@ class _RequestsSectionState extends State<_RequestsSection> {
               Row(
                 children: [
                   Text(
-                    'BOOKING REQUESTS',
+                    context.l10n.bookingRequests,
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
@@ -714,15 +733,15 @@ class _RequestsSectionState extends State<_RequestsSection> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF3E0),
+                      color: context.colors.pendingLightBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${requests.length} pending',
-                      style: const TextStyle(
+                      '${requests.length} ${context.l10n.pendingLabel}',
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFF57F17),
+                        color: context.colors.pendingColor,
                       ),
                     ),
                   ),
@@ -733,6 +752,7 @@ class _RequestsSectionState extends State<_RequestsSection> {
                     booking: b,
                     ride: ride,
                     isProcessing: _processing.contains(b.id),
+                    errorMessage: _errors[b.id],
                     onAccept: () => _accept(context, b),
                     onReject: () => _reject(context, b),
                   )),
@@ -748,6 +768,7 @@ class _RequestRow extends StatelessWidget {
   final BookingModel booking;
   final RideModel ride;
   final bool isProcessing;
+  final String? errorMessage;
   final VoidCallback onAccept;
   final VoidCallback onReject;
 
@@ -757,6 +778,7 @@ class _RequestRow extends StatelessWidget {
     required this.isProcessing,
     required this.onAccept,
     required this.onReject,
+    this.errorMessage,
   });
 
   void _viewLocations(BuildContext context) {
@@ -786,9 +808,9 @@ class _RequestRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFFDE7),
+        color: context.colors.pendingBadgeBg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFFFE082)),
+        border: Border.all(color: context.colors.pendingBadgeBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -864,12 +886,12 @@ class _RequestRow extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F5),
+                    color: context.colors.cardBackgroundColor,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'No pin',
-                    style: TextStyle(fontSize: 10, color: Color(0xFF9E9E9E)),
+                  child: Text(
+                    context.l10n.noPin,
+                    style: TextStyle(fontSize: 10, color: context.colors.textTertiary),
                   ),
                 ),
             ],
@@ -882,24 +904,24 @@ class _RequestRow extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
+                  color: context.colors.infoLinkBg,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
-                    Icon(Icons.map_rounded, size: 14, color: Color(0xFF1565C0)),
-                    SizedBox(width: 6),
+                  children: [
+                    Icon(Icons.map_rounded, size: 14, color: context.colors.infoLinkColor),
+                    const SizedBox(width: 6),
                     Text(
-                      'View pickup & drop-off',
+                      context.l10n.viewPickupDropoff,
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: Color(0xFF1565C0),
+                        color: context.colors.infoLinkColor,
                       ),
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.chevron_right_rounded, size: 14, color: Color(0xFF1565C0)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 14, color: context.colors.infoLinkColor),
                   ],
                 ),
               ),
@@ -920,7 +942,7 @@ class _RequestRow extends StatelessWidget {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       padding: const EdgeInsets.symmetric(vertical: 8),
                     ),
-                    child: const Text('Reject', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: Text(context.l10n.reject, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -934,11 +956,35 @@ class _RequestRow extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       elevation: 0,
                     ),
-                    child: const Text('Accept', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                    child: Text(context.l10n.accept, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                   ),
                 ),
               ],
             ),
+          if (errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: context.colors.errorLightBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppStyles.errorColor.withValues(alpha: 0.4)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, size: 14, color: AppStyles.errorColor),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      errorMessage!,
+                      style: TextStyle(fontSize: 12, color: AppStyles.errorColor, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1002,9 +1048,9 @@ class _PassengerLocationSheetState extends State<_PassengerLocationSheet> {
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.75,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: context.colors.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
         children: [
@@ -1014,7 +1060,7 @@ class _PassengerLocationSheetState extends State<_PassengerLocationSheet> {
             child: Container(
               width: 40, height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFE0E0E0),
+                color: context.colors.borderColor,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1044,10 +1090,10 @@ class _PassengerLocationSheetState extends State<_PassengerLocationSheet> {
                 Expanded(
                   child: Text(
                     '${widget.booking.passengerName}\'s locations',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1A1A1A),
+                      color: context.colors.textPrimary,
                     ),
                   ),
                 ),
@@ -1142,7 +1188,7 @@ class _PassengerLocationSheetState extends State<_PassengerLocationSheet> {
         ),
         const SizedBox(width: 6),
         Text(label,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Color(0xFF424242))),
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: context.colors.textPrimary)),
       ],
     );
   }

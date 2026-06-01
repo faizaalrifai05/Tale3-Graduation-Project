@@ -75,21 +75,21 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                 children: [
                   // Back row
                   Container(
-                    color: Colors.white,
+                    color: context.colors.surfaceColor,
                     padding: const EdgeInsets.symmetric(vertical: 4),
                     child: Row(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.arrow_back,
-                              color: Color(0xFF1A1A1A)),
+                          icon: Icon(Icons.arrow_back,
+                              color: context.colors.textPrimary),
                           onPressed: () => Navigator.of(context).pop(null),
                         ),
                         Text(
                           widget.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                       ],
@@ -101,7 +101,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 9),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: context.colors.surfaceColor,
                       borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
@@ -119,10 +119,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                         const SizedBox(width: 7),
                         Text(
                           widget.instruction,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: Color(0xFF1A1A1A),
+                            color: context.colors.textPrimary,
                           ),
                         ),
                       ],
@@ -189,7 +189,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 8),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: context.colors.surfaceColor,
                               borderRadius: BorderRadius.circular(22),
                               boxShadow: [
                                 BoxShadow(
@@ -207,10 +207,10 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   place.title,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1A1A1A),
+                                    color: context.colors.textPrimary,
                                   ),
                                 ),
                               ],

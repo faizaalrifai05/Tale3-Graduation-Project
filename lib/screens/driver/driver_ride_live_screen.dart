@@ -229,10 +229,13 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
     _locationSub = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high, distanceFilter: 10),
-    ).listen((pos) {
-      if (!mounted) return;
-      setState(() => _driverPosition = LatLng(pos.latitude, pos.longitude));
-    });
+    ).listen(
+      (pos) {
+        if (!mounted) return;
+        setState(() => _driverPosition = LatLng(pos.latitude, pos.longitude));
+      },
+      onError: (_) {},
+    );
   }
 
   @override
@@ -263,19 +266,19 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Cancel Ride',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-            'Are you sure you want to cancel this ride? All passengers will be notified.'),
+        title: Text(context.l10n.cancelRide,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(
+            context.l10n.cancelRideConfirmDesc),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Keep Riding')),
+              child: Text(context.l10n.keepRiding)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Cancel Ride',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(context.l10n.yesCancel,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -302,18 +305,17 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       builder: (ctx) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Arrived at Destination?',
-            style: TextStyle(fontWeight: FontWeight.w800)),
-        content: const Text(
-            'Confirm you have arrived at the destination. Passengers will be able to leave a rating.'),
+        title: Text(context.l10n.arrivedAtDestination,
+            style: const TextStyle(fontWeight: FontWeight.w800)),
+        content: Text(context.l10n.confirmArrivedDesc),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Not Yet')),
+              child: Text(context.l10n.notYet)),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Yes, We\'ve Arrived',
-                style: TextStyle(fontWeight: FontWeight.w700)),
+            child: Text(context.l10n.yesArrived,
+                style: const TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -561,9 +563,9 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _completing ? null : _confirmCancelRide,
                   icon: const Icon(Icons.cancel_outlined, size: 20),
-                  label: const Text(
-                    'Cancel Ride',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  label: Text(
+                    context.l10n.cancelRide,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
@@ -613,12 +615,12 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: allDone
-            ? const Color(0xFFE8F5E9)
+            ? context.colors.successLightBg
             : context.colors.inputFillColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
             color: allDone
-                ? const Color(0xFF81C784)
+                ? context.colors.successBorder
                 : context.colors.borderColor),
       ),
       child: Row(
@@ -628,7 +630,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
             height: 42,
             decoration: BoxDecoration(
               color:
-                  allDone ? const Color(0xFF2E7D32) : AppStyles.primaryColor,
+                  allDone ? context.colors.successDarkText : AppStyles.primaryColor,
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -654,7 +656,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: allDone
-                        ? const Color(0xFF2E7D32)
+                        ? context.colors.successDarkText
                         : context.colors.textPrimary,
                   ),
                 ),
@@ -666,7 +668,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     color: allDone
-                        ? const Color(0xFF388E3C)
+                        ? context.colors.successColor
                         : context.colors.textSecondary,
                   ),
                 ),
@@ -688,7 +690,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isDone
-                        ? const Color(0xFF2E7D32)
+                        ? context.colors.successDarkText
                         : isCurrent
                             ? AppStyles.primaryColor
                             : context.colors.borderColor,
@@ -720,7 +722,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
             color: AppStyles.primaryColor.withValues(alpha: 0.5), width: 1.5),
@@ -760,17 +762,17 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF8E1),
+                    color: context.colors.pendingLightBg,
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.location_off,
+                      const Icon(Icons.location_off,
                           size: 11, color: Color(0xFFF57F17)),
-                      SizedBox(width: 4),
-                      Text('No GPS',
-                          style: TextStyle(
+                      const SizedBox(width: 4),
+                      Text(context.l10n.noGps,
+                          style: const TextStyle(
                               fontSize: 10,
                               color: Color(0xFFF57F17),
                               fontWeight: FontWeight.w700)),
@@ -832,7 +834,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
           ),
 
           const SizedBox(height: 16),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
+          Divider(height: 1, color: context.colors.dividerColor),
           const SizedBox(height: 14),
 
           // Action buttons
@@ -853,8 +855,8 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                       }
                     },
                     icon: const Icon(Icons.navigation_rounded, size: 18),
-                    label: const Text('Navigate',
-                        style: TextStyle(
+                    label: Text(context.l10n.navigate,
+                        style: const TextStyle(
                             fontSize: 14, fontWeight: FontWeight.w600)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppStyles.primaryColor,
@@ -907,30 +909,30 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
+        color: context.colors.successLightBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF81C784)),
+        border: Border.all(color: context.colors.successBorder),
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded,
-              color: Color(0xFF2E7D32), size: 30),
+          Icon(Icons.check_circle_rounded,
+              color: context.colors.successDarkText, size: 30),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'All passengers on board!',
                   style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF2E7D32)),
+                      color: context.colors.successDarkText),
                 ),
                 Text(
                   'Drive to ${widget.destination} and tap when you arrive.',
-                  style: const TextStyle(
-                      fontSize: 12, color: Color(0xFF388E3C)),
+                  style: TextStyle(
+                      fontSize: 12, color: context.colors.successColor),
                 ),
               ],
             ),
@@ -962,9 +964,9 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
+              color: context.colors.successLightBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFF81C784)),
+              border: Border.all(color: context.colors.successBorder),
             ),
             child: Row(
               children: [
@@ -994,8 +996,8 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                         color: context.colors.textPrimary),
                   ),
                 ),
-                const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF2E7D32), size: 20),
+                Icon(Icons.check_circle_rounded,
+                    color: context.colors.successDarkText, size: 20),
               ],
             ),
           );
@@ -1068,7 +1070,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F0),
+        color: context.colors.errorLightBg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFFFFCDD2)),
       ),
@@ -1233,7 +1235,7 @@ class _DriverRideLiveScreenState extends State<DriverRideLiveScreen> {
                       Icon(Icons.my_location_rounded,
                           size: 14, color: context.colors.textPrimary),
                       const SizedBox(width: 4),
-                      Text('My Location',
+                      Text(context.l10n.myLocation,
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1329,7 +1331,7 @@ class _PassengerRatingSheetState extends State<_PassengerRatingSheet> {
                 color: context.colors.textPrimary),
           ),
           const SizedBox(height: 4),
-          Text('Rate this passenger',
+          Text(context.l10n.rateThisPassenger,
               style: TextStyle(
                   fontSize: 13, color: context.colors.textSecondary)),
           const SizedBox(height: 20),
@@ -1366,7 +1368,7 @@ class _PassengerRatingSheetState extends State<_PassengerRatingSheet> {
                         borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
-                  child: const Text('Skip',
+                  child: Text(context.l10n.skip,
                       style: TextStyle(
                           fontSize: 15, fontWeight: FontWeight.w600)),
                 ),
@@ -1389,7 +1391,7 @@ class _PassengerRatingSheetState extends State<_PassengerRatingSheet> {
                           height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2))
-                      : const Text('Submit',
+                      : Text(context.l10n.submit,
                           style: TextStyle(
                               fontSize: 15, fontWeight: FontWeight.w600)),
                 ),

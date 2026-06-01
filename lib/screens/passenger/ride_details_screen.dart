@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:testtale3/l10n/app_localizations.dart';
@@ -7,16 +6,17 @@ import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
-import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/screens/shared/route_map_widget.dart';
+import 'package:testtale3/widgets/permission_dialog.dart';
 import 'package:testtale3/Services/maps_service.dart';
+import 'package:testtale3/theme/app_styles.dart';
 
 // ignore_for_file: use_build_context_synchronously
 
 class RideDetailsScreen extends StatefulWidget {
   final RideModel ride;
-
   const RideDetailsScreen({super.key, required this.ride});
 
   @override
@@ -26,10 +26,8 @@ class RideDetailsScreen extends StatefulWidget {
 class _RideDetailsScreenState extends State<RideDetailsScreen> {
   RideModel get ride => widget.ride;
 
-  static const Color _primaryColor = Color(0xFF8B1A2B);
-  static const Color _darkMaroon = Color(0xFF5C0A1A);
-
   String? _locationError;
+  bool _isBooking = false;
   late final Future<String> _durationFuture;
 
   @override
@@ -40,47 +38,51 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Future<void> _handleBooking() async {
-    final perm = await Geolocator.checkPermission();
-
-    if (perm == LocationPermission.denied ||
-        perm == LocationPermission.deniedForever) {
+    if (_isBooking) return;
+    setState(() => _isBooking = true);
+    try {
+      final perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        if (mounted) await showLocationSettingsReminder(context);
+        return;
+      }
       if (!mounted) return;
-      await showLocationSettingsReminder(context);
-      return;
+      setState(() => _locationError = null);
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => SelectSeatScreen(ride: ride)),
+      );
+    } finally {
+      if (mounted) setState(() => _isBooking = false);
     }
-
-    if (!mounted) return;
-    setState(() => _locationError = null);
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => SelectSeatScreen(ride: ride)),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final colors = context.colors;
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA), // Light gray background
+      backgroundColor: colors.backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
             // Header
             Container(
-              color: Colors.white,
+              color: colors.surfaceColor,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
               child: Row(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Color(0xFF1A1A1A)),
+                    icon: Icon(Icons.arrow_back, color: colors.textPrimary),
                     onPressed: () => Navigator.of(context).pop(),
                   ),
                   Expanded(
                     child: Center(
                       child: Text(
                         context.l10n.rideDetails,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1A1A),
+                          color: colors.textPrimary,
                         ),
                       ),
                     ),
@@ -89,12 +91,12 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     width: 36,
                     height: 36,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFFDF2F4),
+                    decoration: BoxDecoration(
+                      color: colors.highlightBackgroundColor,
                       shape: BoxShape.circle,
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.share, color: _primaryColor, size: 18),
+                      icon: const Icon(Icons.share, color: AppStyles.primaryColor, size: 18),
                       onPressed: () {},
                       padding: EdgeInsets.zero,
                     ),
@@ -111,17 +113,14 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                   children: [
                     // Driver Card
                     Container(
-                      color: Colors.white,
+                      color: colors.surfaceColor,
                       padding: const EdgeInsets.all(20),
                       child: Row(
                         children: [
-                          GestureDetector(
-                            onTap: () {},
-                            child: const CircleAvatar(
-                              radius: 32,
-                              backgroundColor: Color(0xFFE0E0E0),
-                              child: Icon(Icons.person, color: Colors.white, size: 40),
-                            ),
+                          CircleAvatar(
+                            radius: 32,
+                            backgroundColor: colors.borderColor,
+                            child: const Icon(Icons.person, color: Colors.white, size: 40),
                           ),
                           const SizedBox(width: 16),
                           Expanded(
@@ -132,14 +131,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                   children: [
                                     Text(
                                       ride.driverName.isEmpty ? 'Driver' : ride.driverName,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1A1A1A),
+                                        color: colors.textPrimary,
                                       ),
                                     ),
                                     const SizedBox(width: 8),
-                                    // ── Dynamic rating badge ──────────────
                                     FutureBuilder<DocumentSnapshot>(
                                       future: FirebaseFirestore.instance
                                           .collection('users')
@@ -149,65 +147,37 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                         double avg = 0.0;
                                         int count = 0;
                                         if (snap.hasData && snap.data!.exists) {
-                                          final data = snap.data!.data()
-                                              as Map<String, dynamic>;
-                                          avg = (data['averageRating'] as num?)
-                                                  ?.toDouble() ??
-                                              0.0;
-                                          count = (data['ratingCount'] as num?)
-                                                  ?.toInt() ??
-                                              0;
+                                          final data = snap.data!.data() as Map<String, dynamic>;
+                                          avg = (data['averageRating'] as num?)?.toDouble() ?? 0.0;
+                                          count = (data['ratingCount'] as num?)?.toInt() ?? 0;
                                         }
-                                        // Show nothing if no ratings yet
                                         if (count == 0) {
                                           return Container(
-                                            padding: const EdgeInsets.symmetric(
-                                                horizontal: 6, vertical: 2),
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                             decoration: BoxDecoration(
-                                              color: const Color(0xFFF5F5F5),
-                                              borderRadius:
-                                                  BorderRadius.circular(4),
+                                              color: colors.cardBackgroundColor,
+                                              borderRadius: BorderRadius.circular(4),
                                             ),
-                                            child: const Row(
+                                            child: Row(
                                               children: [
-                                                Icon(Icons.star_border,
-                                                    color: Color(0xFF9E9E9E),
-                                                    size: 12),
-                                                SizedBox(width: 2),
-                                                Text(
-                                                  'New',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    color: Color(0xFF9E9E9E),
-                                                  ),
-                                                ),
+                                                Icon(Icons.star_border, color: colors.textTertiary, size: 12),
+                                                const SizedBox(width: 2),
+                                                Text('New', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: colors.textTertiary)),
                                               ],
                                             ),
                                           );
                                         }
                                         return Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                           decoration: BoxDecoration(
-                                            color: const Color(0xFFFFF8E1),
-                                            borderRadius:
-                                                BorderRadius.circular(4),
+                                            color: AppStyles.starRatingLightBg,
+                                            borderRadius: BorderRadius.circular(4),
                                           ),
                                           child: Row(
                                             children: [
-                                              const Icon(Icons.star,
-                                                  color: Color(0xFFFFC107),
-                                                  size: 12),
+                                              const Icon(Icons.star, color: AppStyles.starRatingColor, size: 12),
                                               const SizedBox(width: 2),
-                                              Text(
-                                                avg.toStringAsFixed(1),
-                                                style: const TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFFF57F17),
-                                                ),
-                                              ),
+                                              Text(avg.toStringAsFixed(1), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppStyles.starRatingDarkText)),
                                             ],
                                           ),
                                         );
@@ -217,25 +187,17 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  '${ride.carShortInfo} \u2022 ${ride.plateNumber}',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Color(0xFF757575),
-                                  ),
+                                  '${ride.carShortInfo} • ${ride.plateNumber}',
+                                  style: TextStyle(fontSize: 13, color: colors.textSecondary),
                                 ),
                                 const SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    const Icon(Icons.verified, color: _primaryColor, size: 14),
+                                    const Icon(Icons.verified, color: AppStyles.primaryColor, size: 14),
                                     const SizedBox(width: 4),
                                     Text(
                                       context.l10n.verifiedDriver,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w700,
-                                        color: _primaryColor,
-                                        letterSpacing: 1,
-                                      ),
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppStyles.primaryColor, letterSpacing: 1),
                                     ),
                                   ],
                                 ),
@@ -247,17 +209,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Map Section
+                    // Map + Route Section
                     Container(
-                      color: Colors.white,
+                      color: colors.surfaceColor,
                       padding: const EdgeInsets.all(20),
                       child: Column(
                         children: [
-                          RouteMapWidget(
-                            origin: ride.origin,
-                            destination: ride.destination,
-                            height: 160,
-                          ),
+                          RouteMapWidget(origin: ride.origin, destination: ride.destination, height: 160),
                           const SizedBox(height: 20),
                           Row(
                             children: [
@@ -265,68 +223,36 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                                 width: 48,
                                 height: 48,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF5F5F5),
+                                  color: colors.cardBackgroundColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.location_on, color: _primaryColor),
+                                child: const Icon(Icons.location_on, color: AppStyles.primaryColor),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      context.l10n.route,
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF9E9E9E),
-                                        letterSpacing: 1,
-                                      ),
-                                    ),
+                                    Text(context.l10n.route, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: colors.textTertiary, letterSpacing: 1)),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      '${ride.origin} → ${ride.destination}',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1A1A1A),
-                                      ),
-                                    ),
+                                    Text('${ride.origin} → ${ride.destination}', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: colors.textPrimary)),
                                   ],
                                 ),
                               ),
                               Column(
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(
-                                    context.l10n.estTime,
-                                    style: const TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Color(0xFF9E9E9E),
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
+                                  Text(context.l10n.estTime, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: colors.textTertiary, letterSpacing: 1)),
                                   const SizedBox(height: 4),
                                   FutureBuilder<String>(
                                     future: _durationFuture,
-                                    builder: (context, snap) => Text(
-                                      snap.data ?? '—',
-                                      style: const TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                        color: Color(0xFF1A1A1A),
-                                      ),
-                                    ),
+                                    builder: (context, snap) => Text(snap.data ?? '—', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: colors.textPrimary)),
                                   ),
                                 ],
                               ),
                             ],
                           ),
                           const SizedBox(height: 20),
-                          
-                          // Time, Seats, Price Cards
                           Row(
                             children: [
                               _buildInfoCard(context, Icons.access_time, context.l10n.departure, ride.time),
@@ -343,28 +269,20 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
                     // Rules and Features
                     Container(
-                      color: Colors.white,
+                      color: colors.surfaceColor,
                       padding: const EdgeInsets.all(20),
                       width: double.infinity,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            context.l10n.tripRulesFeatures,
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF9E9E9E),
-                              letterSpacing: 1,
-                            ),
-                          ),
+                          Text(context.l10n.tripRulesFeatures, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: colors.textTertiary, letterSpacing: 1)),
                           const SizedBox(height: 16),
-                          if (ride.noSmoking) _buildRuleItem(Icons.smoke_free, context.l10n.noSmokingAllowed),
-                          if (ride.luggageEnabled) _buildRuleItem(Icons.luggage, context.l10n.luggageSpaceAvailable),
-                          if (ride.acEnabled) _buildRuleItem(Icons.ac_unit, context.l10n.airConditioning),
-                          if (ride.petsAllowed) _buildRuleItem(Icons.pets, context.l10n.petsAllowed),
+                          if (ride.noSmoking) _buildRuleItem(context, Icons.smoke_free, context.l10n.noSmokingAllowed),
+                          if (ride.luggageEnabled) _buildRuleItem(context, Icons.luggage, context.l10n.luggageSpaceAvailable),
+                          if (ride.acEnabled) _buildRuleItem(context, Icons.ac_unit, context.l10n.airConditioning),
+                          if (ride.petsAllowed) _buildRuleItem(context, Icons.pets, context.l10n.petsAllowed),
                           if (!ride.noSmoking && !ride.luggageEnabled && !ride.acEnabled && !ride.petsAllowed)
-                            Text(context.l10n.noSpecialRules, style: const TextStyle(color: Color(0xFF9E9E9E), fontSize: 13)),
+                            Text(context.l10n.noSpecialRules, style: TextStyle(color: colors.textTertiary, fontSize: 13)),
                         ],
                       ),
                     ),
@@ -375,22 +293,15 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
 
             // Bottom Booking Bar
             StreamBuilder<BookingModel?>(
-              stream: context
-                  .read<BookingProvider>()
-                  .existingBookingStream(ride.id),
+              stream: context.read<BookingProvider>().existingBookingStream(ride.id),
               builder: (context, snapshot) {
                 final existing = snapshot.data;
+                final colors = context.colors;
                 return Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Color(0x0D000000),
-                        blurRadius: 10,
-                        offset: Offset(0, -5),
-                      ),
-                    ],
+                  decoration: BoxDecoration(
+                    color: colors.surfaceColor,
+                    boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 10, offset: Offset(0, -5))],
                   ),
                   child: existing != null
                       ? Column(
@@ -398,27 +309,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                           children: [
                             Container(
                               width: double.infinity,
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8F5E9),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Row(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(color: colors.successLightBg, borderRadius: BorderRadius.circular(10)),
+                              child: Row(
                                 children: [
-                                  Icon(Icons.check_circle_rounded,
-                                      color: Color(0xFF2E7D32), size: 16),
-                                  SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      "You've already booked this ride",
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF2E7D32),
-                                      ),
-                                    ),
-                                  ),
+                                  const Icon(Icons.check_circle_rounded, color: AppStyles.successDarkText, size: 16),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: Text(context.l10n.alreadyBookedRide, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: colors.successDarkText))),
                                 ],
                               ),
                             ),
@@ -427,24 +324,13 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                               width: double.infinity,
                               height: 52,
                               child: ElevatedButton.icon(
-                                onPressed: () =>
-                                    Navigator.of(context).push(MaterialPageRoute(
-                                  builder: (_) =>
-                                      BookingStatusScreen(booking: existing),
-                                )),
-                                icon: const Icon(Icons.receipt_long_rounded,
-                                    size: 20),
-                                label: const Text(
-                                  'View My Booking',
-                                  style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600),
-                                ),
+                                onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => BookingStatusScreen(booking: existing))),
+                                icon: const Icon(Icons.receipt_long_rounded, size: 20),
+                                label: Text(context.l10n.viewMyBooking, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2E7D32),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12)),
+                                  backgroundColor: AppStyles.successDarkText,
+                                  foregroundColor: AppStyles.onPrimary,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                   elevation: 0,
                                 ),
                               ),
@@ -457,82 +343,59 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                             if (_locationError != null) ...[
                               Container(
                                 width: double.infinity,
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 14, vertical: 12),
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                 margin: const EdgeInsets.only(bottom: 12),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFFFF0F0),
+                                  color: colors.errorLightBg,
                                   borderRadius: BorderRadius.circular(10),
-                                  border: Border.all(
-                                      color: const Color(0xFFFFCDD2)),
+                                  border: Border.all(color: AppStyles.errorColor.withValues(alpha: 0.3)),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.location_off_rounded,
-                                        color: Color(0xFFB71C1C), size: 18),
+                                    const Icon(Icons.location_off_rounded, color: AppStyles.errorColor, size: 18),
                                     const SizedBox(width: 10),
-                                    Expanded(
-                                      child: Text(
-                                        _locationError!,
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          color: Color(0xFFB71C1C),
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
+                                    Expanded(child: Text(_locationError!, style: const TextStyle(fontSize: 13, color: AppStyles.errorColor, fontWeight: FontWeight.w500))),
                                   ],
                                 ),
                               ),
                             ],
                             Row(
-                          children: [
-                            Column(
-                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.event_seat,
-                                    color: _primaryColor, size: 24),
-                                const SizedBox(height: 4),
-                                Text(
-                                  context.l10n.selectSeat,
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: _primaryColor,
-                                    height: 1.2,
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.event_seat, color: AppStyles.primaryColor, size: 24),
+                                    const SizedBox(height: 4),
+                                    Text(context.l10n.selectSeat, textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppStyles.primaryColor, height: 1.2)),
+                                  ],
+                                ),
+                                const SizedBox(width: 20),
+                                Expanded(
+                                  child: SizedBox(
+                                    height: 52,
+                                    child: ElevatedButton(
+                                      onPressed: _isBooking ? null : _handleBooking,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppStyles.darkMaroon,
+                                        foregroundColor: AppStyles.onPrimary,
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        elevation: 0,
+                                      ),
+                                      child: _isBooking
+                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                const Icon(Icons.check_circle_outline, size: 20),
+                                                const SizedBox(width: 8),
+                                                Text(context.l10n.requestBooking, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                                              ],
+                                            ),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(width: 20),
-                            Expanded(
-                              child: SizedBox(
-                                height: 52,
-                                child: ElevatedButton.icon(
-                                  onPressed: _handleBooking,
-                                  icon: const Icon(Icons.check_circle_outline,
-                                      size: 20),
-                                  label: Text(
-                                    context.l10n.requestBooking,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _darkMaroon,
-                                    foregroundColor: Colors.white,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    elevation: 0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                           ],
                         ),
                 );
@@ -545,61 +408,35 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
   }
 
   Widget _buildInfoCard(BuildContext context, IconData icon, String label, String value, {bool isPrice = false}) {
+    final colors = context.colors;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFDF2F4),
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(color: colors.highlightBackgroundColor, borderRadius: BorderRadius.circular(12)),
         child: Column(
           children: [
-            Icon(icon, color: _primaryColor, size: 20),
+            Icon(icon, color: AppStyles.primaryColor, size: 20),
             const SizedBox(height: 12),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF757575),
-                letterSpacing: 0.5,
-              ),
-            ),
+            Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: colors.textSecondary, letterSpacing: 0.5)),
             const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: isPrice ? _primaryColor : const Color(0xFF1A1A1A),
-              ),
-            ),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isPrice ? AppStyles.primaryColor : colors.textPrimary)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildRuleItem(IconData icon, String label) {
+  Widget _buildRuleItem(BuildContext context, IconData icon, String label) {
+    final colors = context.colors;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F5F5),
-        borderRadius: BorderRadius.circular(12),
-      ),
+      decoration: BoxDecoration(color: colors.cardBackgroundColor, borderRadius: BorderRadius.circular(12)),
       child: Row(
         children: [
-          Icon(icon, color: _primaryColor, size: 20),
+          Icon(icon, color: AppStyles.primaryColor, size: 20),
           const SizedBox(width: 12),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF1A1A1A),
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: colors.textPrimary)),
         ],
       ),
     );

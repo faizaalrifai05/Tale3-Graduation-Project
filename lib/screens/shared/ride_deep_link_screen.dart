@@ -6,6 +6,7 @@ import 'package:testtale3/providers/auth_provider.dart';
 import 'package:testtale3/providers/ride_provider.dart';
 import 'package:testtale3/screens/passenger/ride_details_screen.dart';
 import 'package:testtale3/screens/driver/driver_ride_details_screen.dart';
+import 'package:testtale3/l10n/app_localizations.dart';
 import 'package:testtale3/theme/app_styles.dart';
 
 /// Landing screen when the app is opened via a tale3://ride/{rideId} link.
@@ -55,7 +56,7 @@ class _RideDeepLinkScreenState extends State<RideDeepLinkScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Link Unavailable',
+        title: Text(context.l10n.linkUnavailable,
             style: TextStyle(fontWeight: FontWeight.w800)),
         content: Text(message),
         actions: [
@@ -64,7 +65,7 @@ class _RideDeepLinkScreenState extends State<RideDeepLinkScreen> {
               Navigator.pop(ctx);
               Navigator.pop(context);
             },
-            child: const Text('OK'),
+            child: Text(context.l10n.ok),
           ),
         ],
       ),

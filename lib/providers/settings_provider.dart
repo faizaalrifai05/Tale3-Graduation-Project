@@ -99,36 +99,17 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setBool(_permAskedKey, true);
   }
 
-  /// Toggle notification switch from the settings screen.
-  ///
-  /// OFF → disables in-app (cannot revoke OS permission programmatically).
-  /// ON  → requests permission if not yet granted, or opens app settings
-  ///        if permanently denied.
+  /// Toggle notification switch — always opens app settings so the user can
+  /// grant or revoke the permission themselves (Android doesn't allow apps to
+  /// do this programmatically). State re-syncs on resume.
   Future<void> toggleNotifications(bool value) async {
-    if (!value) {
-      _notificationsEnabled = false;
-      notifyListeners();
-      return;
-    }
-    // ON → send user to device settings to enable it themselves
     await openAppSettings();
-    // State syncs when they return via didChangeAppLifecycleState → syncPermissions()
   }
 
-  /// Toggle location switch from the settings screen.
-  ///
-  /// OFF → disables in-app (cannot revoke OS permission programmatically).
-  /// ON  → requests permission if not yet granted, or opens app settings
-  ///        if permanently denied.
+  /// Toggle location switch — always opens app settings so the user can
+  /// grant or revoke location permission themselves. State re-syncs on resume.
   Future<void> toggleLocation(bool value) async {
-    if (!value) {
-      _locationEnabled = false;
-      notifyListeners();
-      return;
-    }
-    // ON → send user to device settings to enable it themselves
     await openAppSettings();
-    // State syncs when they return via didChangeAppLifecycleState → syncPermissions()
   }
 
   // kept for old call sites

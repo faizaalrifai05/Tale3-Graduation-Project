@@ -516,6 +516,121 @@ class AppLocalizations {
   String get searchConversations => _t('searchConversations');
   String get noConversations => _t('noConversations');
 
+  // ── DRIVER RIDE DETAILS ──────────────────────────────────────────────────
+  String get accept => _t('accept');
+  String get reject => _t('reject');
+  String get rideCancelled => _t('rideCancelled');
+  String get rideCompleted => _t('rideCompleted');
+  String get viewPickupDropoff => _t('viewPickupDropoff');
+  String get noPin => _t('noPin');
+  String get noSeatsAvailable => _t('noSeatsAvailable');
+  String get rideAlreadyStarted => _t('rideAlreadyStarted');
+  String get rideNotFound => _t('rideNotFound');
+  String get permissionDenied => _t('permissionDenied');
+  String get somethingWentWrong => _t('somethingWentWrong');
+  String get bookingRequests => _t('bookingRequests');
+  String get pendingLabel => _t('pendingLabel');
+  String get selectPickupLocation => _t('selectPickupLocation');
+  String get myPlaces => _t('myPlaces');
+  String get rejected => _t('rejected');
+  String get resendVerificationEmail => _t('resendVerificationEmail');
+  String get setAsPickup => _t('setAsPickup');
+  String get setAsDestination => _t('setAsDestination');
+  String get selectOriginCity => _t('selectOriginCity');
+  String get selectDestinationCity => _t('selectDestinationCity');
+  String get setPickupLocation => _t('setPickupLocation');
+  String get setDropoffLocation => _t('setDropoffLocation');
+  String get linkUnavailable => _t('linkUnavailable');
+  String get rideNotAvailable => _t('rideNotAvailable');
+  String get liveLabel => _t('liveLabel');
+  String get rateThisPassenger => _t('rateThisPassenger');
+  String get skip => _t('skip');
+  String get submit => _t('submit');
+  String get back => _t('back');
+  String get pickLocation => _t('pickLocation');
+
+  // ── PASSENGER RIDE DETAILS ───────────────────────────────────────────────
+  String get alreadyBookedRide => _t('alreadyBookedRide');
+  String get viewMyBooking => _t('viewMyBooking');
+
+  // ── BOOKING STATUS ───────────────────────────────────────────────────────
+  String get awaitingDriverApproval => _t('awaitingDriverApproval');
+  String get requestRejected => _t('requestRejected');
+  String get yourRideIsLive => _t('yourRideIsLive');
+  String get requestSentToDriver => _t('requestSentToDriver');
+  String get driverDeclinedRequest => _t('driverDeclinedRequest');
+  String get thanksTravelling => _t('thanksTravelling');
+  String get rideConfirmedDesc => _t('rideConfirmedDesc');
+  String get youRatedThisRide => _t('youRatedThisRide');
+  String get rateYourDriver => _t('rateYourDriver');
+  String get trackLiveRide => _t('trackLiveRide');
+  String get messageDriver => _t('messageDriver');
+  String get viewMyTrips => _t('viewMyTrips');
+  String get driverArrived => _t('driverArrived');
+  String get driverArrivedDesc => _t('driverArrivedDesc');
+
+  // ── ACCOUNT BLOCKED ──────────────────────────────────────────────────────
+  String get accountBlocked => _t('accountBlocked');
+  String get accountBlockedDesc => _t('accountBlockedDesc');
+
+  // ── DRIVER HOME / REVIEWS ────────────────────────────────────────────────
+  String get noReviewsYet => _t('noReviewsYet');
+  String get noReviewsDesc => _t('noReviewsDesc');
+
+  // ── PERMISSION DIALOG ────────────────────────────────────────────────────
+  String get locationIsOff => _t('locationIsOff');
+  String get locationIsOffDesc => _t('locationIsOffDesc');
+  String get openLocationSettings => _t('openLocationSettings');
+  String get locationRequired => _t('locationRequired');
+  String get locationPermissionDesc => _t('locationPermissionDesc');
+  String get openAppSettings => _t('openAppSettings');
+
+  // ── DRIVER RIDE LIVE ─────────────────────────────────────────────────────
+  String get cancelRideConfirmDesc => _t('cancelRideConfirmDesc');
+  String get keepRiding => _t('keepRiding');
+  String get yesCancel => _t('yesCancel');
+  String get arrivedAtDestination => _t('arrivedAtDestination');
+  String get confirmArrivedDesc => _t('confirmArrivedDesc');
+  String get notYet => _t('notYet');
+  String get yesArrived => _t('yesArrived');
+  String get noGps => _t('noGps');
+  String get myLocation => _t('myLocation');
+  String get navigate => _t('navigate');
+
+  // ── RATE DRIVER ──────────────────────────────────────────────────────────
+  String get howWasYourRide => _t('howWasYourRide');
+  String get submitRating => _t('submitRating');
+  String get ratingTerrible => _t('ratingTerrible');
+  String get ratingBad => _t('ratingBad');
+  String get ratingOkay => _t('ratingOkay');
+  String get ratingGood => _t('ratingGood');
+  String get ratingExcellent => _t('ratingExcellent');
+  String get leaveCommentHint => _t('leaveCommentHint');
+  String get hadAProblem => _t('hadAProblem');
+  String get reportDriver => _t('reportDriver');
+
+  // ── REPORT SCREEN ────────────────────────────────────────────────────────
+  String get whatHappened => _t('whatHappened');
+  String get selectReason => _t('selectReason');
+  String get tellUsMore => _t('tellUsMore');
+  String get describeWhatHappened => _t('describeWhatHappened');
+  String get reportSubmitted => _t('reportSubmitted');
+  String get selectReasonError => _t('selectReasonError');
+  String get reportFailed => _t('reportFailed');
+  String get reasonInappropriate => _t('reasonInappropriate');
+  String get reasonNoShow => _t('reasonNoShow');
+  String get reasonUnsafeDriving => _t('reasonUnsafeDriving');
+  String get reasonHarassment => _t('reasonHarassment');
+  String get reasonScamFraud => _t('reasonScamFraud');
+  String get reasonWrongVehicle => _t('reasonWrongVehicle');
+  String get reasonRude => _t('reasonRude');
+  String get reasonOtherReport => _t('reasonOtherReport');
+
+  // ── SETTINGS SCREEN ──────────────────────────────────────────────────────
+  String get personalInfoUpdated => _t('personalInfoUpdated');
+  String get passwordUpdated => _t('passwordUpdated');
+  String get enterPasswordToConfirm => _t('enterPasswordToConfirm');
+
   // ══════════════════════════════════════════════════════════════════════════
   //  ENGLISH STRINGS
   // ══════════════════════════════════════════════════════════════════════════
@@ -976,6 +1091,121 @@ class AppLocalizations {
 
     'searchConversations': 'Search conversations…',
     'noConversations': 'No conversations yet.',
+
+    // Driver ride details
+    'accept': 'Accept',
+    'reject': 'Reject',
+    'rideCancelled': 'Ride Cancelled',
+    'rideCompleted': 'Ride Completed',
+    'viewPickupDropoff': 'View pickup & drop-off',
+    'noPin': 'No pin',
+    'noSeatsAvailable': 'No seats available for this request.',
+    'rideAlreadyStarted': 'This ride has already started and is no longer accepting bookings.',
+    'rideNotFound': 'Ride not found. It may have been deleted.',
+    'permissionDenied': 'Permission denied. Please try again.',
+    'somethingWentWrong': 'Something went wrong. Please try again.',
+    'bookingRequests': 'BOOKING REQUESTS',
+    'pendingLabel': 'pending',
+    'selectPickupLocation': 'Select pickup location',
+    'myPlaces': 'My Places',
+    'rejected': 'Rejected',
+    'resendVerificationEmail': 'Resend Verification Email',
+    'setAsPickup': 'Set as Pickup',
+    'setAsDestination': 'Set as Destination',
+    'selectOriginCity': 'Select origin city',
+    'selectDestinationCity': 'Select destination city',
+    'setPickupLocation': 'Set Pickup Location',
+    'setDropoffLocation': 'Set Drop-off Location',
+    'linkUnavailable': 'Link Unavailable',
+    'rideNotAvailable': 'Ride not found or no longer available.',
+    'liveLabel': 'LIVE',
+    'rateThisPassenger': 'Rate this passenger',
+    'skip': 'Skip',
+    'submit': 'Submit',
+    'back': 'Back',
+    'pickLocation': 'Pick Location',
+
+    // Passenger ride details
+    'alreadyBookedRide': "You've already booked this ride",
+    'viewMyBooking': 'View My Booking',
+
+    // Booking status
+    'awaitingDriverApproval': 'Awaiting Driver Approval',
+    'requestRejected': 'Request Rejected',
+    'yourRideIsLive': 'Your Ride is Live!',
+    'requestSentToDriver': 'Your request has been sent to the driver and will be reviewed shortly.',
+    'driverDeclinedRequest': 'Unfortunately, the driver has declined your request. You can search for another ride.',
+    'thanksTravelling': "Thanks for travelling with Tale3!",
+    'rideConfirmedDesc': "Your ride has been confirmed. You can track its status at My Trips.",
+    'youRatedThisRide': 'You rated this ride',
+    'rateYourDriver': 'Rate Your Driver',
+    'trackLiveRide': 'Track Live Ride',
+    'messageDriver': 'Message Driver',
+    'viewMyTrips': 'View My Trips',
+    'driverArrived': 'Driver Arrived!',
+    'driverArrivedDesc': 'Your driver has arrived at the pickup point!',
+
+    // Account blocked
+    'accountBlocked': 'Account Blocked',
+    'accountBlockedDesc': 'Your account has been blocked by the admin. If you believe this is a mistake, please contact support at support@tale3.app.',
+
+    // Driver home / reviews
+    'noReviewsYet': 'No reviews yet',
+    'noReviewsDesc': 'Complete trips and passengers will leave reviews here.',
+
+    // Permission dialog
+    'locationIsOff': 'Location is Off',
+    'locationIsOffDesc': "Your device's location is turned off. Please enable it to continue.",
+    'openLocationSettings': 'Open Location Settings',
+    'locationRequired': 'Location Required',
+    'locationPermissionDesc': 'Location permission is disabled for Tale3. Please enable it to continue.',
+    'openAppSettings': 'Open App Settings',
+
+    // Driver ride live
+    'cancelRideConfirmDesc': 'Are you sure you want to cancel this ride? All passengers will be notified.',
+    'keepRiding': 'Keep Riding',
+    'yesCancel': 'Yes, Cancel',
+    'arrivedAtDestination': 'Arrived at Destination?',
+    'confirmArrivedDesc': 'Confirm you have arrived at the final destination.',
+    'notYet': 'Not Yet',
+    'yesArrived': "Yes, We've Arrived",
+    'noGps': 'No GPS',
+    'myLocation': 'My Location',
+    'navigate': 'Navigate',
+
+    // Rate driver
+    'howWasYourRide': 'How was your ride?',
+    'submitRating': 'Submit Rating',
+    'ratingTerrible': 'Terrible',
+    'ratingBad': 'Bad',
+    'ratingOkay': 'Okay',
+    'ratingGood': 'Good',
+    'ratingExcellent': 'Excellent!',
+    'leaveCommentHint': 'Leave a comment (optional)…',
+    'hadAProblem': 'Had a problem?',
+    'reportDriver': 'Report Driver',
+
+    // Report screen
+    'whatHappened': 'What happened?',
+    'selectReason': 'Select the reason…',
+    'tellUsMore': 'Tell us more (optional)',
+    'describeWhatHappened': 'Describe what happened…',
+    'reportSubmitted': 'Report Submitted',
+    'selectReasonError': 'Please select a reason for your report.',
+    'reportFailed': 'Failed to submit report. Please try again.',
+    'reasonInappropriate': 'Inappropriate behavior',
+    'reasonNoShow': 'No show / cancelled without notice',
+    'reasonUnsafeDriving': 'Unsafe driving',
+    'reasonHarassment': 'Harassment',
+    'reasonScamFraud': 'Scam or fraud',
+    'reasonWrongVehicle': 'Wrong vehicle information',
+    'reasonRude': 'Rude or disrespectful',
+    'reasonOtherReport': 'Other',
+
+    // Settings screen
+    'personalInfoUpdated': 'Personal information updated',
+    'passwordUpdated': 'Password updated successfully',
+    'enterPasswordToConfirm': 'Enter your password to confirm deletion.',
   };
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -1438,6 +1668,121 @@ class AppLocalizations {
 
     'searchConversations': 'البحث في المحادثات...',
     'noConversations': 'لا توجد محادثات بعد.',
+
+    // Driver ride details
+    'accept': 'قبول',
+    'reject': 'رفض',
+    'rideCancelled': 'الرحلة ملغاة',
+    'rideCompleted': 'الرحلة مكتملة',
+    'viewPickupDropoff': 'عرض نقطة الركوب والإنزال',
+    'noPin': 'بدون دبوس',
+    'noSeatsAvailable': 'لا مقاعد متاحة لهذا الطلب.',
+    'rideAlreadyStarted': 'بدأت الرحلة بالفعل ولم تعد تقبل الحجوزات.',
+    'rideNotFound': 'الرحلة غير موجودة. ربما تم حذفها.',
+    'permissionDenied': 'تم رفض الإذن. يرجى المحاولة مجدداً.',
+    'somethingWentWrong': 'حدث خطأ ما. يرجى المحاولة مجدداً.',
+    'bookingRequests': 'طلبات الحجز',
+    'pendingLabel': 'معلّق',
+    'selectPickupLocation': 'اختر موقع الركوب',
+    'myPlaces': 'أماكني',
+    'rejected': 'مرفوض',
+    'resendVerificationEmail': 'إعادة إرسال بريد التحقق',
+    'setAsPickup': 'تعيين كنقطة ركوب',
+    'setAsDestination': 'تعيين كوجهة',
+    'selectOriginCity': 'اختر مدينة الانطلاق',
+    'selectDestinationCity': 'اختر مدينة الوجهة',
+    'setPickupLocation': 'تحديد موقع الركوب',
+    'setDropoffLocation': 'تحديد موقع الإنزال',
+    'linkUnavailable': 'الرابط غير متاح',
+    'rideNotAvailable': 'الرحلة غير موجودة أو لم تعد متاحة.',
+    'liveLabel': 'مباشر',
+    'rateThisPassenger': 'قيّم هذا الراكب',
+    'skip': 'تخطي',
+    'submit': 'إرسال',
+    'back': 'رجوع',
+    'pickLocation': 'اختر الموقع',
+
+    // Passenger ride details
+    'alreadyBookedRide': 'لقد حجزت هذه الرحلة بالفعل',
+    'viewMyBooking': 'عرض حجزي',
+
+    // Booking status
+    'awaitingDriverApproval': 'في انتظار موافقة السائق',
+    'requestRejected': 'تم رفض الطلب',
+    'yourRideIsLive': 'رحلتك نشطة!',
+    'requestSentToDriver': 'تم إرسال طلبك إلى السائق وسيتم مراجعته قريباً.',
+    'driverDeclinedRequest': 'للأسف، رفض السائق طلبك. يمكنك البحث عن رحلة أخرى.',
+    'thanksTravelling': 'شكراً لسفرك مع Tale3!',
+    'rideConfirmedDesc': 'تم تأكيد رحلتك. يمكنك متابعة حالتها في رحلاتي.',
+    'youRatedThisRide': 'لقد قيّمت هذه الرحلة',
+    'rateYourDriver': 'قيّم سائقك',
+    'trackLiveRide': 'تتبع الرحلة المباشرة',
+    'messageDriver': 'مراسلة السائق',
+    'viewMyTrips': 'عرض رحلاتي',
+    'driverArrived': 'وصل السائق!',
+    'driverArrivedDesc': 'وصل سائقك إلى نقطة الركوب!',
+
+    // Account blocked
+    'accountBlocked': 'الحساب محظور',
+    'accountBlockedDesc': 'تم حظر حسابك من قِبل الإدارة. يرجى التواصل مع الدعم.',
+
+    // Driver home / reviews
+    'noReviewsYet': 'لا توجد تقييمات بعد',
+    'noReviewsDesc': 'أكمل الرحلات وسيترك الركاب تقييماتهم هنا.',
+
+    // Permission dialog
+    'locationIsOff': 'الموقع معطّل',
+    'locationIsOffDesc': 'الموقع على جهازك معطّل. يرجى تفعيله للمتابعة.',
+    'openLocationSettings': 'فتح إعدادات الموقع',
+    'locationRequired': 'الموقع مطلوب',
+    'locationPermissionDesc': 'إذن الموقع معطّل لتطبيق Tale3. يرجى تفعيله للمتابعة.',
+    'openAppSettings': 'فتح إعدادات التطبيق',
+
+    // Driver ride live
+    'cancelRideConfirmDesc': 'هل أنت متأكد من إلغاء هذه الرحلة؟ سيتم إشعار جميع الركاب.',
+    'keepRiding': 'متابعة الرحلة',
+    'yesCancel': 'نعم، إلغاء',
+    'arrivedAtDestination': 'وصلت إلى الوجهة؟',
+    'confirmArrivedDesc': 'تأكيد وصولك إلى الوجهة النهائية.',
+    'notYet': 'ليس بعد',
+    'yesArrived': 'نعم، وصلنا',
+    'noGps': 'لا GPS',
+    'myLocation': 'موقعي',
+    'navigate': 'ملاحة',
+
+    // Rate driver
+    'howWasYourRide': 'كيف كانت رحلتك؟',
+    'submitRating': 'إرسال التقييم',
+    'ratingTerrible': 'سيء جداً',
+    'ratingBad': 'سيء',
+    'ratingOkay': 'مقبول',
+    'ratingGood': 'جيد',
+    'ratingExcellent': 'ممتاز!',
+    'leaveCommentHint': 'اترك تعليقاً (اختياري)',
+    'hadAProblem': 'هل واجهت مشكلة؟',
+    'reportDriver': 'الإبلاغ عن السائق',
+
+    // Report screen
+    'whatHappened': 'ماذا حدث؟',
+    'selectReason': 'اختر السبب...',
+    'tellUsMore': 'أخبرنا أكثر (اختياري)',
+    'describeWhatHappened': 'اشرح ما حدث...',
+    'reportSubmitted': 'تم تقديم البلاغ',
+    'selectReasonError': 'يرجى اختيار سبب للبلاغ.',
+    'reportFailed': 'فشل تقديم البلاغ. يرجى المحاولة مجدداً.',
+    'reasonInappropriate': 'سلوك غير لائق',
+    'reasonNoShow': 'لم يحضر / إلغاء بدون إشعار',
+    'reasonUnsafeDriving': 'قيادة غير آمنة',
+    'reasonHarassment': 'تحرش',
+    'reasonScamFraud': 'احتيال أو نصب',
+    'reasonWrongVehicle': 'معلومات مركبة خاطئة',
+    'reasonRude': 'وقاحة أو عدم احترام',
+    'reasonOtherReport': 'أخرى',
+
+    // Settings screen
+    'personalInfoUpdated': 'تم تحديث المعلومات الشخصية',
+    'passwordUpdated': 'تم تحديث كلمة المرور بنجاح',
+    'enterPasswordToConfirm': 'يرجى إدخال كلمة المرور لتأكيد الحذف.',
   };
 }
 

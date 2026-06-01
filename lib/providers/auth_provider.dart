@@ -263,22 +263,38 @@ class AuthProvider extends ChangeNotifier {
       }
 
       final doc = await _db.collection('users').doc(cred.user!.uid).get();
-      if (doc.exists) {
-        final blocked = doc.data()!['isBlocked'] as bool? ?? false;
-        if (blocked) {
-          await _auth.signOut();
-          return 'Your account has been blocked. Please contact support.';
-        }
-
-        final storedRole = _roleFromString(doc.data()!['role'] as String?);
-        if (storedRole != expectedRole) {
-          await _auth.signOut();
-          final roleName = _roleToString(storedRole);
-          return 'This account is registered as a $roleName. Please use the correct login screen.';
-        }
+      if (!doc.exists) {
+        await _auth.signOut();
+        return 'No account found with this email address.';
+      }
+      final blocked = doc.data()!['isBlocked'] as bool? ?? false;
+      if (blocked) {
+        await _auth.signOut();
+        return 'Your account has been blocked. Please contact support.';
+      }
+      final storedRole = _roleFromString(doc.data()!['role'] as String?);
+      if (storedRole != expectedRole) {
+        await _auth.signOut();
+        final roleName = _roleToString(storedRole);
+        return 'This account is registered as a $roleName. Please use the correct login screen.';
       }
       return null;
     } on FirebaseAuthException catch (e) {
+      // Firebase now returns 'invalid-credential' for both wrong password AND
+      // non-existent account. Check Firestore to give the right message.
+      if (e.code == 'invalid-credential' || e.code == 'wrong-password') {
+        try {
+          final snap = await _db
+              .collection('users')
+              .where('email', isEqualTo: email.trim())
+              .limit(1)
+              .get();
+          if (snap.docs.isEmpty) {
+            return 'No account found with this email address.';
+          }
+        } catch (_) {}
+        return 'Incorrect email or password.';
+      }
       return _friendlyError(e.code);
     } catch (_) {
       return 'Something went wrong. Please try again.';
@@ -878,6 +894,7 @@ class AuthProvider extends ChangeNotifier {
   String _friendlyError(String code) {
     switch (code) {
       case 'user-not-found':
+        return 'No account found with this email address.';
       case 'wrong-password':
       case 'invalid-credential':
         return 'Incorrect email or password.';
