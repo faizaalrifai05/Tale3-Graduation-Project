@@ -6,6 +6,7 @@ import 'package:testtale3/models/booking_model.dart';
 import 'package:testtale3/models/ride_model.dart';
 import 'package:testtale3/providers/booking_provider.dart';
 import 'package:testtale3/screens/passenger/booking_status_screen.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:geolocator/geolocator.dart';
 import 'package:testtale3/screens/passenger/select_seat_screen.dart';
 import 'package:testtale3/screens/shared/route_map_widget.dart';
@@ -57,6 +58,73 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
     }
   }
 
+  void _showShareSheet(BuildContext context) {
+    final shareText =
+        'Check out this ride on Tale3!\n'
+        '🚗 ${ride.origin} → ${ride.destination} • ${ride.date} at ${ride.time}\n'
+        'Driver: ${ride.driverName} | ${ride.carShortInfo}\n'
+        'Price: ${ride.pricePerSeat} JOD per seat\n'
+        'Book now on Tale3 — the trusted carpool app.';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.surfaceColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: ctx.colors.borderColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(context.l10n.shareRide,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ctx.colors.textPrimary)),
+            const SizedBox(height: 8),
+            Text(shareText,
+                style: TextStyle(fontSize: 14, color: ctx.colors.textSecondary, height: 1.5)),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.copy, size: 18),
+                label: Text(context.l10n.copyRideDetails,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: shareText));
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(context.l10n.rideCopied),
+                    backgroundColor: AppStyles.successColor,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ));
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppStyles.darkMaroon,
+                  foregroundColor: AppStyles.onPrimary,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.colors;
@@ -97,7 +165,7 @@ class _RideDetailsScreenState extends State<RideDetailsScreen> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.share, color: AppStyles.primaryColor, size: 18),
-                      onPressed: () {},
+                      onPressed: () => _showShareSheet(context),
                       padding: EdgeInsets.zero,
                     ),
                   ),
